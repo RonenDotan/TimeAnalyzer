@@ -107,6 +107,41 @@ src/
   components/
 ```
 
+## Commands
+
+```bash
+# Install dependencies
+npm install
+
+# Run on Android (requires device/emulator connected)
+npx react-native run-android
+
+# Run Metro bundler
+npx react-native start
+
+# Run tests
+npm test
+
+# Type check
+npx tsc --noEmit
+```
+
+## Environment (this machine)
+
+- Java: C:\Program Files\Android\Android Studio\jbr (Java 21, Android Studio bundled JBR)
+- Android SDK: C:\Users\ronen\AppData\Local\Android\Sdk
+- JAVA_HOME and ANDROID_HOME are set in ~/.claude/settings.json env section
+- gh CLI: C:\Program Files\GitHub CLI\gh.exe (also in settings.json PATH)
+
+## Current Status (2026-04-30)
+
+- React Native 0.85 + TypeScript scaffolded ✅
+- src/ folder structure created ✅
+- node_modules installed ✅
+- Issue #1 (project structure) complete ✅
+- Next: Issue #2 — periodic check-in scheduler (local notifications)
+- Still needed: verify java/adb work after Claude Code restart, run on device
+
 ## Task Tracking
 
 Active tasks: https://github.com/users/RonenDotan/projects/1
