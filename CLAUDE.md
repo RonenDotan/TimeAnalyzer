@@ -4,25 +4,60 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Purpose
 
-TimeAnalyzer is a personal work-session tracker. The user records short voice check-ins every ~2 hours describing what they've been doing. The app transcribes the audio, categorizes the work using AI, persists entries to a local log, and generates reports showing how time was actually spent.
+TimeAnalyzer is a voice-driven work journal that helps you understand where your time actually went during a work session. The user records short voice check-ins every ~2 hours describing what they've been doing. The app transcribes the audio, categorizes the work using AI, persists entries locally, and generates reports showing how time was actually spent.
 
 The core loop:
-1. Periodic prompt → user records audio → transcribe → categorize → save → report
+**Scheduled notification → user records audio → transcribe → categorize → save → report**
 
-## Planned Architecture
+## Architecture
 
-The app has five distinct responsibilities that map to modules:
+**Fully mobile, no backend.** Everything runs on the device:
+- Direct API calls to Claude (categorization) and optionally Whisper (transcription)
+- SQLite for on-device storage
+- Local notifications for scheduling check-ins
+- No server, no sync, no auth system
 
-- **Scheduler** — triggers check-in prompts on a configurable interval (default ~2h)
-- **Recorder** — captures audio input from the user (CLI or lightweight UI)
-- **Transcriber** — converts audio to text via Whisper (local preferred, API fallback)
-- **Analyzer** — sends transcript to Claude API to extract categories, tasks, and time themes
-- **Store** — persists entries as structured JSON log files (one per day or per session)
-- **Reporter** — reads the log and renders a timeline + category breakdown
+## Tech Stack
+
+- **Framework:** React Native + TypeScript
+- **Storage:** SQLite (on-device)
+- **Transcription:** On-device native speech-to-text (v1), Whisper API (v2)
+- **AI analysis:** Claude API via Anthropic SDK (called directly from app)
+- **Scheduling:** Local notifications (no background process needed)
+
+## Design Pattern — Provider / Strategy
+
+All external services are abstracted behind interfaces so providers can be swapped via config without touching app logic.
+
+**TranscriptionService**
+```
+interface TranscriptionProvider {
+  transcribe(audioFile: AudioFile): Promise<string>
+}
+
+Implementations:
+  NativeTranscriptionProvider   // on-device (v1)
+  WhisperTranscriptionProvider  // OpenAI Whisper API (v2)
+```
+
+**AnalysisService**
+```
+interface AnalysisProvider {
+  analyze(transcript: string): Promise<{ categories: string[], summary: string }>
+}
+
+Implementations:
+  ClaudeAnalysisProvider   // Anthropic API (v1)
+  OpenAIAnalysisProvider   // future
+```
+
+**StorageService** — abstracted similarly in case cloud sync is added later.
+
+The app never calls providers directly — always goes through the service interface.
 
 ## Work Categories
 
-The canonical category list (used by the Analyzer and Reporter):
+Canonical category list used by AnalysisService and the Reporter:
 - `Reading / Code Exploration`
 - `Debugging`
 - `Writing / Documentation`
@@ -31,11 +66,12 @@ The canonical category list (used by the Analyzer and Reporter):
 - `Setup / Configuration`
 - `Blocked / Waiting`
 
-## Log Format
+## Data Model
 
-Each saved entry should contain at minimum:
+Each log entry:
 ```json
 {
+  "id": "uuid",
   "timestamp_start": "2026-04-30T10:00:00",
   "timestamp_end": "2026-04-30T12:00:00",
   "transcript": "...",
@@ -44,15 +80,34 @@ Each saved entry should contain at minimum:
 }
 ```
 
-## Tech Stack
+## Project Structure (planned)
 
-- **Language** — TBD (Python preferred for Whisper + Claude API ecosystem)
-- **Transcription** — OpenAI Whisper
-- **AI analysis** — Claude API (Anthropic SDK)
-- **Storage** — local JSON files
-- **Interface** — CLI first, simple web report view later
+```
+src/
+  providers/
+    transcription/
+      TranscriptionProvider.ts       # interface
+      NativeTranscriptionProvider.ts
+      WhisperTranscriptionProvider.ts
+    analysis/
+      AnalysisProvider.ts            # interface
+      ClaudeAnalysisProvider.ts
+    storage/
+      StorageProvider.ts             # interface
+      SQLiteStorageProvider.ts
+  services/
+    TranscriptionService.ts          # wraps active provider
+    AnalysisService.ts
+    StorageService.ts
+    SchedulerService.ts              # local notifications
+  screens/
+    CheckInScreen.tsx
+    ReportScreen.tsx
+    SettingsScreen.tsx
+  components/
+```
 
 ## Task Tracking
 
-Active tasks are tracked on the GitHub Project board: https://github.com/users/RonenDotan/projects/1  
-Issues live at: https://github.com/RonenDotan/TimeAnalyzer/issues
+Active tasks: https://github.com/users/RonenDotan/projects/1
+Issues: https://github.com/RonenDotan/TimeAnalyzer/issues
