@@ -1,14 +1,20 @@
 import React from 'react';
 import { StyleSheet, Text, View, StatusBar } from 'react-native';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
+import v from './version.json';
+
+const version = `v${v.major}.${v.minor}.${v.ticket_id}.${v.sequence}`;
 
 function AppContent(): React.JSX.Element {
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <Text style={styles.title}>TimeAnalyzer</Text>
-      <Text style={styles.subtitle}>Hello World ✓</Text>
+    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+      <View style={styles.center}>
+        <Text style={styles.title}>TimeAnalyzer</Text>
+        <Text style={styles.subtitle}>Hello World ✓</Text>
+      </View>
+      <Text style={styles.version}>{version}</Text>
     </View>
   );
 }
@@ -26,8 +32,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
     backgroundColor: '#fff',
+  },
+  center: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   title: {
     fontSize: 28,
@@ -37,6 +47,11 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 16,
     color: '#666',
+  },
+  version: {
+    fontSize: 11,
+    color: '#bbb',
+    marginBottom: 8,
   },
 });
 
