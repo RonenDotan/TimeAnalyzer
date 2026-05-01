@@ -5,7 +5,13 @@ param(
 $ErrorActionPreference = "Stop"
 $ADB = "$env:ANDROID_HOME\platform-tools\adb.exe"
 $PACKAGE = "com.timeanalyzer"
-$APK = "android\app\build\outputs\apk\debug\app-debug.apk"
+# Pick the right split APK for the connected device (arm64-v8a for real phones, x86_64 for emulator)
+$ABI = (& $ADB shell getprop ro.product.cpu.abi).Trim()
+$APK = if ($ABI -like "*x86_64*") {
+    "android\app\build\outputs\apk\debug\app-x86_64-debug.apk"
+} else {
+    "android\app\build\outputs\apk\debug\app-arm64-v8a-debug.apk"
+}
 
 # 1. Unit tests
 if (-not $SkipTests) {
