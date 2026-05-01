@@ -20,23 +20,29 @@ if (-not $SkipTests) {
   if ($LASTEXITCODE -ne 0) { Write-Error "Tests failed. Aborting."; exit 1 }
 }
 
-# 2. Build APK
+# 2. Bundle JS
+Write-Host "==> Bundling JS..." -ForegroundColor Cyan
+npx react-native bundle --platform android --dev false --entry-file index.js --bundle-output android/app/src/main/assets/index.android.bundle --assets-dest android/app/src/main/res
+if ($LASTEXITCODE -ne 0) { Write-Error "JS bundle failed."; exit 1 }
+
+# 3. Build APK
 Write-Host "==> Building APK..." -ForegroundColor Cyan
 Push-Location android
 .\gradlew.bat app:assembleDebug
 if ($LASTEXITCODE -ne 0) { Pop-Location; Write-Error "Build failed."; exit 1 }
 Pop-Location
 
-# 3. Install APK
+# 4. Install APK
 Write-Host "==> Installing APK..." -ForegroundColor Cyan
 & $ADB install -r $APK
 if ($LASTEXITCODE -ne 0) { Write-Error "Install failed."; exit 1 }
 
-# 4. Grant notification permission (skips the runtime dialog)
-Write-Host "==> Granting POST_NOTIFICATIONS permission..." -ForegroundColor Cyan
+# 5. Grant permissions (skips the runtime dialogs)
+Write-Host "==> Granting permissions..." -ForegroundColor Cyan
 & $ADB shell pm grant $PACKAGE android.permission.POST_NOTIFICATIONS
+& $ADB shell pm grant $PACKAGE android.permission.RECORD_AUDIO
 
-# 5. Launch app
+# 6. Launch app
 Write-Host "==> Launching app..." -ForegroundColor Cyan
 & $ADB shell monkey -p $PACKAGE 1 | Out-Null
 
