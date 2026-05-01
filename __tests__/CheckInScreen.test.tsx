@@ -2,16 +2,11 @@ import React from 'react';
 import ReactTestRenderer from 'react-test-renderer';
 import { PermissionsAndroid } from 'react-native';
 import CheckInScreen from '../src/screens/CheckInScreen';
-import AudioRecorderPlayer from 'react-native-audio-recorder-player';
-import RNFS from 'react-native-fs';
 import TranscriptionService from '../src/services/TranscriptionService';
 import StorageService from '../src/services/StorageService';
 
-const mockRecorder = AudioRecorderPlayer as jest.Mocked<typeof AudioRecorderPlayer>;
-
 const PERIOD_START    = new Date('2026-01-01T10:00:00').getTime();
 const PERIOD_END      = new Date('2026-01-01T12:00:00').getTime();
-const FAKE_PATH       = '/tmp/checkin_123.mp4';
 const FAKE_TRANSCRIPT = 'I worked on the scheduler.';
 
 async function renderScreen(onDone = jest.fn(), onCancel = jest.fn()) {
@@ -30,17 +25,18 @@ async function renderScreen(onDone = jest.fn(), onCancel = jest.fn()) {
 }
 
 beforeEach(() => {
+  jest.useFakeTimers();
   jest.clearAllMocks();
-  mockRecorder.startRecorder.mockResolvedValue(FAKE_PATH);
-  mockRecorder.stopRecorder.mockResolvedValue(FAKE_PATH);
-  mockRecorder.startPlayer.mockResolvedValue('');
-  mockRecorder.stopPlayer.mockResolvedValue('');
-  jest.spyOn(TranscriptionService, 'transcribe').mockResolvedValue(FAKE_TRANSCRIPT);
+  jest.spyOn(TranscriptionService, 'start').mockResolvedValue(undefined);
+  jest.spyOn(TranscriptionService, 'stop').mockResolvedValue(FAKE_TRANSCRIPT);
   jest.spyOn(StorageService, 'save').mockResolvedValue(undefined);
-  jest.spyOn(RNFS, 'unlink').mockResolvedValue(undefined);
   jest.spyOn(PermissionsAndroid, 'request').mockResolvedValue(
     PermissionsAndroid.RESULTS.GRANTED,
   );
+});
+
+afterEach(() => {
+  jest.useRealTimers();
 });
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
@@ -49,7 +45,6 @@ async function tapText(renderer: ReactTestRenderer.ReactTestRenderer, label: str
   await ReactTestRenderer.act(async () => {
     let node = renderer.root
       .findAll(el => (el.type as string) === 'Text' && el.props.children === label)[0];
-    // Walk up until we find the pressable ancestor
     while (node && typeof node.props.onPress !== 'function') {
       node = node.parent!;
     }
@@ -71,61 +66,53 @@ test('starts in idle phase showing Record button', async () => {
   expect(tree).not.toContain('Did we get that right');
 });
 
-test('tapping Record calls startRecorder and switches to recording phase', async () => {
+test('tapping Record calls TranscriptionService.start and switches to recording phase', async () => {
   const renderer = await renderScreen();
   await tapText(renderer, 'Record');
-  expect(mockRecorder.startRecorder).toHaveBeenCalledWith(expect.stringContaining('.mp4'));
+  expect(TranscriptionService.start).toHaveBeenCalled();
   expect(JSON.stringify(renderer.toJSON())).toContain('Stop');
 });
 
-test('tapping Stop calls stopRecorder, transcribes, then shows confirm screen', async () => {
+test('tapping Stop calls TranscriptionService.stop then shows confirm screen with transcript', async () => {
   const renderer = await renderScreen();
   await reachConfirmScreen(renderer);
-  expect(mockRecorder.stopRecorder).toHaveBeenCalled();
-  expect(TranscriptionService.transcribe).toHaveBeenCalled();
+  expect(TranscriptionService.stop).toHaveBeenCalled();
   const tree = JSON.stringify(renderer.toJSON());
   expect(tree).toContain('Did we get that right');
   expect(tree).toContain(FAKE_TRANSCRIPT);
 });
 
-// ─── playback ─────────────────────────────────────────────────────────────────
+// ─── live partial results ─────────────────────────────────────────────────────
 
-test('tapping play calls startPlayer with the recorded file path', async () => {
-  const renderer = await renderScreen();
-  await reachConfirmScreen(renderer);
-  await tapText(renderer, '▶');
-  expect(mockRecorder.startPlayer).toHaveBeenCalledWith(FAKE_PATH);
-});
-
-test('playback auto-stops when listener fires with currentPosition >= duration', async () => {
-  let playbackCb: ((e: { currentPosition: number; duration: number }) => void) | null = null;
-  mockRecorder.addPlayBackListener.mockImplementation(cb => { playbackCb = cb; });
-
-  const renderer = await renderScreen();
-  await reachConfirmScreen(renderer);
-  await tapText(renderer, '▶');
-
-  await ReactTestRenderer.act(async () => {
-    playbackCb!({ currentPosition: 5000, duration: 5000 });
+test('partial results update the displayed text during recording', async () => {
+  let partialCb: ((text: string) => void) | null = null;
+  jest.spyOn(TranscriptionService, 'start').mockImplementation(async (onPartial) => {
+    partialCb = onPartial;
   });
 
-  expect(mockRecorder.stopPlayer).toHaveBeenCalled();
-  expect(mockRecorder.removePlayBackListener).toHaveBeenCalled();
+  const renderer = await renderScreen();
+  await tapText(renderer, 'Record');
+
+  await ReactTestRenderer.act(async () => {
+    partialCb?.('I worked on');
+  });
+
+  expect(JSON.stringify(renderer.toJSON())).toContain('I worked on');
 });
 
-// ─── cleanup ──────────────────────────────────────────────────────────────────
+// ─── re-record ────────────────────────────────────────────────────────────────
 
-test('Re-record stops player and deletes the audio file', async () => {
+test('Re-record resets to idle phase', async () => {
   const renderer = await renderScreen();
   await reachConfirmScreen(renderer);
   await tapText(renderer, 'Re-record');
-
-  expect(mockRecorder.stopPlayer).toHaveBeenCalled();
-  expect(RNFS.unlink).toHaveBeenCalledWith(FAKE_PATH);
   expect(JSON.stringify(renderer.toJSON())).toContain('Record');
+  expect(JSON.stringify(renderer.toJSON())).not.toContain('Did we get that right');
 });
 
-test('Confirm saves to StorageService, deletes audio file, and calls onDone', async () => {
+// ─── confirm ──────────────────────────────────────────────────────────────────
+
+test('Confirm saves to StorageService and calls onDone', async () => {
   const onDone = jest.fn();
   const renderer = await renderScreen(onDone);
   await reachConfirmScreen(renderer);
@@ -138,6 +125,5 @@ test('Confirm saves to StorageService, deletes audio file, and calls onDone', as
       transcript: FAKE_TRANSCRIPT,
     }),
   );
-  expect(RNFS.unlink).toHaveBeenCalledWith(FAKE_PATH);
   expect(onDone).toHaveBeenCalledWith(FAKE_TRANSCRIPT);
 });

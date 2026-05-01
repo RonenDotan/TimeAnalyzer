@@ -1,23 +1,19 @@
-import { AudioFile } from '../types/AudioFile';
+import AndroidSpeechProvider from '../providers/transcription/AndroidSpeechProvider';
 import { TranscriptionProvider } from '../providers/transcription/TranscriptionProvider';
 
-// Stub provider — returns a placeholder until Whisper integration (ticket #4)
-const stubProvider: TranscriptionProvider = {
-  async transcribe(_audio: AudioFile): Promise<string> {
-    await new Promise<void>(resolve => { setTimeout(resolve, 1000); });
-    return 'This is a placeholder transcript. Real transcription coming in ticket #4.';
-  },
-};
-
-let activeProvider: TranscriptionProvider = stubProvider;
+let activeProvider: TranscriptionProvider = AndroidSpeechProvider;
 
 function setProvider(provider: TranscriptionProvider): void {
   activeProvider = provider;
 }
 
-async function transcribe(audio: AudioFile): Promise<string> {
-  return activeProvider.transcribe(audio);
+async function start(onPartialResult: (text: string) => void): Promise<void> {
+  return activeProvider.start(onPartialResult);
 }
 
-const TranscriptionService = { transcribe, setProvider };
+async function stop(): Promise<string> {
+  return activeProvider.stop();
+}
+
+const TranscriptionService = { start, stop, setProvider };
 export default TranscriptionService;

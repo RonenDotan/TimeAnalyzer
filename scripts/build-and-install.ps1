@@ -3,10 +3,16 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$ADB = "$env:ANDROID_HOME\platform-tools\adb.exe"
+$ADB_EXE = "$env:ANDROID_HOME\platform-tools\adb.exe"
 $PACKAGE = "com.timeanalyzer"
+# If multiple devices, prefer the real phone over the emulator
+$devices = (& $ADB_EXE devices) | Select-String "device$" | ForEach-Object { ($_ -split "\s+")[0] }
+$SERIAL = if ($devices -notmatch "emulator") { ($devices | Where-Object { $_ -notmatch "emulator" } | Select-Object -First 1) } else { $devices | Select-Object -First 1 }
+Write-Host "==> Targeting device: $SERIAL" -ForegroundColor Cyan
+# Helper: run adb with device serial
+function adb { & $ADB_EXE -s $SERIAL @args }
 # Pick the right split APK for the connected device (arm64-v8a for real phones, x86_64 for emulator)
-$ABI = (& $ADB shell getprop ro.product.cpu.abi).Trim()
+$ABI = (adb shell getprop ro.product.cpu.abi).Trim()
 $APK = if ($ABI -like "*x86_64*") {
     "android\app\build\outputs\apk\debug\app-x86_64-debug.apk"
 } else {
@@ -34,13 +40,13 @@ Pop-Location
 
 # 4. Install APK
 Write-Host "==> Installing APK..." -ForegroundColor Cyan
-& $ADB install -r $APK
+adb install -r $APK
 if ($LASTEXITCODE -ne 0) { Write-Error "Install failed."; exit 1 }
 
 # 5. Grant permissions (skips the runtime dialogs)
 Write-Host "==> Granting permissions..." -ForegroundColor Cyan
-& $ADB shell pm grant $PACKAGE android.permission.POST_NOTIFICATIONS
-& $ADB shell pm grant $PACKAGE android.permission.RECORD_AUDIO
+adb shell pm grant $PACKAGE android.permission.POST_NOTIFICATIONS
+adb shell pm grant $PACKAGE android.permission.RECORD_AUDIO
 
 # 6. Delete APK files older than 2 days from Drive
 $DriveApk = "C:\Users\ronen\Desktop\TimeAnalyzer\apk"
@@ -61,15 +67,15 @@ if (Test-Path $Arm64Apk) {
 
 # 8. Launch app
 Write-Host "==> Launching app..." -ForegroundColor Cyan
-& $ADB shell monkey -p $PACKAGE 1 | Out-Null
+adb shell monkey -p $PACKAGE 1 | Out-Null
 
 # 9. Take screenshot of home screen and save to Drive
 Start-Sleep -Seconds 4
 $ScreenshotDir = "C:\Users\ronen\Desktop\TimeAnalyzer\tests\screenshots"
 if (-not (Test-Path $ScreenshotDir)) { New-Item -ItemType Directory -Path $ScreenshotDir | Out-Null }
 $ScreenshotPath = "$ScreenshotDir\home-screen_${VersionStr}_${Timestamp}.png"
-& $ADB shell screencap -p /sdcard/build_screen.png
-& $ADB pull /sdcard/build_screen.png $ScreenshotPath | Out-Null
+adb shell screencap -p /sdcard/build_screen.png
+adb pull /sdcard/build_screen.png $ScreenshotPath | Out-Null
 Write-Host "==> Screenshot saved to Drive: $ScreenshotPath" -ForegroundColor Green
 
 Write-Host "==> Done." -ForegroundColor Green
