@@ -1,12 +1,21 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { StyleSheet, Text, View, StatusBar } from 'react-native';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import v from './version.json';
+import SchedulerService from './src/services/SchedulerService';
 
 const version = `v${v.major}.${v.minor}.${v.ticket_id}.${v.sequence}`;
 
 function AppContent(): React.JSX.Element {
   const insets = useSafeAreaInsets();
+
+  useEffect(() => {
+    SchedulerService.requestPermission().then(granted => {
+      if (granted) {
+        SchedulerService.reschedule();
+      }
+    });
+  }, []);
 
   return (
     <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
