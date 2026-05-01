@@ -1,7 +1,7 @@
-import AndroidSpeechProvider from '../providers/transcription/AndroidSpeechProvider';
+import WhisperTranscriptionProvider from '../providers/transcription/WhisperTranscriptionProvider';
 import { TranscriptionProvider } from '../providers/transcription/TranscriptionProvider';
 
-let activeProvider: TranscriptionProvider = AndroidSpeechProvider;
+let activeProvider: TranscriptionProvider = WhisperTranscriptionProvider;
 
 function setProvider(provider: TranscriptionProvider): void {
   activeProvider = provider;

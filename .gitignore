@@ -40,6 +40,9 @@ build/
 .env
 .env.local
 
+# Local secrets (API keys — never commit)
+src/secrets.local.ts
+
 # Local debug artifacts
 screenshots/
 *.xml

@@ -6,15 +6,17 @@ import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.module.model.ReactModuleInfo
 import com.facebook.react.module.model.ReactModuleInfoProvider
 
-class SpeechRecognitionPackage : BaseReactPackage() {
+class AudioRecorderPackage : BaseReactPackage() {
     override fun getModule(name: String, reactContext: ReactApplicationContext): NativeModule? =
-        if (name == SpeechRecognitionModule.NAME) SpeechRecognitionModule(reactContext) else null
+        when (name) {
+            AudioRecorderModule.NAME -> AudioRecorderModule(reactContext)
+            else -> null
+        }
 
     override fun getReactModuleInfoProvider() = ReactModuleInfoProvider {
         mapOf(
-            SpeechRecognitionModule.NAME to ReactModuleInfo(
-                SpeechRecognitionModule.NAME,
-                SpeechRecognitionModule.NAME,
+            AudioRecorderModule.NAME to ReactModuleInfo(
+                AudioRecorderModule.NAME, AudioRecorderModule.NAME,
                 false, false, false, false
             )
         )

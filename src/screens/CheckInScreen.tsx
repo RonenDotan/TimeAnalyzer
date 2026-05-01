@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   PermissionsAndroid,
   Platform,
@@ -13,7 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import StorageService from '../services/StorageService';
 import TranscriptionService from '../services/TranscriptionService';
 
-type Phase = 'idle' | 'recording' | 'confirming';
+type Phase = 'idle' | 'recording' | 'transcribing' | 'confirming';
 
 interface Props {
   periodStart: number;
@@ -90,13 +91,14 @@ export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel
       clearInterval(timerRef.current);
       timerRef.current = null;
     }
+    setPhase('transcribing');
 
     try {
       const finalText = await TranscriptionService.stop();
       setTranscript(finalText || partialTranscript);
       setPhase('confirming');
-    } catch {
-      Alert.alert('Transcription failed', 'Could not transcribe. Please try again.');
+    } catch (e: any) {
+      Alert.alert('Transcription failed', String(e?.message ?? e));
       setPhase('idle');
     }
   }
@@ -163,6 +165,13 @@ export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel
             <TouchableOpacity style={[styles.recordBtn, styles.stopBtn]} onPress={stopRecording}>
               <Text style={styles.recordBtnText}>Stop</Text>
             </TouchableOpacity>
+          </>
+        )}
+
+        {phase === 'transcribing' && (
+          <>
+            <ActivityIndicator size="large" color="#007AFF" />
+            <Text style={styles.transcribingLabel}>Transcribing…</Text>
           </>
         )}
 
@@ -233,6 +242,7 @@ const styles = StyleSheet.create({
   stopBtn: { backgroundColor: '#ff3b30', shadowColor: '#ff3b30' },
   recordBtnText: { fontSize: 22, fontWeight: '600', color: '#fff' },
   hint: { fontSize: 14, color: '#6d6d72', textAlign: 'center' },
+  transcribingLabel: { fontSize: 16, color: '#6d6d72', marginTop: 16 },
   liveBox: {
     width: '100%',
     maxHeight: 120,

@@ -3,6 +3,7 @@ import {
   View,
   Text,
   Switch,
+  TextInput,
   TouchableOpacity,
   ScrollView,
   StyleSheet,
@@ -19,9 +20,11 @@ interface Props {
 export default function SettingsScreen({ onClose }: Props) {
   const insets = useSafeAreaInsets();
   const [settings, setSettings] = useState<Settings | null>(null);
+  const [groqApiKey, setGroqApiKey] = useState('');
 
   useEffect(() => {
     SettingsService.load().then(setSettings);
+    SettingsService.getGroqApiKey().then(setGroqApiKey);
   }, []);
 
   if (!settings) {
@@ -42,6 +45,7 @@ export default function SettingsScreen({ onClose }: Props) {
   async function handleSave() {
     if (!settings) return;
     await SettingsService.save(settings);
+    await SettingsService.setGroqApiKey(groqApiKey.trim());
     onClose(true);
   }
 
@@ -134,6 +138,26 @@ export default function SettingsScreen({ onClose }: Props) {
           )}
         </View>
 
+        {/* API Keys */}
+        <Text style={styles.sectionLabel}>API KEYS</Text>
+        <View style={styles.card}>
+          <View style={styles.row}>
+            <Text style={styles.rowLabel}>Groq API Key</Text>
+          </View>
+          <View style={[styles.row, styles.rowBorder]}>
+            <TextInput
+              style={styles.apiKeyInput}
+              value={groqApiKey}
+              onChangeText={setGroqApiKey}
+              placeholder="gsk_..."
+              placeholderTextColor="#aaa"
+              autoCapitalize="none"
+              autoCorrect={false}
+              secureTextEntry
+            />
+          </View>
+        </View>
+
         {/* Frequency */}
         <Text style={styles.sectionLabel}>FREQUENCY</Text>
         <View style={styles.card}>
@@ -201,4 +225,11 @@ const styles = StyleSheet.create({
   hourPicker: { flexDirection: 'row', alignItems: 'center', gap: 16 },
   stepper: { fontSize: 22, color: '#007AFF', width: 28, textAlign: 'center' },
   hourValue: { fontSize: 16, fontWeight: '500', width: 52, textAlign: 'center' },
+  apiKeyInput: {
+    flex: 1,
+    fontSize: 14,
+    color: '#000',
+    fontFamily: 'monospace',
+    paddingVertical: 4,
+  },
 });
