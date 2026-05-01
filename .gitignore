@@ -39,3 +39,10 @@ build/
 *.log
 .env
 .env.local
+
+# Local debug artifacts
+screenshots/
+*.xml
+android/app/.cxx/
+android/app/src/main/res/drawable-mdpi/
+android/app/src/main/res/raw/
