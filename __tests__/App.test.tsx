@@ -10,7 +10,7 @@ test('renders TimeAnalyzer title', async () => {
   });
   const tree = JSON.stringify(renderer!.toJSON());
   expect(tree).toContain('TimeAnalyzer');
-  expect(tree).toContain('Hello World');
+  expect(tree).toContain('Start Check-in');
 });
 
 test('renders correct version string', async () => {

@@ -4,12 +4,15 @@ import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-cont
 import v from './version.json';
 import SchedulerService from './src/services/SchedulerService';
 import SettingsScreen from './src/screens/SettingsScreen';
+import CheckInScreen from './src/screens/CheckInScreen';
 
 const version = `v${v.major}.${v.minor}.${v.ticket_id}.${v.sequence}`;
 
+type Screen = 'home' | 'settings' | 'checkin';
+
 function AppContent(): React.JSX.Element {
   const insets = useSafeAreaInsets();
-  const [showSettings, setShowSettings] = useState(false);
+  const [screen, setScreen] = useState<Screen>('home');
 
   useEffect(() => {
     SchedulerService.requestPermission().then(granted => {
@@ -20,26 +23,45 @@ function AppContent(): React.JSX.Element {
   }, []);
 
   function handleSettingsClose(saved: boolean) {
-    setShowSettings(false);
+    setScreen('home');
     if (saved) {
       SchedulerService.reschedule();
     }
   }
 
-  if (showSettings) {
+  function handleCheckInDone(transcript: string) {
+    console.log('Check-in confirmed:', transcript);
+    setScreen('home');
+  }
+
+  if (screen === 'settings') {
     return <SettingsScreen onClose={handleSettingsClose} />;
+  }
+
+  if (screen === 'checkin') {
+    const now = Date.now();
+    return (
+      <CheckInScreen
+        periodStart={now - 2 * 60 * 60 * 1000}
+        periodEnd={now}
+        onDone={handleCheckInDone}
+        onCancel={() => setScreen('home')}
+      />
+    );
   }
 
   return (
     <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       <View style={styles.topBar}>
-        <TouchableOpacity onPress={() => setShowSettings(true)} style={styles.gearButton}>
+        <TouchableOpacity onPress={() => setScreen('settings')} style={styles.gearButton}>
           <Text style={styles.gear}>⚙️</Text>
         </TouchableOpacity>
       </View>
       <View style={styles.center}>
         <Text style={styles.title}>TimeAnalyzer</Text>
-        <Text style={styles.subtitle}>Hello World ✓</Text>
+        <TouchableOpacity style={styles.checkInBtn} onPress={() => setScreen('checkin')}>
+          <Text style={styles.checkInBtnText}>Start Check-in</Text>
+        </TouchableOpacity>
       </View>
       <Text style={styles.version}>{version}</Text>
     </View>
@@ -79,9 +101,17 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginBottom: 8,
   },
-  subtitle: {
-    fontSize: 16,
-    color: '#666',
+  checkInBtn: {
+    marginTop: 24,
+    paddingHorizontal: 32,
+    paddingVertical: 14,
+    backgroundColor: '#007AFF',
+    borderRadius: 12,
+  },
+  checkInBtnText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#fff',
   },
   version: {
     fontSize: 11,
