@@ -5,6 +5,7 @@ import CheckInScreen from '../src/screens/CheckInScreen';
 import AudioRecorderPlayer from 'react-native-audio-recorder-player';
 import RNFS from 'react-native-fs';
 import TranscriptionService from '../src/services/TranscriptionService';
+import StorageService from '../src/services/StorageService';
 
 const mockRecorder = AudioRecorderPlayer as jest.Mocked<typeof AudioRecorderPlayer>;
 
@@ -35,6 +36,7 @@ beforeEach(() => {
   mockRecorder.startPlayer.mockResolvedValue('');
   mockRecorder.stopPlayer.mockResolvedValue('');
   jest.spyOn(TranscriptionService, 'transcribe').mockResolvedValue(FAKE_TRANSCRIPT);
+  jest.spyOn(StorageService, 'save').mockResolvedValue(undefined);
   jest.spyOn(RNFS, 'unlink').mockResolvedValue(undefined);
   jest.spyOn(PermissionsAndroid, 'request').mockResolvedValue(
     PermissionsAndroid.RESULTS.GRANTED,
@@ -46,7 +48,7 @@ beforeEach(() => {
 async function tapText(renderer: ReactTestRenderer.ReactTestRenderer, label: string) {
   await ReactTestRenderer.act(async () => {
     let node = renderer.root
-      .findAll(el => el.type === 'Text' && el.props.children === label)[0];
+      .findAll(el => (el.type as string) === 'Text' && el.props.children === label)[0];
     // Walk up until we find the pressable ancestor
     while (node && typeof node.props.onPress !== 'function') {
       node = node.parent!;
@@ -123,12 +125,19 @@ test('Re-record stops player and deletes the audio file', async () => {
   expect(JSON.stringify(renderer.toJSON())).toContain('Record');
 });
 
-test('Confirm deletes the audio file and calls onDone with the transcript', async () => {
+test('Confirm saves to StorageService, deletes audio file, and calls onDone', async () => {
   const onDone = jest.fn();
   const renderer = await renderScreen(onDone);
   await reachConfirmScreen(renderer);
   await tapText(renderer, 'Confirm');
 
+  expect(StorageService.save).toHaveBeenCalledWith(
+    expect.objectContaining({
+      timestampStart: PERIOD_START,
+      timestampEnd: PERIOD_END,
+      transcript: FAKE_TRANSCRIPT,
+    }),
+  );
   expect(RNFS.unlink).toHaveBeenCalledWith(FAKE_PATH);
   expect(onDone).toHaveBeenCalledWith(FAKE_TRANSCRIPT);
 });

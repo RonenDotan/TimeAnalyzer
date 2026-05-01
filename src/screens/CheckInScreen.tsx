@@ -13,6 +13,7 @@ import {
 import AudioRecorderPlayer, { PlayBackType, RecordBackType } from 'react-native-audio-recorder-player';
 import RNFS from 'react-native-fs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import StorageService from '../services/StorageService';
 import TranscriptionService from '../services/TranscriptionService';
 import { AudioFile } from '../types/AudioFile';
 
@@ -147,8 +148,14 @@ export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel
     setPhase('idle');
   }
 
-  function handleConfirm() {
+  async function handleConfirm() {
     if (audioPath) RNFS.unlink(audioPath).catch(() => {});
+    await StorageService.save({
+      id: `${periodStart}-${periodEnd}`,
+      timestampStart: periodStart,
+      timestampEnd: periodEnd,
+      transcript,
+    });
     onDone(transcript);
   }
 
