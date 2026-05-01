@@ -17,3 +17,5 @@ const AudioRecorderPlayer = {
 };
 
 export default AudioRecorderPlayer;
+export type RecordBackType = { isRecording?: boolean; currentPosition: number; currentMetering?: number };
+export type PlayBackType = { currentPosition: number; duration: number; isMuted?: boolean };

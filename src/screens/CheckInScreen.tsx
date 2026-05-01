@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -10,7 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import AudioRecorderPlayer, { RecordBackType } from 'react-native-audio-recorder-player';
+import AudioRecorderPlayer, { PlayBackType, RecordBackType } from 'react-native-audio-recorder-player';
 import RNFS from 'react-native-fs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import TranscriptionService from '../services/TranscriptionService';
@@ -39,19 +39,21 @@ function formatHour(ts: number): string {
 
 export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel }: Props) {
   const insets = useSafeAreaInsets();
-  const recorder = AudioRecorderPlayer;
   const [phase, setPhase] = useState<Phase>('idle');
   const [recordingMs, setRecordingMs] = useState(0);
   const [audioPath, setAudioPath] = useState<string | null>(null);
   const [durationMs, setDurationMs] = useState(0);
   const [transcript, setTranscript] = useState('');
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [playbackMs, setPlaybackMs] = useState(0);
 
   useEffect(() => {
     return () => {
-      recorder.stopRecorder().catch(() => {});
-      recorder.removeRecordBackListener();
+      AudioRecorderPlayer.stopRecorder().catch(() => {});
+      AudioRecorderPlayer.removeRecordBackListener();
+      AudioRecorderPlayer.stopPlayer().catch(() => {});
+      AudioRecorderPlayer.removePlayBackListener();
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function requestMicPermission(): Promise<boolean> {
@@ -79,20 +81,21 @@ export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel
     setRecordingMs(0);
     setPhase('recording');
 
-    await recorder.startRecorder(path);
-    recorder.addRecordBackListener((e: RecordBackType) => {
+    await AudioRecorderPlayer.startRecorder(path);
+    AudioRecorderPlayer.addRecordBackListener((e: RecordBackType) => {
       setRecordingMs(e.currentPosition);
     });
   }
 
   async function stopRecording() {
-    const result = await recorder.stopRecorder();
-    recorder.removeRecordBackListener();
+    const result = await AudioRecorderPlayer.stopRecorder();
+    AudioRecorderPlayer.removeRecordBackListener();
     const ms = recordingMs;
     setDurationMs(ms);
     setPhase('transcribing');
 
     const path = result === 'Already stopped' ? audioPath! : result;
+    setAudioPath(path);
     const audio: AudioFile = { path, durationMs: ms };
 
     try {
@@ -101,20 +104,51 @@ export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel
       setPhase('confirming');
     } catch (e) {
       Alert.alert('Transcription failed', 'Could not transcribe the recording. Please try again.');
-      setPhase('idle');
-    } finally {
       RNFS.unlink(path).catch(() => {});
+      setPhase('idle');
+    }
+    // File intentionally kept alive here — deleted on confirm or re-record
+  }
+
+  async function togglePlayback() {
+    if (!audioPath) return;
+
+    if (isPlaying) {
+      await AudioRecorderPlayer.stopPlayer();
+      AudioRecorderPlayer.removePlayBackListener();
+      setIsPlaying(false);
+      setPlaybackMs(0);
+    } else {
+      setIsPlaying(true);
+      setPlaybackMs(0);
+      await AudioRecorderPlayer.startPlayer(audioPath);
+      AudioRecorderPlayer.addPlayBackListener((e: PlayBackType) => {
+        setPlaybackMs(e.currentPosition);
+        if (e.currentPosition >= e.duration) {
+          AudioRecorderPlayer.stopPlayer().catch(() => {});
+          AudioRecorderPlayer.removePlayBackListener();
+          setIsPlaying(false);
+          setPlaybackMs(0);
+        }
+      });
     }
   }
 
   async function handleReRecord() {
+    await AudioRecorderPlayer.stopPlayer().catch(() => {});
+    AudioRecorderPlayer.removePlayBackListener();
+    if (audioPath) RNFS.unlink(audioPath).catch(() => {});
     setTranscript('');
     setRecordingMs(0);
     setDurationMs(0);
+    setAudioPath(null);
+    setIsPlaying(false);
+    setPlaybackMs(0);
     setPhase('idle');
   }
 
   function handleConfirm() {
+    if (audioPath) RNFS.unlink(audioPath).catch(() => {});
     onDone(transcript);
   }
 
@@ -168,6 +202,24 @@ export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel
 
         {phase === 'confirming' && (
           <>
+            {/* Playback bar */}
+            <TouchableOpacity style={styles.playbackRow} onPress={togglePlayback}>
+              <View style={[styles.playBtn, isPlaying && styles.playBtnActive]}>
+                <Text style={styles.playBtnIcon}>{isPlaying ? '■' : '▶'}</Text>
+              </View>
+              <View style={styles.playbackTrack}>
+                <View
+                  style={[
+                    styles.playbackProgress,
+                    { width: durationMs > 0 ? `${(playbackMs / durationMs) * 100}%` : '0%' },
+                  ]}
+                />
+              </View>
+              <Text style={styles.playbackTime}>
+                {isPlaying ? formatDuration(playbackMs) : formatDuration(durationMs)}
+              </Text>
+            </TouchableOpacity>
+
             <Text style={styles.confirmLabel}>Did we get that right?</Text>
             <ScrollView style={styles.transcriptBox} contentContainerStyle={styles.transcriptContent}>
               <Text style={styles.transcriptText}>{transcript}</Text>
@@ -235,6 +287,35 @@ const styles = StyleSheet.create({
   hint: { fontSize: 14, color: '#6d6d72', textAlign: 'center' },
   transcribingBox: { alignItems: 'center', gap: 16 },
   transcribingText: { fontSize: 16, color: '#6d6d72' },
+  playbackRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 12,
+  },
+  playBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#007AFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  playBtnActive: { backgroundColor: '#ff3b30' },
+  playBtnIcon: { fontSize: 14, color: '#fff' },
+  playbackTrack: {
+    flex: 1,
+    height: 4,
+    backgroundColor: '#e0e0e0',
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  playbackProgress: { height: '100%', backgroundColor: '#007AFF', borderRadius: 2 },
+  playbackTime: { fontSize: 13, color: '#6d6d72', width: 40, textAlign: 'right' },
   confirmLabel: { fontSize: 18, fontWeight: '600', color: '#000', alignSelf: 'flex-start' },
   transcriptBox: {
     width: '100%',
