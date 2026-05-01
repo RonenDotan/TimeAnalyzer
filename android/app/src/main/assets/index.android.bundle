@@ -1288,7 +1288,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
    */
 
   _reactNative.AppRegistry.registerComponent(_$$_REQUIRE(_dependencyMap[3], "./app.json").name, () => _App.default);
-},0,[1,2,605,650],"index.js");
+},0,[1,2,605,659],"index.js");
 __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
   function _interopRequireDefault(e) {
     return e && e.__esModule ? e : {
@@ -100021,16 +100021,22 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
     value: true
   });
   exports.default = void 0;
-  var _react = _interopRequireWildcard(_$$_REQUIRE(_dependencyMap[1], "react"));
-  var _reactNative = _$$_REQUIRE(_dependencyMap[2], "react-native");
-  var _version = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[3], "./version.json"));
-  var _SchedulerService = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[4], "./src/services/SchedulerService"));
-  var _jsxRuntime = _$$_REQUIRE(_dependencyMap[5], "react/jsx-runtime");
+  var _slicedToArray2 = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[1], "@babel/runtime/helpers/slicedToArray"));
+  var _react = _interopRequireWildcard(_$$_REQUIRE(_dependencyMap[2], "react"));
+  var _reactNative = _$$_REQUIRE(_dependencyMap[3], "react-native");
+  var _version = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[4], "./version.json"));
+  var _SchedulerService = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[5], "./src/services/SchedulerService"));
+  var _SettingsScreen = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[6], "./src/screens/SettingsScreen"));
+  var _jsxRuntime = _$$_REQUIRE(_dependencyMap[7], "react/jsx-runtime");
   var _jsxFileName = "C:\\Users\\ronen\\TimeAnalyzer\\App.tsx";
   function _interopRequireWildcard(e, t) { if ("function" == typeof WeakMap) var r = new WeakMap(), n = new WeakMap(); return (_interopRequireWildcard = function (e, t) { if (!t && e && e.__esModule) return e; var o, i, f = { __proto__: null, default: e }; if (null === e || "object" != typeof e && "function" != typeof e) return f; if (o = t ? n : r) { if (o.has(e)) return o.get(e); o.set(e, f); } for (var _t in e) "default" !== _t && {}.hasOwnProperty.call(e, _t) && ((i = (o = Object.defineProperty) && Object.getOwnPropertyDescriptor(e, _t)) && (i.get || i.set) ? o(f, _t, i) : f[_t] = e[_t]); return f; })(e, t); }
   var version = `v${_version.default.major}.${_version.default.minor}.${_version.default.ticket_id}.${_version.default.sequence}`;
   function AppContent() {
-    var insets = (0, _$$_REQUIRE(_dependencyMap[6], "react-native-safe-area-context").useSafeAreaInsets)();
+    var insets = (0, _$$_REQUIRE(_dependencyMap[8], "react-native-safe-area-context").useSafeAreaInsets)();
+    var _useState = (0, _react.useState)(false),
+      _useState2 = (0, _slicedToArray2.default)(_useState, 2),
+      showSettings = _useState2[0],
+      setShowSettings = _useState2[1];
     (0, _react.useEffect)(() => {
       _SchedulerService.default.requestPermission().then(granted => {
         if (granted) {
@@ -100038,12 +100044,33 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         }
       });
     }, []);
+    function handleSettingsClose(saved) {
+      setShowSettings(false);
+      if (saved) {
+        _SchedulerService.default.reschedule();
+      }
+    }
+    if (showSettings) {
+      return /*#__PURE__*/(0, _jsxRuntime.jsx)(_SettingsScreen.default, {
+        onClose: handleSettingsClose
+      });
+    }
     return /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
       style: [styles.container, {
         paddingTop: insets.top,
         paddingBottom: insets.bottom
       }],
-      children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+      children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
+        style: styles.topBar,
+        children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
+          onPress: () => setShowSettings(true),
+          style: styles.gearButton,
+          children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+            style: styles.gear,
+            children: "\u2699\uFE0F"
+          })
+        })
+      }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
         style: styles.center,
         children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
           style: styles.title,
@@ -100059,7 +100086,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
     });
   }
   function App() {
-    return /*#__PURE__*/(0, _jsxRuntime.jsxs)(_$$_REQUIRE(_dependencyMap[6], "react-native-safe-area-context").SafeAreaProvider, {
+    return /*#__PURE__*/(0, _jsxRuntime.jsxs)(_$$_REQUIRE(_dependencyMap[8], "react-native-safe-area-context").SafeAreaProvider, {
       children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.StatusBar, {
         barStyle: "dark-content"
       }), /*#__PURE__*/(0, _jsxRuntime.jsx)(AppContent, {})]
@@ -100070,6 +100097,18 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       flex: 1,
       alignItems: 'center',
       backgroundColor: '#fff'
+    },
+    topBar: {
+      width: '100%',
+      alignItems: 'flex-end',
+      paddingHorizontal: 16,
+      paddingTop: 8
+    },
+    gearButton: {
+      padding: 8
+    },
+    gear: {
+      fontSize: 22
     },
     center: {
       flex: 1,
@@ -100092,13 +100131,13 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
     }
   });
   var _default = exports.default = App;
-},605,[1,71,2,606,607,182,641],"App.tsx");
+},605,[1,14,71,2,606,607,649,182,650],"App.tsx");
 __d(function(global, require, _importDefaultUnused, _importAllUnused, module, exports, _dependencyMapUnused) {
   module.exports = {
   "major": 0,
   "minor": 0,
   "ticket_id": 2,
-  "sequence": 3
+  "sequence": 5
 }
 ;
 },606,[],"version.json");
@@ -100107,17 +100146,59 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
   Object.defineProperty(exports, "__esModule", {
     value: true
   });
+  exports.buildSchedule = buildSchedule;
   exports.default = void 0;
   var _asyncToGenerator2 = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[1], "@babel/runtime/helpers/asyncToGenerator"));
   var _reactNative = _interopRequireWildcard(_$$_REQUIRE(_dependencyMap[2], "@notifee/react-native"));
   var _config = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[3], "../config"));
+  var _SettingsService = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[4], "./SettingsService"));
   function _interopRequireWildcard(e, t) { if ("function" == typeof WeakMap) var r = new WeakMap(), n = new WeakMap(); return (_interopRequireWildcard = function (e, t) { if (!t && e && e.__esModule) return e; var o, i, f = { __proto__: null, default: e }; if (null === e || "object" != typeof e && "function" != typeof e) return f; if (o = t ? n : r) { if (o.has(e)) return o.get(e); o.set(e, f); } for (var _t in e) "default" !== _t && {}.hasOwnProperty.call(e, _t) && ((i = (o = Object.defineProperty) && Object.getOwnPropertyDescriptor(e, _t)) && (i.get || i.set) ? o(f, _t, i) : f[_t] = e[_t]); return f; })(e, t); }
   var BATCH_SIZE = 50;
   function formatTime(timestamp) {
-    var date = new Date(timestamp);
-    var h = date.getHours().toString().padStart(2, '0');
-    var m = date.getMinutes().toString().padStart(2, '0');
-    return `${h}:${m}`;
+    var d = new Date(timestamp);
+    return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+  }
+  function isAllowedDay(ts, checkInDays) {
+    return checkInDays[new Date(ts).getDay()];
+  }
+
+  // Returns fire slots for a single calendar day.
+  // Each slot fires at the END of its period; the last slot fires at windowEnd even if partial.
+  function slotsForDay(midnight, settings) {
+    var everyHour = settings.everyHour,
+      startHour = settings.startHour,
+      endHour = settings.endHour,
+      frequencyMinutes = settings.frequencyMinutes;
+    var windowStart = everyHour ? 0 : startHour;
+    var windowEnd = everyHour ? 24 : endHour;
+    var freqHours = frequencyMinutes / 60;
+    var slots = [];
+    var cursor = windowStart;
+    while (cursor < windowEnd) {
+      var nextCursor = cursor + freqHours;
+      var fireHour = Math.min(nextCursor, windowEnd);
+      slots.push({
+        fireAt: midnight + fireHour * 3600_000,
+        periodStart: midnight + cursor * 3600_000
+      });
+      if (nextCursor >= windowEnd) break;
+      cursor = nextCursor;
+    }
+    return slots;
+  }
+  function buildSchedule(settings, now) {
+    var slots = [];
+    for (var dayOffset = 0; slots.length < BATCH_SIZE; dayOffset++) {
+      var d = new Date(now + dayOffset * 86_400_000);
+      var midnight = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+      if (!isAllowedDay(midnight, settings.checkInDays)) continue;
+      for (var slot of slotsForDay(midnight, settings)) {
+        if (slot.fireAt <= now) continue;
+        slots.push(slot);
+        if (slots.length >= BATCH_SIZE) break;
+      }
+    }
+    return slots;
   }
   function ensureChannel() {
     return _ensureChannel.apply(this, arguments);
@@ -100138,15 +100219,15 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
   function _start() {
     _start = (0, _asyncToGenerator2.default)(function* () {
       yield ensureChannel();
-      var intervalMs = _config.default.checkInIntervalMinutes * 60 * 1000;
-      for (var i = 0; i < BATCH_SIZE; i++) {
-        var endTime = Date.now() + (i + 1) * intervalMs;
-        var startTime = endTime - intervalMs;
-        var id = `checkin-${endTime}`;
+      var settings = yield _SettingsService.default.load();
+      var slots = buildSchedule(settings, Date.now());
+      for (var _ref of slots) {
+        var fireAt = _ref.fireAt;
+        var periodStart = _ref.periodStart;
         yield _reactNative.default.createTriggerNotification({
-          id,
+          id: `checkin-${fireAt}`,
           title: 'Time for a check-in!',
-          body: `What did you work on from ${formatTime(startTime)} to ${formatTime(endTime)}?`,
+          body: `What did you work on from ${formatTime(periodStart)} to ${formatTime(fireAt)}?`,
           android: {
             channelId: _config.default.notificationChannelId,
             pressAction: {
@@ -100155,7 +100236,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
           }
         }, {
           type: _reactNative.TriggerType.TIMESTAMP,
-          timestamp: endTime
+          timestamp: fireAt
         });
       }
     });
@@ -100185,8 +100266,8 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
   }
   function _requestPermission() {
     _requestPermission = (0, _asyncToGenerator2.default)(function* () {
-      var settings = yield _reactNative.default.requestPermission();
-      return settings.authorizationStatus >= 1;
+      var result = yield _reactNative.default.requestPermission();
+      return result.authorizationStatus >= 1;
     });
     return _requestPermission.apply(this, arguments);
   }
@@ -100197,7 +100278,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
     requestPermission
   };
   var _default = exports.default = SchedulerService;
-},607,[1,178,608,640],"src/services/SchedulerService.ts");
+},607,[1,178,608,640,641],"src/services/SchedulerService.ts");
 __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
   "use strict";
 
@@ -104027,6 +104108,833 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
   var _default = exports.default = config;
 },640,[],"src/config.ts");
 __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
+  var _interopRequireDefault = _$$_REQUIRE(_dependencyMap[0], "@babel/runtime/helpers/interopRequireDefault");
+  Object.defineProperty(exports, "__esModule", {
+    value: true
+  });
+  exports.default = void 0;
+  var _asyncToGenerator2 = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[1], "@babel/runtime/helpers/asyncToGenerator"));
+  var _asyncStorage = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[2], "@react-native-async-storage/async-storage"));
+  var KEY = 'checkin_settings';
+  function load() {
+    return _load.apply(this, arguments);
+  }
+  function _load() {
+    _load = (0, _asyncToGenerator2.default)(function* () {
+      var raw = yield _asyncStorage.default.getItem(KEY);
+      if (!raw) return {
+        ..._$$_REQUIRE(_dependencyMap[3], "../types/Settings").DEFAULT_SETTINGS
+      };
+      try {
+        return {
+          ..._$$_REQUIRE(_dependencyMap[3], "../types/Settings").DEFAULT_SETTINGS,
+          ...JSON.parse(raw)
+        };
+      } catch {
+        return {
+          ..._$$_REQUIRE(_dependencyMap[3], "../types/Settings").DEFAULT_SETTINGS
+        };
+      }
+    });
+    return _load.apply(this, arguments);
+  }
+  function save(_x) {
+    return _save.apply(this, arguments);
+  }
+  function _save() {
+    _save = (0, _asyncToGenerator2.default)(function* (settings) {
+      yield _asyncStorage.default.setItem(KEY, JSON.stringify(settings));
+    });
+    return _save.apply(this, arguments);
+  }
+  var SettingsService = {
+    load,
+    save
+  };
+  var _default = exports.default = SettingsService;
+},641,[1,178,642,648],"src/services/SettingsService.ts");
+__d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
+  var _interopRequireDefault = _$$_REQUIRE(_dependencyMap[0], "@babel/runtime/helpers/interopRequireDefault");
+  Object.defineProperty(exports, "__esModule", {
+    value: true
+  });
+  exports.default = void 0;
+  Object.defineProperty(exports, "useAsyncStorage", {
+    enumerable: true,
+    get: function () {
+      return _$$_REQUIRE(_dependencyMap[1], "./hooks").useAsyncStorage;
+    }
+  });
+  var _AsyncStorage = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[2], "./AsyncStorage"));
+  var _default = exports.default = _AsyncStorage.default;
+},642,[1,643,644],"node_modules/@react-native-async-storage/async-storage/src/index.ts");
+__d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
+  var _interopRequireDefault = _$$_REQUIRE(_dependencyMap[0], "@babel/runtime/helpers/interopRequireDefault");
+  Object.defineProperty(exports, "__esModule", {
+    value: true
+  });
+  exports.useAsyncStorage = useAsyncStorage;
+  var _AsyncStorage = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[1], "./AsyncStorage"));
+  function useAsyncStorage(key) {
+    return {
+      getItem: (...args) => _AsyncStorage.default.getItem(key, ...args),
+      setItem: (...args) => _AsyncStorage.default.setItem(key, ...args),
+      mergeItem: (...args) => _AsyncStorage.default.mergeItem(key, ...args),
+      removeItem: (...args) => _AsyncStorage.default.removeItem(key, ...args)
+    };
+  }
+},643,[1,644],"node_modules/@react-native-async-storage/async-storage/src/hooks.ts");
+__d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
+  var _interopRequireDefault = _$$_REQUIRE(_dependencyMap[0], "@babel/runtime/helpers/interopRequireDefault");
+  Object.defineProperty(exports, "__esModule", {
+    value: true
+  });
+  exports.default = void 0;
+  var _RCTAsyncStorage = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[1], "./RCTAsyncStorage"));
+  /**
+   * Copyright (c) Facebook, Inc. and its affiliates.
+   *
+   * This source code is licensed under the MIT license found in the
+   * LICENSE file in the root directory of this source tree.
+   */
+
+  if (!_RCTAsyncStorage.default) {
+    throw new Error(`[@RNC/AsyncStorage]: NativeModule: AsyncStorage is null.
+
+To fix this issue try these steps:
+
+  • Uninstall, rebuild and restart the app.
+
+  • Run the packager with \`--reset-cache\` flag.
+
+  • If you are using CocoaPods on iOS, run \`pod install\` in the \`ios\` directory, then rebuild and re-run the app.
+
+  • Make sure your project's \`package.json\` depends on \`@react-native-async-storage/async-storage\`, even if you only depend on it indirectly through other dependencies. CLI only autolinks native modules found in your \`package.json\`.
+
+  • If this happens while testing with Jest, check out how to integrate AsyncStorage here: https://react-native-async-storage.github.io/async-storage/docs/advanced/jest
+
+If none of these fix the issue, please open an issue on the GitHub repository: https://github.com/react-native-async-storage/async-storage/issues
+`);
+  }
+
+  /**
+   * `AsyncStorage` is a simple, unencrypted, asynchronous, persistent, key-value
+   * storage system that is global to the app. It should be used instead of
+   * LocalStorage.
+   *
+   * See https://react-native-async-storage.github.io/async-storage/docs/api
+   */
+  var AsyncStorage = (() => {
+    var _getRequests = [];
+    var _getKeys = [];
+    var _immediate = null;
+    return {
+      /**
+       * Fetches an item for a `key` and invokes a callback upon completion.
+       *
+       * See https://react-native-async-storage.github.io/async-storage/docs/api#getitem
+       */
+      getItem: (key, callback) => {
+        return new Promise((resolve, reject) => {
+          (0, _$$_REQUIRE(_dependencyMap[2], "./helpers").checkValidInput)(key);
+          _RCTAsyncStorage.default.multiGet([key], (errors, result) => {
+            // Unpack result to get value from [[key,value]]
+            var value = result?.[0]?.[1] ? result[0][1] : null;
+            var errs = (0, _$$_REQUIRE(_dependencyMap[2], "./helpers").convertErrors)(errors);
+            callback?.(errs?.[0], value);
+            if (errs) {
+              reject(errs[0]);
+            } else {
+              resolve(value);
+            }
+          });
+        });
+      },
+      /**
+       * Sets the value for a `key` and invokes a callback upon completion.
+       *
+       * See https://react-native-async-storage.github.io/async-storage/docs/api#setitem
+       */
+      setItem: (key, value, callback) => {
+        return new Promise((resolve, reject) => {
+          (0, _$$_REQUIRE(_dependencyMap[2], "./helpers").checkValidInput)(key, value);
+          _RCTAsyncStorage.default.multiSet([[key, value]], errors => {
+            var errs = (0, _$$_REQUIRE(_dependencyMap[2], "./helpers").convertErrors)(errors);
+            callback?.(errs?.[0]);
+            if (errs) {
+              reject(errs[0]);
+            } else {
+              resolve();
+            }
+          });
+        });
+      },
+      /**
+       * Removes an item for a `key` and invokes a callback upon completion.
+       *
+       * See https://react-native-async-storage.github.io/async-storage/docs/api#removeitem
+       */
+      removeItem: (key, callback) => {
+        return new Promise((resolve, reject) => {
+          (0, _$$_REQUIRE(_dependencyMap[2], "./helpers").checkValidInput)(key);
+          _RCTAsyncStorage.default.multiRemove([key], errors => {
+            var errs = (0, _$$_REQUIRE(_dependencyMap[2], "./helpers").convertErrors)(errors);
+            callback?.(errs?.[0]);
+            if (errs) {
+              reject(errs[0]);
+            } else {
+              resolve();
+            }
+          });
+        });
+      },
+      /**
+       * Merges an existing `key` value with an input value, assuming both values
+       * are stringified JSON.
+       *
+       * See https://react-native-async-storage.github.io/async-storage/docs/api#mergeitem
+       */
+      mergeItem: (key, value, callback) => {
+        return new Promise((resolve, reject) => {
+          (0, _$$_REQUIRE(_dependencyMap[2], "./helpers").checkValidInput)(key, value);
+          _RCTAsyncStorage.default.multiMerge([[key, value]], errors => {
+            var errs = (0, _$$_REQUIRE(_dependencyMap[2], "./helpers").convertErrors)(errors);
+            callback?.(errs?.[0]);
+            if (errs) {
+              reject(errs[0]);
+            } else {
+              resolve();
+            }
+          });
+        });
+      },
+      /**
+       * Erases *all* `AsyncStorage` for all clients, libraries, etc. You probably
+       * don't want to call this; use `removeItem` or `multiRemove` to clear only
+       * your app's keys.
+       *
+       * See https://react-native-async-storage.github.io/async-storage/docs/api#clear
+       */
+      clear: callback => {
+        return new Promise((resolve, reject) => {
+          _RCTAsyncStorage.default.clear(error => {
+            var err = (0, _$$_REQUIRE(_dependencyMap[2], "./helpers").convertError)(error);
+            callback?.(err);
+            if (err) {
+              reject(err);
+            } else {
+              resolve();
+            }
+          });
+        });
+      },
+      /**
+       * Gets *all* keys known to your app; for all callers, libraries, etc.
+       *
+       * See https://react-native-async-storage.github.io/async-storage/docs/api#getallkeys
+       */
+      getAllKeys: callback => {
+        return new Promise((resolve, reject) => {
+          _RCTAsyncStorage.default.getAllKeys((error, keys) => {
+            var err = (0, _$$_REQUIRE(_dependencyMap[2], "./helpers").convertError)(error);
+            callback?.(err, keys);
+            if (keys) {
+              resolve(keys);
+            } else {
+              reject(err);
+            }
+          });
+        });
+      },
+      /**
+       * The following batched functions are useful for executing a lot of
+       * operations at once, allowing for native optimizations and provide the
+       * convenience of a single callback after all operations are complete.
+       *
+       * These functions return arrays of errors, potentially one for every key.
+       * For key-specific errors, the Error object will have a key property to
+       * indicate which key caused the error.
+       */
+
+      /**
+       * Flushes any pending requests using a single batch call to get the data.
+       *
+       * See https://react-native-async-storage.github.io/async-storage/docs/api#flushgetrequests
+       * */
+      flushGetRequests: () => {
+        var getRequests = _getRequests;
+        var getKeys = _getKeys;
+        _getRequests = [];
+        _getKeys = [];
+        _RCTAsyncStorage.default.multiGet(getKeys, (errors, result) => {
+          // Even though the runtime complexity of this is theoretically worse vs if we used a map,
+          // it's much, much faster in practice for the data sets we deal with (we avoid
+          // allocating result pair arrays). This was heavily benchmarked.
+          //
+          // Is there a way to avoid using the map but fix the bug in this breaking test?
+          // https://github.com/facebook/react-native/commit/8dd8ad76579d7feef34c014d387bf02065692264
+          var map = {};
+          result?.forEach(([key, value]) => {
+            map[key] = value;
+            return value;
+          });
+          var reqLength = getRequests.length;
+
+          /**
+           * As mentioned few lines above, this method could be called with the array of potential error,
+           * in case of anything goes wrong. The problem is, if any of the batched calls fails
+           * the rest of them would fail too, but the error would be consumed by just one. The rest
+           * would simply return `undefined` as their result, rendering false negatives.
+           *
+           * In order to avoid this situation, in case of any call failing,
+           * the rest of them will be rejected as well (with the same error).
+           */
+          var errorList = (0, _$$_REQUIRE(_dependencyMap[2], "./helpers").convertErrors)(errors);
+          var error = errorList?.length ? errorList[0] : null;
+          for (var i = 0; i < reqLength; i++) {
+            var request = getRequests[i];
+            if (error) {
+              request.callback?.(errorList);
+              request.reject?.(error);
+              continue;
+            }
+            var requestResult = request.keys.map(key => [key, map[key]]);
+            request.callback?.(null, requestResult);
+            request.resolve?.(requestResult);
+          }
+        });
+      },
+      /**
+       * This allows you to batch the fetching of items given an array of `key`
+       * inputs. Your callback will be invoked with an array of corresponding
+       * key-value pairs found.
+       *
+       * See https://react-native-async-storage.github.io/async-storage/docs/api#multiget
+       */
+      multiGet: (keys, callback) => {
+        if (!_immediate) {
+          _immediate = setImmediate(() => {
+            _immediate = null;
+            AsyncStorage.flushGetRequests();
+          });
+        }
+        var getRequest = {
+          keys: keys,
+          callback: callback,
+          // do we need this?
+          keyIndex: _getKeys.length
+        };
+        var promiseResult = new Promise((resolve, reject) => {
+          getRequest.resolve = resolve;
+          getRequest.reject = reject;
+        });
+        _getRequests.push(getRequest);
+        // avoid fetching duplicates
+        keys.forEach(key => {
+          if (_getKeys.indexOf(key) === -1) {
+            _getKeys.push(key);
+          }
+        });
+        return promiseResult;
+      },
+      /**
+       * Use this as a batch operation for storing multiple key-value pairs. When
+       * the operation completes you'll get a single callback with any errors.
+       *
+       * See https://react-native-async-storage.github.io/async-storage/docs/api#multiset
+       */
+      multiSet: (keyValuePairs, callback) => {
+        (0, _$$_REQUIRE(_dependencyMap[2], "./helpers").checkValidArgs)(keyValuePairs, callback);
+        return new Promise((resolve, reject) => {
+          keyValuePairs.forEach(([key, value]) => {
+            (0, _$$_REQUIRE(_dependencyMap[2], "./helpers").checkValidInput)(key, value);
+          });
+          _RCTAsyncStorage.default.multiSet(keyValuePairs, errors => {
+            var error = (0, _$$_REQUIRE(_dependencyMap[2], "./helpers").convertErrors)(errors);
+            callback?.(error);
+            if (error) {
+              reject(error);
+            } else {
+              resolve();
+            }
+          });
+        });
+      },
+      /**
+       * Call this to batch the deletion of all keys in the `keys` array.
+       *
+       * See https://react-native-async-storage.github.io/async-storage/docs/api#multiremove
+       */
+      multiRemove: (keys, callback) => {
+        return new Promise((resolve, reject) => {
+          keys.forEach(key => (0, _$$_REQUIRE(_dependencyMap[2], "./helpers").checkValidInput)(key));
+          _RCTAsyncStorage.default.multiRemove(keys, errors => {
+            var error = (0, _$$_REQUIRE(_dependencyMap[2], "./helpers").convertErrors)(errors);
+            callback?.(error);
+            if (error) {
+              reject(error);
+            } else {
+              resolve();
+            }
+          });
+        });
+      },
+      /**
+       * Batch operation to merge in existing and new values for a given set of
+       * keys. This assumes that the values are stringified JSON.
+       *
+       * See https://react-native-async-storage.github.io/async-storage/docs/api#multimerge
+       */
+      multiMerge: (keyValuePairs, callback) => {
+        return new Promise((resolve, reject) => {
+          _RCTAsyncStorage.default.multiMerge(keyValuePairs, errors => {
+            var error = (0, _$$_REQUIRE(_dependencyMap[2], "./helpers").convertErrors)(errors);
+            callback?.(error);
+            if (error) {
+              reject(error);
+            } else {
+              resolve();
+            }
+          });
+        });
+      }
+    };
+  })();
+  var _default = exports.default = AsyncStorage;
+},644,[1,645,647],"node_modules/@react-native-async-storage/async-storage/src/AsyncStorage.native.ts");
+__d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
+  Object.defineProperty(exports, "__esModule", {
+    value: true
+  });
+  exports.default = void 0;
+  var _reactNative = _$$_REQUIRE(_dependencyMap[0], "react-native");
+  // TurboModuleRegistry falls back to NativeModules so we don't have to try go
+  // assign NativeModules' counterparts if TurboModuleRegistry would resolve
+  // with undefined.
+  var RCTAsyncStorage = _reactNative.TurboModuleRegistry ? _reactNative.TurboModuleRegistry.get("PlatformLocalStorage") ||
+  // Support for external modules, like react-native-windows
+  _reactNative.TurboModuleRegistry.get("RNC_AsyncSQLiteDBStorage") || _reactNative.TurboModuleRegistry.get("RNCAsyncStorage") : _reactNative.NativeModules["PlatformLocalStorage"] ||
+  // Support for external modules, like react-native-windows
+  _reactNative.NativeModules["RNC_AsyncSQLiteDBStorage"] || _reactNative.NativeModules["RNCAsyncStorage"];
+  if (!RCTAsyncStorage && (0, _$$_REQUIRE(_dependencyMap[1], "./shouldFallbackToLegacyNativeModule").shouldFallbackToLegacyNativeModule)()) {
+    if (_reactNative.TurboModuleRegistry) {
+      RCTAsyncStorage = _reactNative.TurboModuleRegistry.get("AsyncSQLiteDBStorage") || _reactNative.TurboModuleRegistry.get("AsyncLocalStorage");
+    } else {
+      RCTAsyncStorage = _reactNative.NativeModules["AsyncSQLiteDBStorage"] || _reactNative.NativeModules["AsyncLocalStorage"];
+    }
+  }
+  var _default = exports.default = RCTAsyncStorage;
+},645,[2,646],"node_modules/@react-native-async-storage/async-storage/src/RCTAsyncStorage.ts");
+__d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
+  Object.defineProperty(exports, "__esModule", {
+    value: true
+  });
+  exports.shouldFallbackToLegacyNativeModule = shouldFallbackToLegacyNativeModule;
+  var _reactNative = _$$_REQUIRE(_dependencyMap[0], "react-native");
+  function shouldFallbackToLegacyNativeModule() {
+    var expoConstants = _reactNative.NativeModules["NativeUnimoduleProxy"]?.modulesConstants?.ExponentConstants;
+    if (expoConstants) {
+      /**
+       * In SDK <= 39, appOwnership is defined in managed apps but executionEnvironment is not.
+       * In bare React Native apps using expo-constants, appOwnership is never defined, so
+       * isLegacySdkVersion will be false in that context.
+       */
+      var isLegacySdkVersion = expoConstants.appOwnership && !expoConstants.executionEnvironment;
+
+      /**
+       * Expo managed apps don't include the @react-native-async-storage/async-storage
+       * native modules yet, but the API interface is the same, so we can use the version
+       * exported from React Native still.
+       *
+       * If in future releases (eg: @react-native-async-storage/async-storage >= 2.0.0) this
+       * will likely not be valid anymore, and the package will need to be included in the Expo SDK
+       * to continue to work.
+       */
+      if (isLegacySdkVersion || ["storeClient", "standalone"].includes(expoConstants.executionEnvironment)) {
+        return true;
+      }
+    }
+    return false;
+  }
+},646,[2],"node_modules/@react-native-async-storage/async-storage/src/shouldFallbackToLegacyNativeModule.ts");
+__d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
+  Object.defineProperty(exports, "__esModule", {
+    value: true
+  });
+  exports.checkValidArgs = checkValidArgs;
+  exports.checkValidInput = checkValidInput;
+  exports.convertError = convertError;
+  exports.convertErrors = convertErrors;
+  function checkValidArgs(keyValuePairs, callback) {
+    if (!Array.isArray(keyValuePairs) || keyValuePairs.length === 0 || !Array.isArray(keyValuePairs[0])) {
+      throw new Error("[AsyncStorage] Expected array of key-value pairs as first argument to multiSet");
+    }
+    if (callback && typeof callback !== "function") {
+      if (Array.isArray(callback)) {
+        throw new Error("[AsyncStorage] Expected function as second argument to multiSet. Did you forget to wrap key-value pairs in an array for the first argument?");
+      }
+      throw new Error("[AsyncStorage] Expected function as second argument to multiSet");
+    }
+  }
+  function checkValidInput(...input) {
+    var key = input[0],
+      value = input[1];
+    if (typeof key !== "string") {
+      // eslint-disable-next-line no-console
+      console.warn(`[AsyncStorage] Using ${typeof key} type for key is not supported. This can lead to unexpected behavior/errors. Use string instead.\nKey passed: ${key}\n`);
+    }
+    if (input.length > 1 && typeof value !== "string") {
+      if (value == null) {
+        throw new Error(`[AsyncStorage] Passing null/undefined as value is not supported. If you want to remove value, Use .removeItem method instead.\nPassed value: ${value}\nPassed key: ${key}\n`);
+      } else {
+        // eslint-disable-next-line no-console
+        console.warn(`[AsyncStorage] The value for key "${key}" is not a string. This can lead to unexpected behavior/errors. Consider stringifying it.\nPassed value: ${value}\nPassed key: ${key}\n`);
+      }
+    }
+  }
+  function convertError(error) {
+    if (!error) {
+      return null;
+    }
+    var out = new Error(error.message);
+    out["key"] = error.key;
+    return out;
+  }
+  function convertErrors(errs) {
+    var errors = ensureArray(errs);
+    return errors ? errors.map(e => convertError(e)) : null;
+  }
+  function ensureArray(e) {
+    if (Array.isArray(e)) {
+      return e.length === 0 ? null : e;
+    } else if (e) {
+      return [e];
+    } else {
+      return null;
+    }
+  }
+},647,[],"node_modules/@react-native-async-storage/async-storage/src/helpers.ts");
+__d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
+  Object.defineProperty(exports, "__esModule", {
+    value: true
+  });
+  exports.FREQUENCY_OPTIONS = exports.DEFAULT_SETTINGS = exports.DAY_LABELS = void 0;
+  var DEFAULT_SETTINGS = exports.DEFAULT_SETTINGS = {
+    checkInDays: [true, true, true, true, true, true, true],
+    everyHour: true,
+    startHour: 10,
+    endHour: 19,
+    frequencyMinutes: 120
+  };
+  var FREQUENCY_OPTIONS = exports.FREQUENCY_OPTIONS = [{
+    label: '1 min (debug)',
+    value: 1
+  }, {
+    label: '30 min',
+    value: 30
+  }, {
+    label: '1 hour',
+    value: 60
+  }, {
+    label: '2 hours',
+    value: 120
+  }, {
+    label: '4 hours',
+    value: 240
+  }, {
+    label: '8 hours',
+    value: 480
+  }, {
+    label: '1 day',
+    value: 1440
+  }];
+  var DAY_LABELS = exports.DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+},648,[],"src/types/Settings.ts");
+__d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
+  var _interopRequireDefault = _$$_REQUIRE(_dependencyMap[0], "@babel/runtime/helpers/interopRequireDefault");
+  Object.defineProperty(exports, "__esModule", {
+    value: true
+  });
+  exports.default = SettingsScreen;
+  var _asyncToGenerator2 = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[1], "@babel/runtime/helpers/asyncToGenerator"));
+  var _slicedToArray2 = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[2], "@babel/runtime/helpers/slicedToArray"));
+  var _react = _interopRequireWildcard(_$$_REQUIRE(_dependencyMap[3], "react"));
+  var _reactNative = _$$_REQUIRE(_dependencyMap[4], "react-native");
+  var _SettingsService = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[5], "../services/SettingsService"));
+  var _jsxRuntime = _$$_REQUIRE(_dependencyMap[6], "react/jsx-runtime");
+  var _jsxFileName = "C:\\Users\\ronen\\TimeAnalyzer\\src\\screens\\SettingsScreen.tsx";
+  function _interopRequireWildcard(e, t) { if ("function" == typeof WeakMap) var r = new WeakMap(), n = new WeakMap(); return (_interopRequireWildcard = function (e, t) { if (!t && e && e.__esModule) return e; var o, i, f = { __proto__: null, default: e }; if (null === e || "object" != typeof e && "function" != typeof e) return f; if (o = t ? n : r) { if (o.has(e)) return o.get(e); o.set(e, f); } for (var _t in e) "default" !== _t && {}.hasOwnProperty.call(e, _t) && ((i = (o = Object.defineProperty) && Object.getOwnPropertyDescriptor(e, _t)) && (i.get || i.set) ? o(f, _t, i) : f[_t] = e[_t]); return f; })(e, t); }
+  function SettingsScreen({
+    onClose
+  }) {
+    var insets = (0, _$$_REQUIRE(_dependencyMap[7], "react-native-safe-area-context").useSafeAreaInsets)();
+    var _useState = (0, _react.useState)(null),
+      _useState2 = (0, _slicedToArray2.default)(_useState, 2),
+      settings = _useState2[0],
+      setSettings = _useState2[1];
+    (0, _react.useEffect)(() => {
+      _SettingsService.default.load().then(setSettings);
+    }, []);
+    if (!settings) {
+      return /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
+        style: styles.loading,
+        children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.ActivityIndicator, {})
+      });
+    }
+    function toggleDay(i) {
+      if (!settings) return;
+      var days = [...settings.checkInDays];
+      days[i] = !days[i];
+      setSettings({
+        ...settings,
+        checkInDays: days
+      });
+    }
+    function handleSave() {
+      return _handleSave.apply(this, arguments);
+    }
+    function _handleSave() {
+      _handleSave = (0, _asyncToGenerator2.default)(function* () {
+        if (!settings) return;
+        yield _SettingsService.default.save(settings);
+        onClose(true);
+      });
+      return _handleSave.apply(this, arguments);
+    }
+    return /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+      style: [styles.container, {
+        paddingTop: insets.top,
+        paddingBottom: insets.bottom
+      }],
+      children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+        style: styles.header,
+        children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
+          onPress: () => onClose(false),
+          children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+            style: styles.cancel,
+            children: "Cancel"
+          })
+        }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+          style: styles.title,
+          children: "Settings"
+        }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
+          onPress: handleSave,
+          children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+            style: styles.save,
+            children: "Save"
+          })
+        })]
+      }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.ScrollView, {
+        contentContainerStyle: styles.body,
+        children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+          style: styles.sectionLabel,
+          children: "CHECK-IN DAYS"
+        }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
+          style: styles.card,
+          children: _$$_REQUIRE(_dependencyMap[8], "../types/Settings").DAY_LABELS.map((label, i) => /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+            style: [styles.row, i < _$$_REQUIRE(_dependencyMap[8], "../types/Settings").DAY_LABELS.length - 1 && styles.rowBorder],
+            children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+              style: styles.rowLabel,
+              children: label
+            }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Switch, {
+              value: settings.checkInDays[i],
+              onValueChange: () => toggleDay(i)
+            })]
+          }, label))
+        }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+          style: styles.sectionLabel,
+          children: "WORKING HOURS"
+        }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+          style: styles.card,
+          children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+            style: styles.row,
+            children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+              style: styles.rowLabel,
+              children: "Every hour (all day)"
+            }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Switch, {
+              value: settings.everyHour,
+              onValueChange: v => setSettings({
+                ...settings,
+                everyHour: v
+              })
+            })]
+          }), !settings.everyHour && /*#__PURE__*/(0, _jsxRuntime.jsxs)(_jsxRuntime.Fragment, {
+            children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+              style: [styles.row, styles.rowBorder],
+              children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                style: styles.rowLabel,
+                children: "Start"
+              }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+                style: styles.hourPicker,
+                children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
+                  onPress: () => setSettings({
+                    ...settings,
+                    startHour: Math.max(0, settings.startHour - 1)
+                  }),
+                  children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                    style: styles.stepper,
+                    children: "\u2212"
+                  })
+                }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
+                  style: styles.hourValue,
+                  children: [settings.startHour.toString().padStart(2, '0'), ":00"]
+                }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
+                  onPress: () => setSettings({
+                    ...settings,
+                    startHour: Math.min(settings.endHour - 1, settings.startHour + 1)
+                  }),
+                  children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                    style: styles.stepper,
+                    children: "+"
+                  })
+                })]
+              })]
+            }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+              style: [styles.row, styles.rowBorder],
+              children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                style: styles.rowLabel,
+                children: "End"
+              }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+                style: styles.hourPicker,
+                children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
+                  onPress: () => setSettings({
+                    ...settings,
+                    endHour: Math.max(settings.startHour + 1, settings.endHour - 1)
+                  }),
+                  children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                    style: styles.stepper,
+                    children: "\u2212"
+                  })
+                }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
+                  style: styles.hourValue,
+                  children: [settings.endHour.toString().padStart(2, '0'), ":00"]
+                }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
+                  onPress: () => setSettings({
+                    ...settings,
+                    endHour: Math.min(24, settings.endHour + 1)
+                  }),
+                  children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                    style: styles.stepper,
+                    children: "+"
+                  })
+                })]
+              })]
+            })]
+          })]
+        }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+          style: styles.sectionLabel,
+          children: "FREQUENCY"
+        }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
+          style: styles.card,
+          children: _$$_REQUIRE(_dependencyMap[8], "../types/Settings").FREQUENCY_OPTIONS.map((opt, i) => /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.TouchableOpacity, {
+            style: [styles.row, i < _$$_REQUIRE(_dependencyMap[8], "../types/Settings").FREQUENCY_OPTIONS.length - 1 && styles.rowBorder],
+            onPress: () => setSettings({
+              ...settings,
+              frequencyMinutes: opt.value
+            }),
+            children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+              style: styles.rowLabel,
+              children: opt.label
+            }), settings.frequencyMinutes === opt.value && /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+              style: styles.checkmark,
+              children: "\u2713"
+            })]
+          }, opt.value))
+        })]
+      })]
+    });
+  }
+  var styles = _reactNative.StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: '#f2f2f7'
+    },
+    loading: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center'
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      backgroundColor: '#fff',
+      borderBottomWidth: _reactNative.StyleSheet.hairlineWidth,
+      borderBottomColor: '#ccc'
+    },
+    title: {
+      fontSize: 17,
+      fontWeight: '600'
+    },
+    cancel: {
+      fontSize: 17,
+      color: '#666'
+    },
+    save: {
+      fontSize: 17,
+      color: '#007AFF',
+      fontWeight: '600'
+    },
+    body: {
+      paddingVertical: 24,
+      paddingHorizontal: 16,
+      gap: 8
+    },
+    sectionLabel: {
+      fontSize: 12,
+      color: '#6d6d72',
+      fontWeight: '500',
+      marginBottom: 4,
+      marginTop: 8,
+      marginLeft: 4
+    },
+    card: {
+      backgroundColor: '#fff',
+      borderRadius: 10,
+      overflow: 'hidden'
+    },
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      minHeight: 48
+    },
+    rowBorder: {
+      borderTopWidth: _reactNative.StyleSheet.hairlineWidth,
+      borderTopColor: '#e0e0e0'
+    },
+    rowLabel: {
+      fontSize: 16,
+      color: '#000'
+    },
+    checkmark: {
+      fontSize: 18,
+      color: '#007AFF'
+    },
+    hourPicker: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 16
+    },
+    stepper: {
+      fontSize: 22,
+      color: '#007AFF',
+      width: 28,
+      textAlign: 'center'
+    },
+    hourValue: {
+      fontSize: 16,
+      fontWeight: '500',
+      width: 52,
+      textAlign: 'center'
+    }
+  });
+},649,[1,178,14,71,2,641,182,650,648],"src/screens/SettingsScreen.tsx");
+__d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
   'use client';
 
   Object.defineProperty(exports, "__esModule", {
@@ -104072,7 +104980,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       }
     });
   });
-},641,[642,645,647,649],"node_modules/react-native-safe-area-context/src/index.tsx");
+},650,[651,654,656,658],"node_modules/react-native-safe-area-context/src/index.tsx");
 __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
   var _interopRequireDefault = _$$_REQUIRE(_dependencyMap[0], "@babel/runtime/helpers/interopRequireDefault");
   Object.defineProperty(exports, "__esModule", {
@@ -104228,7 +105136,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
    * @deprecated
    */
   var SafeAreaContext = exports.SafeAreaContext = SafeAreaInsetsContext;
-},642,[1,14,71,2,182,643],"node_modules/react-native-safe-area-context/src/SafeAreaContext.tsx");
+},651,[1,14,71,2,182,652],"node_modules/react-native-safe-area-context/src/SafeAreaContext.tsx");
 __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
   var _interopRequireDefault = _$$_REQUIRE(_dependencyMap[0], "@babel/runtime/helpers/interopRequireDefault");
   Object.defineProperty(exports, "__esModule", {
@@ -104241,7 +105149,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
     }
   });
   var _NativeSafeAreaProvider = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[1], "./specs/NativeSafeAreaProvider"));
-},643,[1,644],"node_modules/react-native-safe-area-context/src/NativeSafeAreaProvider.tsx");
+},652,[1,653],"node_modules/react-native-safe-area-context/src/NativeSafeAreaProvider.tsx");
 __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
   var _interopRequireDefault = _$$_REQUIRE(_dependencyMap[0], "@babel/runtime/helpers/interopRequireDefault");
   Object.defineProperty(exports, "__esModule", {
@@ -104264,7 +105172,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
     }
   };
   var _default = exports.default = _$$_REQUIRE(_dependencyMap[3], "react-native/Libraries/NativeComponent/NativeComponentRegistry").get(nativeComponentName, () => __INTERNAL_VIEW_CONFIG);
-},644,[1,314,102,75],"node_modules/react-native-safe-area-context/src/specs/NativeSafeAreaProvider.ts");
+},653,[1,314,102,75],"node_modules/react-native-safe-area-context/src/specs/NativeSafeAreaProvider.ts");
 __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
   var _interopRequireDefault = _$$_REQUIRE(_dependencyMap[0], "@babel/runtime/helpers/interopRequireDefault");
   Object.defineProperty(exports, "__esModule", {
@@ -104313,7 +105221,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       ref: ref
     });
   });
-},645,[1,71,646,182],"node_modules/react-native-safe-area-context/src/SafeAreaView.tsx");
+},654,[1,71,655,182],"node_modules/react-native-safe-area-context/src/SafeAreaView.tsx");
 __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
   var _interopRequireDefault = _$$_REQUIRE(_dependencyMap[0], "@babel/runtime/helpers/interopRequireDefault");
   Object.defineProperty(exports, "__esModule", {
@@ -104330,7 +105238,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
     }
   };
   var _default = exports.default = _$$_REQUIRE(_dependencyMap[2], "react-native/Libraries/NativeComponent/NativeComponentRegistry").get(nativeComponentName, () => __INTERNAL_VIEW_CONFIG);
-},646,[1,314,75],"node_modules/react-native-safe-area-context/src/specs/NativeSafeAreaView.ts");
+},655,[1,314,75],"node_modules/react-native-safe-area-context/src/specs/NativeSafeAreaView.ts");
 __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
   var _interopRequireDefault = _$$_REQUIRE(_dependencyMap[0], "@babel/runtime/helpers/interopRequireDefault");
   Object.defineProperty(exports, "__esModule", {
@@ -104344,7 +105252,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
    * @deprecated
    */
   var initialWindowSafeAreaInsets = exports.initialWindowSafeAreaInsets = initialWindowMetrics?.insets;
-},647,[1,648],"node_modules/react-native-safe-area-context/src/InitialWindow.native.ts");
+},656,[1,657],"node_modules/react-native-safe-area-context/src/InitialWindow.native.ts");
 __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
   Object.defineProperty(exports, "__esModule", {
     value: true
@@ -104352,18 +105260,18 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
   exports.default = void 0;
   var _reactNative = _$$_REQUIRE(_dependencyMap[0], "react-native");
   var _default = exports.default = _reactNative.TurboModuleRegistry.get('RNCSafeAreaContext');
-},648,[2],"node_modules/react-native-safe-area-context/src/specs/NativeSafeAreaContext.ts");
+},657,[2],"node_modules/react-native-safe-area-context/src/specs/NativeSafeAreaContext.ts");
 __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
   Object.defineProperty(exports, "__esModule", {
     value: true
   });
-},649,[],"node_modules/react-native-safe-area-context/src/SafeArea.types.ts");
+},658,[],"node_modules/react-native-safe-area-context/src/SafeArea.types.ts");
 __d(function(global, require, _importDefaultUnused, _importAllUnused, module, exports, _dependencyMapUnused) {
   module.exports = {
   "name": "TimeAnalyzerTemp",
   "displayName": "TimeAnalyzer"
 }
 ;
-},650,[],"app.json");
+},659,[],"app.json");
 __r(109);
 __r(0);
