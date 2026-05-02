@@ -107,5 +107,40 @@ async function requestPermission(): Promise<boolean> {
   return result.authorizationStatus >= 1;
 }
 
-const SchedulerService = { start, stop, reschedule, requestPermission };
+async function hasMoreCheckInsToday(): Promise<boolean> {
+  const pending = await notifee.getTriggerNotifications();
+  const todayEnd = endOfDay(new Date());
+  return pending.some(
+    n =>
+      n.notification.id?.startsWith('checkin-') &&
+      n.trigger.type === TriggerType.TIMESTAMP &&
+      (n.trigger as { timestamp: number }).timestamp <= todayEnd,
+  );
+}
+
+function endOfDay(date: Date): number {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999).getTime();
+}
+
+async function fireEndOfDayReport(): Promise<void> {
+  await ensureChannel();
+  await notifee.displayNotification({
+    id: config.endOfDayNotificationId,
+    title: "That's a wrap!",
+    body: 'Tap to see your report for today.',
+    android: {
+      channelId: config.notificationChannelId,
+      pressAction: { id: 'open-report' },
+    },
+  });
+}
+
+const SchedulerService = {
+  start,
+  stop,
+  reschedule,
+  requestPermission,
+  hasMoreCheckInsToday,
+  fireEndOfDayReport,
+};
 export default SchedulerService;

@@ -8,7 +8,7 @@ let db: DB | null = null;
 function getDb(): DB {
   if (!db) {
     db = open({ name: 'time-analyzer.sqlite' });
-    db.execute(`
+    db.executeSync(`
       CREATE TABLE IF NOT EXISTS log_entries (
         id TEXT PRIMARY KEY,
         timestamp_start INTEGER NOT NULL,
@@ -31,29 +31,29 @@ function rowToEntry(row: Record<string, unknown>): LogEntry {
 
 const SQLiteStorageProvider: StorageProvider = {
   async save(entry: LogEntry): Promise<void> {
-    getDb().execute(
+    getDb().executeSync(
       'INSERT OR REPLACE INTO log_entries (id, timestamp_start, timestamp_end, transcript) VALUES (?, ?, ?, ?)',
       [entry.id, entry.timestampStart, entry.timestampEnd, entry.transcript],
     );
   },
 
   async getAll(): Promise<LogEntry[]> {
-    const result = getDb().execute(
+    const result = getDb().executeSync(
       'SELECT * FROM log_entries ORDER BY timestamp_end DESC',
     );
-    return (result.rows?._array ?? []).map(rowToEntry);
+    return (result.rows ?? []).map(rowToEntry);
   },
 
   async getByDateRange(start: Date, end: Date): Promise<LogEntry[]> {
-    const result = getDb().execute(
+    const result = getDb().executeSync(
       'SELECT * FROM log_entries WHERE timestamp_end >= ? AND timestamp_end <= ? ORDER BY timestamp_end DESC',
       [start.getTime(), end.getTime()],
     );
-    return (result.rows?._array ?? []).map(rowToEntry);
+    return (result.rows ?? []).map(rowToEntry);
   },
 
   async delete(id: string): Promise<void> {
-    getDb().execute('DELETE FROM log_entries WHERE id = ?', [id]);
+    getDb().executeSync('DELETE FROM log_entries WHERE id = ?', [id]);
   },
 };
 

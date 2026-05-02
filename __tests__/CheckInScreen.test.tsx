@@ -2,8 +2,9 @@ import React from 'react';
 import ReactTestRenderer from 'react-test-renderer';
 import { PermissionsAndroid } from 'react-native';
 import CheckInScreen from '../src/screens/CheckInScreen';
-import TranscriptionService from '../src/services/TranscriptionService';
+import SchedulerService from '../src/services/SchedulerService';
 import StorageService from '../src/services/StorageService';
+import TranscriptionService from '../src/services/TranscriptionService';
 
 const PERIOD_START    = new Date('2026-01-01T10:00:00').getTime();
 const PERIOD_END      = new Date('2026-01-01T12:00:00').getTime();
@@ -30,6 +31,8 @@ beforeEach(() => {
   jest.spyOn(TranscriptionService, 'start').mockResolvedValue(undefined);
   jest.spyOn(TranscriptionService, 'stop').mockResolvedValue(FAKE_TRANSCRIPT);
   jest.spyOn(StorageService, 'save').mockResolvedValue(undefined);
+  jest.spyOn(SchedulerService, 'hasMoreCheckInsToday').mockResolvedValue(true);
+  jest.spyOn(SchedulerService, 'fireEndOfDayReport').mockResolvedValue(undefined);
   jest.spyOn(PermissionsAndroid, 'request').mockResolvedValue(
     PermissionsAndroid.RESULTS.GRANTED,
   );

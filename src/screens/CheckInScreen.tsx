@@ -11,6 +11,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import SchedulerService from '../services/SchedulerService';
 import StorageService from '../services/StorageService';
 import TranscriptionService from '../services/TranscriptionService';
 
@@ -117,6 +118,10 @@ export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel
       timestampEnd: periodEnd,
       transcript,
     });
+    const moreToday = await SchedulerService.hasMoreCheckInsToday();
+    if (!moreToday) {
+      await SchedulerService.fireEndOfDayReport();
+    }
     onDone(transcript);
   }
 
