@@ -1,14 +1,16 @@
+import notifee, { EventType } from '@notifee/react-native';
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, View, StatusBar, TouchableOpacity } from 'react-native';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import v from './version.json';
 import SchedulerService from './src/services/SchedulerService';
-import SettingsScreen from './src/screens/SettingsScreen';
 import CheckInScreen from './src/screens/CheckInScreen';
+import ReportScreen from './src/screens/ReportScreen';
+import SettingsScreen from './src/screens/SettingsScreen';
 
 const version = `v${v.major}.${v.minor}.${v.ticket_id}.${v.sequence}`;
 
-type Screen = 'home' | 'settings' | 'checkin';
+type Screen = 'home' | 'settings' | 'checkin' | 'report';
 
 function AppContent(): React.JSX.Element {
   const insets = useSafeAreaInsets();
@@ -20,6 +22,22 @@ function AppContent(): React.JSX.Element {
         SchedulerService.reschedule();
       }
     });
+
+    // Handle notification tap while app is open
+    const unsub = notifee.onForegroundEvent(({ type, detail }) => {
+      if (type === EventType.PRESS && detail.notification?.id === 'end-of-day-report') {
+        setScreen('report');
+      }
+    });
+
+    // Handle notification tap when app was closed/backgrounded
+    notifee.getInitialNotification().then(initial => {
+      if (initial?.notification?.id === 'end-of-day-report') {
+        setScreen('report');
+      }
+    });
+
+    return () => unsub();
   }, []);
 
   function handleSettingsClose(saved: boolean) {
@@ -36,6 +54,10 @@ function AppContent(): React.JSX.Element {
 
   if (screen === 'settings') {
     return <SettingsScreen onClose={handleSettingsClose} />;
+  }
+
+  if (screen === 'report') {
+    return <ReportScreen onClose={() => setScreen('home')} />;
   }
 
   if (screen === 'checkin') {
@@ -61,6 +83,9 @@ function AppContent(): React.JSX.Element {
         <Text style={styles.title}>TimeAnalyzer</Text>
         <TouchableOpacity style={styles.checkInBtn} onPress={() => setScreen('checkin')}>
           <Text style={styles.checkInBtnText}>Start Check-in</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.reportBtn} onPress={() => setScreen('report')}>
+          <Text style={styles.reportBtnText}>View Report</Text>
         </TouchableOpacity>
       </View>
       <Text style={styles.version}>{version}</Text>
@@ -112,6 +137,19 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     color: '#fff',
+  },
+  reportBtn: {
+    marginTop: 12,
+    paddingHorizontal: 32,
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#007AFF',
+  },
+  reportBtnText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#007AFF',
   },
   version: {
     fontSize: 11,
