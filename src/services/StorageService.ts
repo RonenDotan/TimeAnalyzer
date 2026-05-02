@@ -1,16 +1,8 @@
-import { LogEntry, StorageProvider } from '../providers/storage/StorageProvider';
+import { LogEntry } from '../types/LogEntry';
+import { StorageProvider } from '../providers/storage/StorageProvider';
+import SQLiteStorageProvider from '../providers/storage/SQLiteStorageProvider';
 
-// Stub provider — logs to console until SQLite is wired in (ticket #6)
-const stubProvider: StorageProvider = {
-  async save(entry: LogEntry): Promise<void> {
-    console.log('[StorageService] save entry:', JSON.stringify(entry));
-  },
-  async loadAll(): Promise<LogEntry[]> {
-    return [];
-  },
-};
-
-let activeProvider: StorageProvider = stubProvider;
+let activeProvider: StorageProvider = SQLiteStorageProvider;
 
 function setProvider(provider: StorageProvider): void {
   activeProvider = provider;
@@ -20,9 +12,17 @@ async function save(entry: LogEntry): Promise<void> {
   return activeProvider.save(entry);
 }
 
-async function loadAll(): Promise<LogEntry[]> {
-  return activeProvider.loadAll();
+async function getAll(): Promise<LogEntry[]> {
+  return activeProvider.getAll();
 }
 
-const StorageService = { save, loadAll, setProvider };
+async function getByDateRange(start: Date, end: Date): Promise<LogEntry[]> {
+  return activeProvider.getByDateRange(start, end);
+}
+
+async function deleteEntry(id: string): Promise<void> {
+  return activeProvider.delete(id);
+}
+
+const StorageService = { save, getAll, getByDateRange, deleteEntry, setProvider };
 export default StorageService;
