@@ -37,6 +37,13 @@ const SQLiteStorageProvider: StorageProvider = {
     );
   },
 
+  async update(entry: LogEntry): Promise<void> {
+    getDb().executeSync(
+      'UPDATE log_entries SET timestamp_start = ?, timestamp_end = ?, transcript = ? WHERE id = ?',
+      [entry.timestampStart, entry.timestampEnd, entry.transcript, entry.id],
+    );
+  },
+
   async getAll(): Promise<LogEntry[]> {
     const result = getDb().executeSync(
       'SELECT * FROM log_entries ORDER BY timestamp_end DESC',

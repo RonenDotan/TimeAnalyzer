@@ -2,11 +2,13 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
   PermissionsAndroid,
   Platform,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -125,8 +127,12 @@ export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel
     onDone(transcript);
   }
 
+  const canSubmitTyped = transcript.trim().length > 0;
+
   return (
-    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+    <KeyboardAvoidingView
+      style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <View style={styles.header}>
         <TouchableOpacity onPress={onCancel}>
           <Text style={styles.cancel}>Cancel</Text>
@@ -145,12 +151,29 @@ export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel
       <View style={styles.body}>
         {phase === 'idle' && (
           <>
+            <TextInput
+              style={styles.typeInput}
+              value={transcript}
+              onChangeText={setTranscript}
+              placeholder="Type what you worked on..."
+              placeholderTextColor="#aaa"
+              multiline
+              textAlignVertical="top"
+            />
+            <TouchableOpacity
+              style={[styles.submitBtn, !canSubmitTyped && styles.submitBtnDisabled]}
+              onPress={handleConfirm}
+              disabled={!canSubmitTyped}>
+              <Text style={styles.submitBtnText}>Submit</Text>
+            </TouchableOpacity>
+            <View style={styles.orRow}>
+              <View style={styles.orLine} />
+              <Text style={styles.orText}>or speak</Text>
+              <View style={styles.orLine} />
+            </View>
             <TouchableOpacity style={styles.recordBtn} onPress={startRecording}>
               <Text style={styles.recordBtnText}>Record</Text>
             </TouchableOpacity>
-            <Text style={styles.hint}>
-              Briefly describe what you worked on in the last period.
-            </Text>
           </>
         )}
 
@@ -182,10 +205,15 @@ export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel
 
         {phase === 'confirming' && (
           <>
-            <Text style={styles.confirmLabel}>Did we get that right?</Text>
-            <ScrollView style={styles.transcriptBox} contentContainerStyle={styles.transcriptContent}>
-              <Text style={styles.transcriptText}>{transcript}</Text>
-            </ScrollView>
+            <Text style={styles.confirmLabel}>Review your check-in</Text>
+            <TextInput
+              style={styles.typeInput}
+              value={transcript}
+              onChangeText={setTranscript}
+              multiline
+              textAlignVertical="top"
+              autoFocus
+            />
             <View style={styles.confirmRow}>
               <TouchableOpacity style={styles.rerecordBtn} onPress={handleReRecord}>
                 <Text style={styles.rerecordText}>Re-record</Text>
@@ -197,7 +225,7 @@ export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel
           </>
         )}
       </View>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -225,28 +253,57 @@ const styles = StyleSheet.create({
   body: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     paddingHorizontal: 24,
-    gap: 24,
+    paddingTop: 24,
+    gap: 20,
   },
-  timerBox: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  typeInput: {
+    width: '100%',
+    minHeight: 140,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 14,
+    fontSize: 16,
+    color: '#000',
+    lineHeight: 24,
+    borderWidth: 1.5,
+    borderColor: '#007AFF',
+  },
+  submitBtn: {
+    width: '100%',
+    paddingVertical: 14,
+    borderRadius: 10,
+    backgroundColor: '#007AFF',
+    alignItems: 'center',
+  },
+  submitBtnDisabled: { backgroundColor: '#b0c8f0' },
+  submitBtnText: { fontSize: 16, color: '#fff', fontWeight: '600' },
+  orRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+    gap: 10,
+  },
+  orLine: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: '#ccc' },
+  orText: { fontSize: 13, color: '#999' },
+  timerBox: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 40 },
   timer: { fontSize: 48, fontWeight: '200', color: '#000', fontVariant: ['tabular-nums'] },
   recDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: '#ff3b30' },
   recordBtn: {
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: '#007AFF',
+    backgroundColor: '#ff3b30',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#007AFF',
+    shadowColor: '#ff3b30',
     shadowOpacity: 0.4,
     shadowRadius: 12,
     elevation: 8,
   },
   stopBtn: { backgroundColor: '#ff3b30', shadowColor: '#ff3b30' },
   recordBtnText: { fontSize: 22, fontWeight: '600', color: '#fff' },
-  hint: { fontSize: 14, color: '#6d6d72', textAlign: 'center' },
   transcribingLabel: { fontSize: 16, color: '#6d6d72', marginTop: 16 },
   liveBox: {
     width: '100%',
@@ -257,14 +314,6 @@ const styles = StyleSheet.create({
   liveContent: { padding: 16 },
   liveText: { fontSize: 15, color: '#333', lineHeight: 22, fontStyle: 'italic' },
   confirmLabel: { fontSize: 18, fontWeight: '600', color: '#000', alignSelf: 'flex-start' },
-  transcriptBox: {
-    width: '100%',
-    maxHeight: 200,
-    backgroundColor: '#fff',
-    borderRadius: 10,
-  },
-  transcriptContent: { padding: 16 },
-  transcriptText: { fontSize: 16, color: '#000', lineHeight: 24 },
   confirmRow: { flexDirection: 'row', gap: 12, width: '100%' },
   rerecordBtn: {
     flex: 1,

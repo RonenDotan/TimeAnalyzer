@@ -8,11 +8,13 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import EntryDetailScreen from './EntryDetailScreen';
 import StorageService from '../services/StorageService';
 import { LogEntry } from '../types/LogEntry';
 
 interface Props {
-  onClose: () => void;
+  onStartCheckIn: () => void;
+  onOpenSettings: () => void;
   initialDate?: Date;
 }
 
@@ -46,11 +48,12 @@ function isToday(date: Date): boolean {
   );
 }
 
-export default function ReportScreen({ onClose, initialDate }: Props) {
+export default function ReportScreen({ onStartCheckIn, onOpenSettings, initialDate }: Props) {
   const insets = useSafeAreaInsets();
   const [currentDate, setCurrentDate] = useState<Date>(initialDate ?? new Date());
   const [entries, setEntries] = useState<LogEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedEntry, setSelectedEntry] = useState<LogEntry | null>(null);
 
   const loadEntries = useCallback(async (date: Date) => {
     setLoading(true);
@@ -73,14 +76,29 @@ export default function ReportScreen({ onClose, initialDate }: Props) {
 
   const canGoForward = !isToday(currentDate);
 
+  function handleEntrySaved(updated: LogEntry) {
+    setEntries(prev => prev.map(e => e.id === updated.id ? updated : e));
+    setSelectedEntry(null);
+  }
+
+  if (selectedEntry) {
+    return (
+      <EntryDetailScreen
+        entry={selectedEntry}
+        onSave={handleEntrySaved}
+        onClose={() => setSelectedEntry(null)}
+      />
+    );
+  }
+
   return (
-    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={onClose}>
-          <Text style={styles.closeBtn}>Close</Text>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
+      <View style={styles.topBar}>
+        <TouchableOpacity onPress={onOpenSettings} style={styles.menuBtn}>
+          <Text style={styles.menuIcon}>☰</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Daily Report</Text>
-        <View style={styles.closePlaceholder} />
+        <Text style={styles.appTitle}>TimeAnalyzer</Text>
+        <View style={styles.topBarSpacer} />
       </View>
 
       <View style={styles.dayNav}>
@@ -107,34 +125,44 @@ export default function ReportScreen({ onClose, initialDate }: Props) {
       ) : (
         <ScrollView contentContainerStyle={styles.list}>
           {entries.map(entry => (
-            <View key={entry.id} style={styles.entryCard}>
+            <TouchableOpacity
+              key={entry.id}
+              style={styles.entryCard}
+              onPress={() => setSelectedEntry(entry)}>
               <Text style={styles.timeRange}>
                 {formatTime(entry.timestampStart)} – {formatTime(entry.timestampEnd)}
               </Text>
               <Text style={styles.transcript}>{entry.transcript}</Text>
-            </View>
+            </TouchableOpacity>
           ))}
         </ScrollView>
       )}
+
+      <TouchableOpacity
+        style={[styles.fab, { bottom: insets.bottom + 24 }]}
+        onPress={onStartCheckIn}>
+        <Text style={styles.fabIcon}>+</Text>
+      </TouchableOpacity>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f2f2f7' },
-  header: {
+  topBar: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 10,
     backgroundColor: '#fff',
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#ccc',
+    borderBottomColor: '#e0e0e0',
   },
-  headerTitle: { fontSize: 17, fontWeight: '600' },
-  closeBtn: { fontSize: 17, color: '#007AFF' },
-  closePlaceholder: { width: 50 },
+  menuBtn: { padding: 4, width: 36 },
+  menuIcon: { fontSize: 22, color: '#007AFF' },
+  appTitle: { fontSize: 18, fontWeight: '700', color: '#000' },
+  topBarSpacer: { width: 36 },
   dayNav: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -151,7 +179,7 @@ const styles = StyleSheet.create({
   dayLabel: { fontSize: 16, fontWeight: '600', color: '#000' },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   emptyText: { fontSize: 16, color: '#6d6d72' },
-  list: { padding: 16, gap: 12 },
+  list: { padding: 16, gap: 12, paddingBottom: 100 },
   entryCard: {
     backgroundColor: '#fff',
     borderRadius: 12,
@@ -163,4 +191,19 @@ const styles = StyleSheet.create({
   },
   timeRange: { fontSize: 14, fontWeight: '700', color: '#007AFF', marginBottom: 8 },
   transcript: { fontSize: 15, color: '#000', lineHeight: 22 },
+  fab: {
+    position: 'absolute',
+    right: 24,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#007AFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#007AFF',
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  fabIcon: { fontSize: 32, color: '#fff', lineHeight: 36 },
 });

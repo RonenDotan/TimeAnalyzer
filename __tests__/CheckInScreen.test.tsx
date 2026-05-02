@@ -81,7 +81,7 @@ test('tapping Stop calls TranscriptionService.stop then shows confirm screen wit
   await reachConfirmScreen(renderer);
   expect(TranscriptionService.stop).toHaveBeenCalled();
   const tree = JSON.stringify(renderer.toJSON());
-  expect(tree).toContain('Did we get that right');
+  expect(tree).toContain('Review your check-in');
   expect(tree).toContain(FAKE_TRANSCRIPT);
 });
 

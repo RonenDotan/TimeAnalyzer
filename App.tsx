@@ -1,39 +1,56 @@
 import notifee, { EventType } from '@notifee/react-native';
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, View, StatusBar, TouchableOpacity } from 'react-native';
-import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { StatusBar } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import v from './version.json';
 import SchedulerService from './src/services/SchedulerService';
+import StorageService from './src/services/StorageService';
 import CheckInScreen from './src/screens/CheckInScreen';
 import ReportScreen from './src/screens/ReportScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 
-const version = `v${v.major}.${v.minor}.${v.ticket_id}.${v.sequence}`;
+export const version = `v${v.major}.${v.minor}.${v.ticket_id}.${v.sequence}`;
 
-type Screen = 'home' | 'settings' | 'checkin' | 'report';
+type Screen = 'entries' | 'checkin' | 'settings';
+type Period = { periodStart: number; periodEnd: number };
+
+// ID format: checkin-{periodStart}-{fireAt}
+function parsePeriodFromId(id: string): Period | null {
+  const match = id.match(/^checkin-(\d+)-(\d+)$/);
+  if (!match) return null;
+  return { periodStart: parseInt(match[1], 10), periodEnd: parseInt(match[2], 10) };
+}
 
 function AppContent(): React.JSX.Element {
-  const insets = useSafeAreaInsets();
-  const [screen, setScreen] = useState<Screen>('home');
+  const [screen, setScreen] = useState<Screen>('entries');
+  const [checkInPeriod, setCheckInPeriod] = useState<Period | null>(null);
 
   useEffect(() => {
     SchedulerService.requestPermission().then(granted => {
-      if (granted) {
-        SchedulerService.reschedule();
-      }
+      if (granted) SchedulerService.reschedule();
     });
 
-    // Handle notification tap while app is open
+    // Notification tap while app is open
     const unsub = notifee.onForegroundEvent(({ type, detail }) => {
-      if (type === EventType.PRESS && detail.notification?.id === 'end-of-day-report') {
-        setScreen('report');
+      if (type !== EventType.PRESS) return;
+      const id = detail.notification?.id ?? '';
+      if (id === 'end-of-day-report') {
+        setScreen('entries');
+      } else if (id.startsWith('checkin-')) {
+        const period = parsePeriodFromId(id);
+        if (period) setCheckInPeriod(period);
+        setScreen('checkin');
       }
     });
 
-    // Handle notification tap when app was closed/backgrounded
+    // Notification tap when app was closed/backgrounded
     notifee.getInitialNotification().then(initial => {
-      if (initial?.notification?.id === 'end-of-day-report') {
-        setScreen('report');
+      if (!initial) return;
+      const id = initial.notification?.id ?? '';
+      if (id.startsWith('checkin-')) {
+        const period = parsePeriodFromId(id);
+        if (period) setCheckInPeriod(period);
+        setScreen('checkin');
       }
     });
 
@@ -41,55 +58,50 @@ function AppContent(): React.JSX.Element {
   }, []);
 
   function handleSettingsClose(saved: boolean) {
-    setScreen('home');
-    if (saved) {
-      SchedulerService.reschedule();
-    }
+    setScreen('entries');
+    if (saved) SchedulerService.reschedule();
   }
 
-  function handleCheckInDone(transcript: string) {
-    console.log('Check-in confirmed:', transcript);
-    setScreen('home');
+  function handleCheckInDone() {
+    setScreen('entries');
+  }
+
+  async function handleStartCheckIn() {
+    const now = Date.now();
+    const entries = await StorageService.getAll();
+    let periodStart = now - 2 * 60 * 60 * 1000;
+    if (entries.length > 0) {
+      const last = entries.reduce((a, b) => a.timestampEnd > b.timestampEnd ? a : b);
+      periodStart = last.timestampEnd;
+    }
+    setCheckInPeriod({ periodStart, periodEnd: now });
+    setScreen('checkin');
   }
 
   if (screen === 'settings') {
     return <SettingsScreen onClose={handleSettingsClose} />;
   }
 
-  if (screen === 'report') {
-    return <ReportScreen onClose={() => setScreen('home')} />;
-  }
-
   if (screen === 'checkin') {
-    const now = Date.now();
+    const period = checkInPeriod ?? {
+      periodStart: Date.now() - 2 * 60 * 60 * 1000,
+      periodEnd: Date.now(),
+    };
     return (
       <CheckInScreen
-        periodStart={now - 2 * 60 * 60 * 1000}
-        periodEnd={now}
+        periodStart={period.periodStart}
+        periodEnd={period.periodEnd}
         onDone={handleCheckInDone}
-        onCancel={() => setScreen('home')}
+        onCancel={() => setScreen('entries')}
       />
     );
   }
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
-      <View style={styles.topBar}>
-        <TouchableOpacity onPress={() => setScreen('settings')} style={styles.gearButton}>
-          <Text style={styles.gear}>⚙️</Text>
-        </TouchableOpacity>
-      </View>
-      <View style={styles.center}>
-        <Text style={styles.title}>TimeAnalyzer</Text>
-        <TouchableOpacity style={styles.checkInBtn} onPress={() => setScreen('checkin')}>
-          <Text style={styles.checkInBtnText}>Start Check-in</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.reportBtn} onPress={() => setScreen('report')}>
-          <Text style={styles.reportBtnText}>View Report</Text>
-        </TouchableOpacity>
-      </View>
-      <Text style={styles.version}>{version}</Text>
-    </View>
+    <ReportScreen
+      onStartCheckIn={handleStartCheckIn}
+      onOpenSettings={() => setScreen('settings')}
+    />
   );
 }
 
@@ -101,61 +113,5 @@ function App(): React.JSX.Element {
     </SafeAreaProvider>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    backgroundColor: '#fff',
-  },
-  topBar: {
-    width: '100%',
-    alignItems: 'flex-end',
-    paddingHorizontal: 16,
-    paddingTop: 8,
-  },
-  gearButton: { padding: 8 },
-  gear: { fontSize: 22 },
-  center: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '700',
-    marginBottom: 8,
-  },
-  checkInBtn: {
-    marginTop: 24,
-    paddingHorizontal: 32,
-    paddingVertical: 14,
-    backgroundColor: '#007AFF',
-    borderRadius: 12,
-  },
-  checkInBtnText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#fff',
-  },
-  reportBtn: {
-    marginTop: 12,
-    paddingHorizontal: 32,
-    paddingVertical: 14,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: '#007AFF',
-  },
-  reportBtnText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#007AFF',
-  },
-  version: {
-    fontSize: 11,
-    color: '#bbb',
-    marginBottom: 8,
-  },
-});
 
 export default App;

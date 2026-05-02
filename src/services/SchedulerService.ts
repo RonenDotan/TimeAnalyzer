@@ -80,7 +80,7 @@ async function start(): Promise<void> {
   for (const { fireAt, periodStart } of slots) {
     await notifee.createTriggerNotification(
       {
-        id: `checkin-${fireAt}`,
+        id: `checkin-${periodStart}-${fireAt}`,
         title: 'Time for a check-in!',
         body: `What did you work on from ${formatTime(periodStart)} to ${formatTime(fireAt)}?`,
         android: {
