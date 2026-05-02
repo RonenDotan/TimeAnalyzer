@@ -3,6 +3,8 @@ import { Settings, DEFAULT_SETTINGS } from '../types/Settings';
 
 const SETTINGS_KEY = 'checkin_settings';
 const GROQ_KEY = 'groq_api_key';
+const CLAUDE_KEY = 'claude_api_key';
+const OPENAI_KEY = 'openai_api_key';
 
 async function load(): Promise<Settings> {
   const raw = await AsyncStorage.getItem(SETTINGS_KEY);
@@ -21,7 +23,6 @@ async function save(settings: Settings): Promise<void> {
 async function getGroqApiKey(): Promise<string> {
   const stored = await AsyncStorage.getItem(GROQ_KEY);
   if (stored) return stored;
-  // Fall back to local secrets file (gitignored)
   try {
     const { GROQ_API_KEY } = require('../secrets.local');
     return GROQ_API_KEY ?? '';
@@ -34,5 +35,44 @@ async function setGroqApiKey(key: string): Promise<void> {
   await AsyncStorage.setItem(GROQ_KEY, key);
 }
 
-const SettingsService = { load, save, getGroqApiKey, setGroqApiKey };
+async function getClaudeApiKey(): Promise<string> {
+  const stored = await AsyncStorage.getItem(CLAUDE_KEY);
+  if (stored) return stored;
+  try {
+    const { CLAUDE_API_KEY } = require('../secrets.local');
+    return CLAUDE_API_KEY ?? '';
+  } catch {
+    return '';
+  }
+}
+
+async function setClaudeApiKey(key: string): Promise<void> {
+  await AsyncStorage.setItem(CLAUDE_KEY, key);
+}
+
+async function getOpenAIApiKey(): Promise<string> {
+  const stored = await AsyncStorage.getItem(OPENAI_KEY);
+  if (stored) return stored;
+  try {
+    const { OPENAI_API_KEY } = require('../secrets.local');
+    return OPENAI_API_KEY ?? '';
+  } catch {
+    return '';
+  }
+}
+
+async function setOpenAIApiKey(key: string): Promise<void> {
+  await AsyncStorage.setItem(OPENAI_KEY, key);
+}
+
+const SettingsService = {
+  load,
+  save,
+  getGroqApiKey,
+  setGroqApiKey,
+  getClaudeApiKey,
+  setClaudeApiKey,
+  getOpenAIApiKey,
+  setOpenAIApiKey,
+};
 export default SettingsService;

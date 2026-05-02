@@ -16,10 +16,12 @@ beforeEach(() => {
   jest.spyOn(StorageService, 'getByDateRange').mockResolvedValue([]);
 });
 
-async function render(onClose = jest.fn()) {
+async function render(onStartCheckIn = jest.fn(), onOpenSettings = jest.fn()) {
   let renderer!: ReactTestRenderer.ReactTestRenderer;
   await ReactTestRenderer.act(async () => {
-    renderer = ReactTestRenderer.create(<ReportScreen onClose={onClose} />);
+    renderer = ReactTestRenderer.create(
+      <ReportScreen onStartCheckIn={onStartCheckIn} onOpenSettings={onOpenSettings} />,
+    );
   });
   return renderer;
 }
@@ -42,20 +44,20 @@ test('shows formatted time range for entry', async () => {
   expect(JSON.stringify(renderer.toJSON())).toContain('12:00');
 });
 
-test('calls onClose when Close is tapped', async () => {
-  const onClose = jest.fn();
-  const renderer = await render(onClose);
+test('calls onStartCheckIn when FAB is tapped', async () => {
+  const onStartCheckIn = jest.fn();
+  const renderer = await render(onStartCheckIn);
   await ReactTestRenderer.act(async () => {
-    const closeNode = renderer.root.findAll(
-      el => el.props.children === 'Close',
+    const fabNode = renderer.root.findAll(
+      el => el.props.children === '+',
     )[0];
-    let node = closeNode;
+    let node = fabNode;
     while (node && typeof node.props.onPress !== 'function') {
       node = node.parent!;
     }
     node.props.onPress();
   });
-  expect(onClose).toHaveBeenCalledTimes(1);
+  expect(onStartCheckIn).toHaveBeenCalledTimes(1);
 });
 
 test('end-of-day notification fires when no more check-ins today', async () => {

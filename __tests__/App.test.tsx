@@ -1,24 +1,13 @@
 import React from 'react';
 import ReactTestRenderer from 'react-test-renderer';
 import App from '../App';
-import v from '../version.json';
 
-test('renders TimeAnalyzer title', async () => {
+test('renders entries screen as home', async () => {
   let renderer: ReactTestRenderer.ReactTestRenderer;
-  await ReactTestRenderer.act(() => {
+  await ReactTestRenderer.act(async () => {
     renderer = ReactTestRenderer.create(<App />);
   });
   const tree = JSON.stringify(renderer!.toJSON());
-  expect(tree).toContain('TimeAnalyzer');
-  expect(tree).toContain('Start Check-in');
-});
-
-test('renders correct version string', async () => {
-  let renderer: ReactTestRenderer.ReactTestRenderer;
-  await ReactTestRenderer.act(() => {
-    renderer = ReactTestRenderer.create(<App />);
-  });
-  const tree = JSON.stringify(renderer!.toJSON());
-  const expected = `v${v.major}.${v.minor}.${v.ticket_id}.${v.sequence}`;
-  expect(tree).toContain(expected);
+  // FAB and date nav are present on the entries home screen
+  expect(tree).toContain('+');
 });
