@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import StorageService from '../services/StorageService';
 import { LogEntry } from '../types/LogEntry';
 import { Note } from '../types/Note';
+import NoteDetailScreen from './NoteDetailScreen';
 
 interface Props {
   entry: LogEntry;
@@ -44,6 +45,7 @@ export default function EntryDetailScreen({ entry, onSave, onClose }: Props) {
   const [notes, setNotes] = useState<Note[]>([]);
   const [editingNotes, setEditingNotes] = useState<Record<number, string>>({});
   const [newNoteText, setNewNoteText] = useState('');
+  const [selectedNote, setSelectedNote] = useState<Note | null>(null);
 
   useEffect(() => {
     StorageService.getNotesByEntryId(entry.id).then(setNotes);
@@ -118,6 +120,19 @@ export default function EntryDetailScreen({ entry, onSave, onClose }: Props) {
       delete next[id];
       return next;
     });
+  }
+
+  if (selectedNote) {
+    return (
+      <NoteDetailScreen
+        note={selectedNote}
+        onSave={updated => {
+          setNotes(prev => prev.map(n => n.id === updated.id ? updated : n));
+          setSelectedNote(null);
+        }}
+        onClose={() => setSelectedNote(null)}
+      />
+    );
   }
 
   return (
@@ -198,7 +213,11 @@ export default function EntryDetailScreen({ entry, onSave, onClose }: Props) {
         )}
 
         {notes.map(note => (
-          <View key={note.id} style={styles.noteCard}>
+          <TouchableOpacity
+            key={note.id}
+            style={styles.noteCard}
+            onPress={() => !editing && setSelectedNote(note)}
+            activeOpacity={editing ? 1 : 0.7}>
             <View style={styles.noteCardHeader}>
               <Text style={styles.noteCardMeta}>
                 #{note.id} · {new Date(note.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -220,7 +239,7 @@ export default function EntryDetailScreen({ entry, onSave, onClose }: Props) {
             ) : (
               <Text style={styles.noteText}>{note.text}</Text>
             )}
-          </View>
+          </TouchableOpacity>
         ))}
 
         {/* Add new note — always available */}
