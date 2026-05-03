@@ -103966,7 +103966,7 @@ __d(function(global, require, _importDefaultUnused, _importAllUnused, module, ex
   "major": 0,
   "minor": 0,
   "ticket_id": 7,
-  "sequence": 2
+  "sequence": 4
 }
 ;
 },638,[],"version.json");
@@ -104894,10 +104894,10 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       });
       db.executeSync(`
       CREATE TABLE IF NOT EXISTS log_entries (
-        id TEXT PRIMARY KEY,
+        id             INTEGER PRIMARY KEY AUTOINCREMENT,
         timestamp_start INTEGER NOT NULL,
-        timestamp_end INTEGER NOT NULL,
-        transcript TEXT NOT NULL
+        timestamp_end   INTEGER NOT NULL,
+        transcript      TEXT NOT NULL
       )
     `);
     }
@@ -104914,7 +104914,11 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
   var SQLiteStorageProvider = {
     save(entry) {
       return (0, _asyncToGenerator2.default)(function* () {
-        getDb().executeSync('INSERT OR REPLACE INTO log_entries (id, timestamp_start, timestamp_end, transcript) VALUES (?, ?, ?, ?)', [entry.id, entry.timestampStart, entry.timestampEnd, entry.transcript]);
+        var result = getDb().executeSync('INSERT INTO log_entries (timestamp_start, timestamp_end, transcript) VALUES (?, ?, ?)', [entry.timestampStart, entry.timestampEnd, entry.transcript]);
+        return {
+          ...entry,
+          id: result.insertId
+        };
       })();
     },
     update(entry) {
@@ -105649,7 +105653,6 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
     function _handleConfirm() {
       _handleConfirm = (0, _asyncToGenerator2.default)(function* () {
         yield _StorageService.default.save({
-          id: `${periodStart}-${periodEnd}`,
           timestampStart: periodStart,
           timestampEnd: periodEnd,
           transcript

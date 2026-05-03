@@ -10,10 +10,10 @@ function getDb(): DB {
     db = open({ name: 'time-analyzer.sqlite' });
     db.executeSync(`
       CREATE TABLE IF NOT EXISTS log_entries (
-        id TEXT PRIMARY KEY,
+        id             INTEGER PRIMARY KEY AUTOINCREMENT,
         timestamp_start INTEGER NOT NULL,
-        timestamp_end INTEGER NOT NULL,
-        transcript TEXT NOT NULL
+        timestamp_end   INTEGER NOT NULL,
+        transcript      TEXT NOT NULL
       )
     `);
   }
@@ -22,7 +22,7 @@ function getDb(): DB {
 
 function rowToEntry(row: Record<string, unknown>): LogEntry {
   return {
-    id: row.id as string,
+    id: row.id as number,
     timestampStart: row.timestamp_start as number,
     timestampEnd: row.timestamp_end as number,
     transcript: row.transcript as string,
@@ -30,11 +30,12 @@ function rowToEntry(row: Record<string, unknown>): LogEntry {
 }
 
 const SQLiteStorageProvider: StorageProvider = {
-  async save(entry: LogEntry): Promise<void> {
-    getDb().executeSync(
-      'INSERT OR REPLACE INTO log_entries (id, timestamp_start, timestamp_end, transcript) VALUES (?, ?, ?, ?)',
-      [entry.id, entry.timestampStart, entry.timestampEnd, entry.transcript],
+  async save(entry: Omit<LogEntry, 'id'>): Promise<LogEntry> {
+    const result = getDb().executeSync(
+      'INSERT INTO log_entries (timestamp_start, timestamp_end, transcript) VALUES (?, ?, ?)',
+      [entry.timestampStart, entry.timestampEnd, entry.transcript],
     );
+    return { ...entry, id: result.insertId as number };
   },
 
   async update(entry: LogEntry): Promise<void> {
@@ -59,7 +60,7 @@ const SQLiteStorageProvider: StorageProvider = {
     return (result.rows ?? []).map(rowToEntry);
   },
 
-  async delete(id: string): Promise<void> {
+  async delete(id: number): Promise<void> {
     getDb().executeSync('DELETE FROM log_entries WHERE id = ?', [id]);
   },
 };

@@ -5,7 +5,7 @@ import StorageService from '../src/services/StorageService';
 import { LogEntry } from '../src/types/LogEntry';
 
 const entry: LogEntry = {
-  id: 'e1',
+  id: 1,
   timestampStart: new Date('2026-05-02T10:00:00').getTime(),
   timestampEnd: new Date('2026-05-02T12:00:00').getTime(),
   transcript: 'Worked on the report screen.',

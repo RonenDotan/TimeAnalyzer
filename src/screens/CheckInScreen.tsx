@@ -115,7 +115,6 @@ export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel
 
   async function handleConfirm() {
     await StorageService.save({
-      id: `${periodStart}-${periodEnd}`,
       timestampStart: periodStart,
       timestampEnd: periodEnd,
       transcript,
