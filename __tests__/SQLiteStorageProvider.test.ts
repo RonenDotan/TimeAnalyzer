@@ -4,7 +4,7 @@ const mockExecuteSync = jest.fn().mockReturnValue({ rows: [], insertId: 1 });
 const mockOpen = jest.fn(() => ({ executeSync: mockExecuteSync }));
 
 jest.mock('@op-engineering/op-sqlite', () => ({
-  open: (...args: unknown[]) => mockOpen(...args),
+  open: mockOpen,
 }));
 
 let provider: {
@@ -44,7 +44,7 @@ test('schema uses INTEGER PRIMARY KEY AUTOINCREMENT', async () => {
 test('save() inserts without id and returns entry with assigned id', async () => {
   const saved = await provider.save(entryInput);
   const insertCall = mockExecuteSync.mock.calls.find(
-    ([sql]: [string]) => sql.includes('INSERT'),
+    ([sql]: unknown[]) => (sql as string).includes('INSERT'),
   );
   expect(insertCall).toBeDefined();
   const [sql, params] = insertCall!;
@@ -56,7 +56,7 @@ test('save() inserts without id and returns entry with assigned id', async () =>
 test('getAll() queries all entries ordered by timestamp_end DESC', async () => {
   await provider.getAll();
   const selectCall = mockExecuteSync.mock.calls.find(
-    ([sql]: [string]) => sql.includes('SELECT'),
+    ([sql]: unknown[]) => (sql as string).includes('SELECT'),
   );
   expect(selectCall).toBeDefined();
   expect(selectCall![0]).toMatch(/ORDER BY timestamp_end DESC/);
@@ -88,7 +88,7 @@ test('getByDateRange() passes date range as unix timestamps', async () => {
   const end = new Date('2026-05-02T00:00:00');
   await provider.getByDateRange(start, end);
   const rangeCall = mockExecuteSync.mock.calls.find(
-    ([sql]: [string]) => sql.includes('WHERE'),
+    ([sql]: unknown[]) => (sql as string).includes('WHERE'),
   );
   expect(rangeCall).toBeDefined();
   expect(rangeCall![1]).toEqual([start.getTime(), end.getTime()]);
@@ -97,7 +97,7 @@ test('getByDateRange() passes date range as unix timestamps', async () => {
 test('delete() removes entry by integer id', async () => {
   await provider.delete(1);
   const deleteCall = mockExecuteSync.mock.calls.find(
-    ([sql]: [string]) => sql.includes('DELETE'),
+    ([sql]: unknown[]) => (sql as string).includes('DELETE'),
   );
   expect(deleteCall).toBeDefined();
   expect(deleteCall![1]).toEqual([1]);

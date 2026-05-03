@@ -3,17 +3,26 @@ import { StorageProvider } from '../src/providers/storage/StorageProvider';
 import StorageService from '../src/services/StorageService';
 
 const entry: LogEntry = {
-  id: 'test-id-1',
+  id: 1,
   timestampStart: 1000000,
   timestampEnd: 1007200000,
   transcript: 'I was debugging the auth module.',
 };
 
+const noteStubs = {
+  saveNote: jest.fn(),
+  updateNote: jest.fn(),
+  getNotesByEntryId: jest.fn(),
+  deleteNote: jest.fn(),
+};
+
 const mockProvider: StorageProvider = {
   save: jest.fn(),
+  update: jest.fn(),
   getAll: jest.fn(),
   getByDateRange: jest.fn(),
   delete: jest.fn(),
+  ...noteStubs,
 };
 
 beforeEach(() => {
@@ -44,17 +53,19 @@ test('getByDateRange() delegates to active provider with correct dates', async (
 });
 
 test('deleteEntry() delegates to active provider with correct id', async () => {
-  await StorageService.deleteEntry('test-id-1');
-  expect(mockProvider.delete).toHaveBeenCalledWith('test-id-1');
+  await StorageService.deleteEntry(1);
+  expect(mockProvider.delete).toHaveBeenCalledWith(1);
   expect(mockProvider.delete).toHaveBeenCalledTimes(1);
 });
 
 test('setProvider() switches the active provider', async () => {
   const otherProvider: StorageProvider = {
     save: jest.fn(),
+    update: jest.fn(),
     getAll: jest.fn().mockResolvedValue([]),
     getByDateRange: jest.fn(),
     delete: jest.fn(),
+    ...noteStubs,
   };
   StorageService.setProvider(otherProvider);
   await StorageService.getAll();
