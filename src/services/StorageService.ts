@@ -1,4 +1,5 @@
 import { LogEntry } from '../types/LogEntry';
+import { Note } from '../types/Note';
 import { StorageProvider } from '../providers/storage/StorageProvider';
 import SQLiteStorageProvider from '../providers/storage/SQLiteStorageProvider';
 
@@ -28,5 +29,25 @@ async function deleteEntry(id: number): Promise<void> {
   return activeProvider.delete(id);
 }
 
-const StorageService = { save, update, getAll, getByDateRange, deleteEntry, setProvider };
+async function saveNote(note: Omit<Note, 'id'>): Promise<Note> {
+  return activeProvider.saveNote(note);
+}
+
+async function updateNote(note: Note): Promise<void> {
+  return activeProvider.updateNote(note);
+}
+
+async function getNotesByEntryId(entryId: number): Promise<Note[]> {
+  return activeProvider.getNotesByEntryId(entryId);
+}
+
+async function deleteNote(id: number): Promise<void> {
+  return activeProvider.deleteNote(id);
+}
+
+const StorageService = {
+  save, update, getAll, getByDateRange, deleteEntry,
+  saveNote, updateNote, getNotesByEntryId, deleteNote,
+  setProvider,
+};
 export default StorageService;

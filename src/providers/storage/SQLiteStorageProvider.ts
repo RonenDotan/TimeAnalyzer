@@ -1,5 +1,6 @@
 import { open } from '@op-engineering/op-sqlite';
 import { LogEntry } from '../../types/LogEntry';
+import { Note } from '../../types/Note';
 import { StorageProvider } from './StorageProvider';
 
 type DB = ReturnType<typeof open>;
@@ -10,10 +11,18 @@ function getDb(): DB {
     db = open({ name: 'time-analyzer.sqlite' });
     db.executeSync(`
       CREATE TABLE IF NOT EXISTS log_entries (
-        id             INTEGER PRIMARY KEY AUTOINCREMENT,
+        id              INTEGER PRIMARY KEY AUTOINCREMENT,
         timestamp_start INTEGER NOT NULL,
         timestamp_end   INTEGER NOT NULL,
         transcript      TEXT NOT NULL
+      )
+    `);
+    db.executeSync(`
+      CREATE TABLE IF NOT EXISTS notes (
+        id         INTEGER PRIMARY KEY AUTOINCREMENT,
+        entry_id   INTEGER NOT NULL,
+        text       TEXT NOT NULL,
+        created_at INTEGER NOT NULL
       )
     `);
   }
@@ -26,6 +35,15 @@ function rowToEntry(row: Record<string, unknown>): LogEntry {
     timestampStart: row.timestamp_start as number,
     timestampEnd: row.timestamp_end as number,
     transcript: row.transcript as string,
+  };
+}
+
+function rowToNote(row: Record<string, unknown>): Note {
+  return {
+    id: row.id as number,
+    entryId: row.entry_id as number,
+    text: row.text as string,
+    createdAt: row.created_at as number,
   };
 }
 
@@ -62,6 +80,33 @@ const SQLiteStorageProvider: StorageProvider = {
 
   async delete(id: number): Promise<void> {
     getDb().executeSync('DELETE FROM log_entries WHERE id = ?', [id]);
+  },
+
+  async saveNote(note: Omit<Note, 'id'>): Promise<Note> {
+    const result = getDb().executeSync(
+      'INSERT INTO notes (entry_id, text, created_at) VALUES (?, ?, ?)',
+      [note.entryId, note.text, note.createdAt],
+    );
+    return { ...note, id: result.insertId as number };
+  },
+
+  async updateNote(note: Note): Promise<void> {
+    getDb().executeSync(
+      'UPDATE notes SET text = ? WHERE id = ?',
+      [note.text, note.id],
+    );
+  },
+
+  async getNotesByEntryId(entryId: number): Promise<Note[]> {
+    const result = getDb().executeSync(
+      'SELECT * FROM notes WHERE entry_id = ? ORDER BY created_at ASC',
+      [entryId],
+    );
+    return (result.rows ?? []).map(rowToNote);
+  },
+
+  async deleteNote(id: number): Promise<void> {
+    getDb().executeSync('DELETE FROM notes WHERE id = ?', [id]);
   },
 };
 
