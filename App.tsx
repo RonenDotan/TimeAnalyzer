@@ -9,14 +9,16 @@ import StorageService from './src/services/StorageService';
 import DrawerMenu, { DrawerScreen } from './src/components/DrawerMenu';
 import { ThemeProvider } from './src/contexts/ThemeContext';
 import CheckInScreen from './src/screens/CheckInScreen';
+import DayPlanScreen from './src/screens/DayPlanScreen';
 import ReportScreen from './src/screens/ReportScreen';
+
 import ReportsScreen from './src/screens/ReportsScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 import { Theme } from './src/types/Settings';
 
 export const version = `v${v.major}.${v.minor}.${v.ticket_id}.${v.sequence}`;
 
-type Screen = 'entries' | 'checkin' | 'settings' | 'reports';
+type Screen = 'entries' | 'checkin' | 'settings' | 'reports' | 'dayplan';
 type Period = { periodStart: number; periodEnd: number };
 
 // ID format: checkin-{periodStart}-{fireAt}
@@ -29,6 +31,7 @@ function parsePeriodFromId(id: string): Period | null {
 function AppContent(): React.JSX.Element {
   const [screen, setScreen] = useState<Screen>('entries');
   const [checkInPeriod, setCheckInPeriod] = useState<Period | null>(null);
+  const [planDate, setPlanDate] = useState<Date | undefined>(undefined);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [themeSetting, setThemeSetting] = useState<Theme>('system');
   const systemScheme = useColorScheme();
@@ -49,6 +52,9 @@ function AppContent(): React.JSX.Element {
       const id = detail.notification?.id ?? '';
       if (id === 'end-of-day-report') {
         setScreen('entries');
+      } else if (id.startsWith('daily-plan-')) {
+        setPlanDate(undefined);
+        setScreen('dayplan');
       } else if (id.startsWith('checkin-')) {
         const period = parsePeriodFromId(id);
         if (period) setCheckInPeriod(period);
@@ -59,7 +65,10 @@ function AppContent(): React.JSX.Element {
     notifee.getInitialNotification().then(initial => {
       if (!initial) return;
       const id = initial.notification?.id ?? '';
-      if (id.startsWith('checkin-')) {
+      if (id.startsWith('daily-plan-')) {
+        setPlanDate(undefined);
+        setScreen('dayplan');
+      } else if (id.startsWith('checkin-')) {
         const period = parsePeriodFromId(id);
         if (period) setCheckInPeriod(period);
         setScreen('checkin');
@@ -93,23 +102,30 @@ function AppContent(): React.JSX.Element {
     setScreen('checkin');
   }
 
+  function handleEditPlan(date: Date) {
+    setPlanDate(date);
+    setScreen('dayplan');
+  }
+
   function handleDrawerNavigate(dest: DrawerScreen) {
-    if (dest === 'settings') {
-      setScreen('settings');
-    } else {
-      setScreen(dest);
+    if (dest === 'dayplan') {
+      setPlanDate(undefined);
     }
+    setScreen(dest);
     setDrawerOpen(false);
   }
 
   const drawerScreen: DrawerScreen =
     screen === 'settings' ? 'settings' :
-    screen === 'reports'  ? 'reports'  : 'entries';
+    screen === 'reports'  ? 'reports'  :
+    screen === 'dayplan'  ? 'dayplan'  : 'entries';
 
   return (
     <ThemeProvider isDark={isDark}>
       {screen === 'settings' ? (
         <SettingsScreen onClose={handleSettingsClose} />
+      ) : screen === 'dayplan' ? (
+        <DayPlanScreen initialDate={planDate} onClose={() => setScreen('entries')} />
       ) : screen === 'checkin' ? (
         <CheckInScreen
           periodStart={checkInPeriod?.periodStart ?? Date.now() - 2 * 60 * 60 * 1000}
@@ -125,6 +141,7 @@ function AppContent(): React.JSX.Element {
             <ReportScreen
               onStartCheckIn={handleStartCheckIn}
               onOpenMenu={() => setDrawerOpen(true)}
+              onEditPlan={handleEditPlan}
             />
           )}
           <DrawerMenu

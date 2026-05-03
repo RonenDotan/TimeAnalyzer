@@ -73,7 +73,10 @@ test('stop() cancels all trigger notifications', async () => {
 test('reschedule() stops then starts', async () => {
   await SchedulerService.reschedule();
   expect(notifee.cancelTriggerNotifications).toHaveBeenCalled();
-  expect(notifee.createTriggerNotification).toHaveBeenCalledTimes(50);
+  // 50 check-in + up to 4 daily-plan notifications (5-day window minus today)
+  const count = (notifee.createTriggerNotification as jest.Mock).mock.calls.length;
+  expect(count).toBeGreaterThanOrEqual(50);
+  expect(count).toBeLessThanOrEqual(54);
 });
 
 test('requestPermission() returns true when granted', async () => {

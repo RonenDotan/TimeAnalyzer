@@ -97,9 +97,37 @@ async function stop(): Promise<void> {
   await notifee.cancelTriggerNotifications();
 }
 
+function toDateString(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+async function scheduleDailyPlan(settings: Settings, now: number): Promise<void> {
+  if (!settings.dailyPlanEnabled) return;
+  await ensureChannel();
+  for (let dayOffset = 0; dayOffset < 5; dayOffset++) {
+    const d = new Date(now + dayOffset * 86_400_000);
+    const midnight = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+    if (!isAllowedDay(midnight, settings.checkInDays)) continue;
+    const fireAt = midnight + settings.dailyPlanHour * 3_600_000;
+    if (fireAt <= now) continue;
+    const dateStr = toDateString(d);
+    await notifee.createTriggerNotification(
+      {
+        id: `daily-plan-${dateStr}`,
+        title: 'Time to plan your day 🗓',
+        body: "What's on for today? Tap to set your daily plan.",
+        android: { channelId: config.notificationChannelId, pressAction: { id: 'default' } },
+      },
+      { type: TriggerType.TIMESTAMP, timestamp: fireAt },
+    );
+  }
+}
+
 async function reschedule(): Promise<void> {
   await stop();
+  const settings = await SettingsService.load();
   await start();
+  await scheduleDailyPlan(settings, Date.now());
 }
 
 async function requestPermission(): Promise<boolean> {
@@ -139,6 +167,7 @@ const SchedulerService = {
   start,
   stop,
   reschedule,
+  scheduleDailyPlan,
   requestPermission,
   hasMoreCheckInsToday,
   fireEndOfDayReport,

@@ -11,9 +11,11 @@ export interface Settings {
   frequencyMinutes: FrequencyMinutes;
   transcriptionProvider: TranscriptionProvider;
   analysisProvider: AnalysisProvider;
-  noteKeyword: string;   // spoken word that starts a note (default: "note")
-  appendKeyword: string; // spoken word that appends transcription (default: "append")
+  noteKeyword: string;
+  appendKeyword: string;
   theme: Theme;
+  dailyPlanEnabled: boolean;
+  dailyPlanHour: number; // 0–23
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -27,6 +29,8 @@ export const DEFAULT_SETTINGS: Settings = {
   noteKeyword: 'note',
   appendKeyword: 'append',
   theme: 'system',
+  dailyPlanEnabled: true,
+  dailyPlanHour: 8,
 };
 
 export const THEME_OPTIONS: { label: string; sublabel: string; value: Theme }[] = [

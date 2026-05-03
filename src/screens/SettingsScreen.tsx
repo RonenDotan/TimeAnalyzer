@@ -161,6 +161,28 @@ export default function SettingsScreen({ onClose }: Props) {
               )}
             </View>
 
+            <Text style={styles.sectionLabel}>DAILY PLAN</Text>
+            <View style={styles.card}>
+              <View style={styles.row}>
+                <Text style={styles.rowLabel}>Daily plan reminder</Text>
+                <Switch value={settings.dailyPlanEnabled} onValueChange={v => set({ dailyPlanEnabled: v })} />
+              </View>
+              {settings.dailyPlanEnabled && (
+                <View style={[styles.row, styles.rowBorder]}>
+                  <Text style={styles.rowLabel}>Reminder time</Text>
+                  <View style={styles.stepper}>
+                    <TouchableOpacity onPress={() => set({ dailyPlanHour: Math.max(0, settings.dailyPlanHour - 1) })}>
+                      <Text style={styles.stepperBtn}>−</Text>
+                    </TouchableOpacity>
+                    <Text style={styles.stepperVal}>{settings.dailyPlanHour.toString().padStart(2, '0')}:00</Text>
+                    <TouchableOpacity onPress={() => set({ dailyPlanHour: Math.min(23, settings.dailyPlanHour + 1) })}>
+                      <Text style={styles.stepperBtn}>+</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              )}
+            </View>
+
             <Text style={styles.sectionLabel}>CHECK-IN DAYS</Text>
             <View style={styles.card}>
               {DAY_LABELS.map((label, i) => (

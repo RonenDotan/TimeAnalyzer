@@ -1,6 +1,7 @@
 import { open } from '@op-engineering/op-sqlite';
 import { LogEntry } from '../../types/LogEntry';
 import { Note } from '../../types/Note';
+import { DayPlan, ParsedBlock, PlanBlock } from '../../types/DayPlan';
 import { StorageProvider } from './StorageProvider';
 
 type DB = ReturnType<typeof open>;
@@ -25,6 +26,22 @@ function getDb(): DB {
         created_at INTEGER NOT NULL
       )
     `);
+    db.executeSync(`
+      CREATE TABLE IF NOT EXISTS day_plans (
+        id         INTEGER PRIMARY KEY AUTOINCREMENT,
+        date       TEXT NOT NULL UNIQUE,
+        created_at INTEGER NOT NULL
+      )
+    `);
+    db.executeSync(`
+      CREATE TABLE IF NOT EXISTS plan_blocks (
+        id        INTEGER PRIMARY KEY AUTOINCREMENT,
+        plan_id   INTEGER NOT NULL,
+        start_min INTEGER NOT NULL,
+        end_min   INTEGER NOT NULL,
+        activity  TEXT NOT NULL
+      )
+    `);
   }
   return db;
 }
@@ -47,6 +64,24 @@ function rowToNote(row: Record<string, unknown>): Note {
   };
 }
 
+function rowToDayPlan(row: Record<string, unknown>): DayPlan {
+  return {
+    id: row.id as number,
+    date: row.date as string,
+    createdAt: row.created_at as number,
+  };
+}
+
+function rowToPlanBlock(row: Record<string, unknown>): PlanBlock {
+  return {
+    id: row.id as number,
+    planId: row.plan_id as number,
+    startMin: row.start_min as number,
+    endMin: row.end_min as number,
+    activity: row.activity as string,
+  };
+}
+
 const SQLiteStorageProvider: StorageProvider = {
   async save(entry: Omit<LogEntry, 'id'>): Promise<LogEntry> {
     const result = getDb().executeSync(
@@ -64,9 +99,7 @@ const SQLiteStorageProvider: StorageProvider = {
   },
 
   async getAll(): Promise<LogEntry[]> {
-    const result = getDb().executeSync(
-      'SELECT * FROM log_entries ORDER BY timestamp_end DESC',
-    );
+    const result = getDb().executeSync('SELECT * FROM log_entries ORDER BY timestamp_end DESC');
     return (result.rows ?? []).map(rowToEntry);
   },
 
@@ -91,10 +124,7 @@ const SQLiteStorageProvider: StorageProvider = {
   },
 
   async updateNote(note: Note): Promise<void> {
-    getDb().executeSync(
-      'UPDATE notes SET text = ? WHERE id = ?',
-      [note.text, note.id],
-    );
+    getDb().executeSync('UPDATE notes SET text = ? WHERE id = ?', [note.text, note.id]);
   },
 
   async getNotesByEntryId(entryId: number): Promise<Note[]> {
@@ -107,6 +137,49 @@ const SQLiteStorageProvider: StorageProvider = {
 
   async deleteNote(id: number): Promise<void> {
     getDb().executeSync('DELETE FROM notes WHERE id = ?', [id]);
+  },
+
+  async upsertDayPlan(date: string): Promise<DayPlan> {
+    const existing = getDb().executeSync(
+      'SELECT * FROM day_plans WHERE date = ?', [date],
+    );
+    if (existing.rows && existing.rows.length > 0) {
+      return rowToDayPlan(existing.rows[0]);
+    }
+    const result = getDb().executeSync(
+      'INSERT INTO day_plans (date, created_at) VALUES (?, ?)',
+      [date, Date.now()],
+    );
+    return { id: result.insertId as number, date, createdAt: Date.now() };
+  },
+
+  async getDayPlan(date: string): Promise<DayPlan | null> {
+    const result = getDb().executeSync(
+      'SELECT * FROM day_plans WHERE date = ?', [date],
+    );
+    if (!result.rows || result.rows.length === 0) return null;
+    return rowToDayPlan(result.rows[0]);
+  },
+
+  async replacePlanBlocks(planId: number, blocks: ParsedBlock[]): Promise<PlanBlock[]> {
+    getDb().executeSync('DELETE FROM plan_blocks WHERE plan_id = ?', [planId]);
+    const saved: PlanBlock[] = [];
+    for (const block of blocks) {
+      const result = getDb().executeSync(
+        'INSERT INTO plan_blocks (plan_id, start_min, end_min, activity) VALUES (?, ?, ?, ?)',
+        [planId, block.startMin, block.endMin, block.activity],
+      );
+      saved.push({ ...block, id: result.insertId as number, planId });
+    }
+    return saved;
+  },
+
+  async getPlanBlocks(planId: number): Promise<PlanBlock[]> {
+    const result = getDb().executeSync(
+      'SELECT * FROM plan_blocks WHERE plan_id = ? ORDER BY start_min ASC',
+      [planId],
+    );
+    return (result.rows ?? []).map(rowToPlanBlock);
   },
 };
 

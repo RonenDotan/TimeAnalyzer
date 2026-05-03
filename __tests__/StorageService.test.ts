@@ -16,6 +16,13 @@ const noteStubs = {
   deleteNote: jest.fn(),
 };
 
+const planStubs = {
+  upsertDayPlan: jest.fn(),
+  getDayPlan: jest.fn(),
+  replacePlanBlocks: jest.fn(),
+  getPlanBlocks: jest.fn(),
+};
+
 const mockProvider: StorageProvider = {
   save: jest.fn(),
   update: jest.fn(),
@@ -23,6 +30,7 @@ const mockProvider: StorageProvider = {
   getByDateRange: jest.fn(),
   delete: jest.fn(),
   ...noteStubs,
+  ...planStubs,
 };
 
 beforeEach(() => {
@@ -66,6 +74,7 @@ test('setProvider() switches the active provider', async () => {
     getByDateRange: jest.fn(),
     delete: jest.fn(),
     ...noteStubs,
+    ...planStubs,
   };
   StorageService.setProvider(otherProvider);
   await StorageService.getAll();

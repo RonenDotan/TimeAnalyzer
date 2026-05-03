@@ -19,6 +19,7 @@ import StorageService from '../services/StorageService';
 import TranscriptionService from '../services/TranscriptionService';
 import { parseTranscriptAndNotes } from '../utils/parseTranscript';
 import { ColorPalette, useTheme } from '../contexts/ThemeContext';
+import PlanHintBar from '../components/PlanHintBar';
 
 type Phase = 'idle' | 'recording' | 'transcribing' | 'confirming';
 
@@ -183,6 +184,9 @@ export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel
         </Text>
         <Text style={styles.periodSub}>What did you work on?</Text>
       </View>
+      <View style={styles.hintRow}>
+        <PlanHintBar periodStart={periodStart} periodEnd={periodEnd} />
+      </View>
 
       <View style={styles.body}>
         {phase === 'idle' && (
@@ -309,6 +313,7 @@ function makeStyles(colors: ColorPalette) {
     },
     periodText: { fontSize: 22, fontWeight: '700', color: colors.text },
     periodSub: { fontSize: 14, color: colors.textSecondary, marginTop: 4 },
+    hintRow: { paddingHorizontal: 24, width: '100%' },
     body: {
       flex: 1,
       alignItems: 'center',

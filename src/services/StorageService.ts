@@ -1,5 +1,6 @@
 import { LogEntry } from '../types/LogEntry';
 import { Note } from '../types/Note';
+import { DayPlan, ParsedBlock, PlanBlock } from '../types/DayPlan';
 import { StorageProvider } from '../providers/storage/StorageProvider';
 import SQLiteStorageProvider from '../providers/storage/SQLiteStorageProvider';
 
@@ -45,9 +46,26 @@ async function deleteNote(id: number): Promise<void> {
   return activeProvider.deleteNote(id);
 }
 
+async function upsertDayPlan(date: string): Promise<DayPlan> {
+  return activeProvider.upsertDayPlan(date);
+}
+
+async function getDayPlan(date: string): Promise<DayPlan | null> {
+  return activeProvider.getDayPlan(date);
+}
+
+async function replacePlanBlocks(planId: number, blocks: ParsedBlock[]): Promise<PlanBlock[]> {
+  return activeProvider.replacePlanBlocks(planId, blocks);
+}
+
+async function getPlanBlocks(planId: number): Promise<PlanBlock[]> {
+  return activeProvider.getPlanBlocks(planId);
+}
+
 const StorageService = {
   save, update, getAll, getByDateRange, deleteEntry,
   saveNote, updateNote, getNotesByEntryId, deleteNote,
+  upsertDayPlan, getDayPlan, replacePlanBlocks, getPlanBlocks,
   setProvider,
 };
 export default StorageService;

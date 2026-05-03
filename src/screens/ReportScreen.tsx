@@ -12,10 +12,14 @@ import EntryDetailScreen from './EntryDetailScreen';
 import StorageService from '../services/StorageService';
 import { LogEntry } from '../types/LogEntry';
 import { ColorPalette, useTheme } from '../contexts/ThemeContext';
+import { DayPlan, PlanBlock } from '../types/DayPlan';
+import { allMatchingBlocks, isCovered } from '../utils/planMatching';
+import { formatMin } from '../utils/parseDayPlan';
 
 interface Props {
   onStartCheckIn: () => void;
   onOpenMenu: () => void;
+  onEditPlan?: (date: Date) => void;
   initialDate?: Date;
 }
 
@@ -49,18 +53,31 @@ function isToday(date: Date): boolean {
   );
 }
 
-export default function ReportScreen({ onStartCheckIn, onOpenMenu, initialDate }: Props) {
+export default function ReportScreen({ onStartCheckIn, onOpenMenu, onEditPlan, initialDate }: Props) {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const [currentDate, setCurrentDate] = useState<Date>(initialDate ?? new Date());
   const [entries, setEntries] = useState<LogEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedEntry, setSelectedEntry] = useState<LogEntry | null>(null);
+  const [dayPlan, setDayPlan] = useState<DayPlan | null>(null);
+  const [planBlocks, setPlanBlocks] = useState<PlanBlock[]>([]);
 
   const loadEntries = useCallback(async (date: Date) => {
     setLoading(true);
-    const results = await StorageService.getByDateRange(startOfDay(date), endOfDay(date));
+    const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    const [results, plan] = await Promise.all([
+      StorageService.getByDateRange(startOfDay(date), endOfDay(date)),
+      StorageService.getDayPlan(dateStr),
+    ]);
     setEntries(results.sort((a, b) => a.timestampStart - b.timestampStart));
+    setDayPlan(plan);
+    if (plan) {
+      const blocks = await StorageService.getPlanBlocks(plan.id);
+      setPlanBlocks(blocks);
+    } else {
+      setPlanBlocks([]);
+    }
     setLoading(false);
   }, []);
 
@@ -118,29 +135,67 @@ export default function ReportScreen({ onStartCheckIn, onOpenMenu, initialDate }
       </View>
 
       {loading ? (
-        <View style={styles.centered}>
+        <View style={styles.centeredFull}>
           <ActivityIndicator size="large" color={colors.accent} />
-        </View>
-      ) : entries.length === 0 ? (
-        <View style={styles.centered}>
-          <Text style={styles.emptyText}>No entries for this day</Text>
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.list}>
-          {entries.map(entry => (
-            <TouchableOpacity
-              key={entry.id}
-              style={styles.entryCard}
-              onPress={() => setSelectedEntry(entry)}>
-              <View style={styles.entryCardHeader}>
-                <Text style={styles.timeRange}>
-                  {formatTime(entry.timestampStart)} – {formatTime(entry.timestampEnd)}
+          {/* Plan section — always shown if plan exists */}
+          {planBlocks.length > 0 && (() => {
+            const coveredCount = planBlocks.filter(b => isCovered(b, entries)).length;
+            return (
+              <View style={styles.planSection}>
+                <TouchableOpacity
+                  onPress={() => onEditPlan?.(currentDate)}
+                  style={styles.planHeaderRow}>
+                  <Text style={styles.planHeader}>PLAN</Text>
+                  <Text style={styles.planEditHint}>Edit ›</Text>
+                </TouchableOpacity>
+                {planBlocks.map(block => {
+                  const covered = isCovered(block, entries);
+                  return (
+                    <View key={block.id} style={styles.planBlock}>
+                      <View style={[styles.planDot, covered ? styles.planDotCovered : styles.planDotMissed]} />
+                      <Text style={styles.planTime}>{formatMin(block.startMin)}–{formatMin(block.endMin)}</Text>
+                      <Text style={[styles.planActivity, !covered && styles.planActivityMissed]}>{block.activity}</Text>
+                    </View>
+                  );
+                })}
+                <Text style={styles.planCoverage}>
+                  {coveredCount}/{planBlocks.length} blocks covered
+                  {coveredCount < planBlocks.length ? `  ·  ${planBlocks.length - coveredCount} missed` : '  ✓'}
                 </Text>
-                <Text style={styles.entryId}>#{entry.id}</Text>
               </View>
-              <Text style={styles.transcript}>{entry.transcript}</Text>
-            </TouchableOpacity>
-          ))}
+            );
+          })()}
+
+          {/* Entries */}
+          {entries.length === 0 ? (
+            <View style={styles.centered}>
+              <Text style={styles.emptyText}>No entries for this day</Text>
+            </View>
+          ) : (
+            entries.map(entry => {
+              const matched = planBlocks.length > 0 ? allMatchingBlocks(entry, planBlocks) : [];
+              return (
+                <TouchableOpacity
+                  key={entry.id}
+                  style={styles.entryCard}
+                  onPress={() => setSelectedEntry(entry)}>
+                  <View style={styles.entryCardHeader}>
+                    <Text style={styles.timeRange}>
+                      {formatTime(entry.timestampStart)} – {formatTime(entry.timestampEnd)}
+                    </Text>
+                    <Text style={styles.entryId}>#{entry.id}</Text>
+                  </View>
+                  <Text style={styles.transcript}>{entry.transcript}</Text>
+                  {matched.length > 0 && (
+                    <Text style={styles.planTag}>→ {matched.map(b => b.activity).join(', ')}</Text>
+                  )}
+                </TouchableOpacity>
+              );
+            })
+          )}
         </ScrollView>
       )}
 
@@ -184,7 +239,8 @@ function makeStyles(colors: ColorPalette) {
     navArrow: { fontSize: 28, color: colors.accent, fontWeight: '300' },
     navArrowDisabled: { color: colors.border },
     dayLabel: { fontSize: 16, fontWeight: '600', color: colors.text },
-    centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+    centeredFull: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+    centered: { alignItems: 'center', justifyContent: 'center', paddingVertical: 48 },
     emptyText: { fontSize: 16, color: colors.textSecondary },
     list: { padding: 16, gap: 12, paddingBottom: 100 },
     entryCardHeader: {
@@ -220,5 +276,31 @@ function makeStyles(colors: ColorPalette) {
       elevation: 8,
     },
     fabIcon: { fontSize: 32, color: '#fff', lineHeight: 36 },
+    planSection: {
+      backgroundColor: colors.surface,
+      borderRadius: 12,
+      padding: 14,
+      gap: 8,
+    },
+    planHeaderRow: {
+      flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2,
+    },
+    planHeader: {
+      fontSize: 11, fontWeight: '700', color: colors.accent, letterSpacing: 0.5,
+    },
+    planEditHint: { fontSize: 12, color: colors.accent },
+    planBlock: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+    planDot: { width: 10, height: 10, borderRadius: 5 },
+    planDotCovered: { backgroundColor: colors.accent },
+    planDotMissed: { backgroundColor: colors.border },
+    planTime: { fontSize: 13, fontWeight: '600', color: colors.textSecondary, width: 100 },
+    planActivity: { fontSize: 14, color: colors.text, flex: 1 },
+    planActivityMissed: { color: colors.textSecondary },
+    planCoverage: {
+      fontSize: 12, color: colors.textSecondary, marginTop: 4,
+      borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border,
+      paddingTop: 8,
+    },
+    planTag: { fontSize: 12, color: colors.accent, marginTop: 6, fontWeight: '500' },
   });
 }
