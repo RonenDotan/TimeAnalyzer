@@ -1288,7 +1288,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
    */
 
   _reactNative.AppRegistry.registerComponent(_$$_REQUIRE(_dependencyMap[3], "./app.json").name, () => _App.default);
-},0,[1,2,605,672],"index.js");
+},0,[1,2,605,676],"index.js");
 __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
   function _interopRequireDefault(e) {
     return e && e.__esModule ? e : {
@@ -100028,11 +100028,14 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
   var _reactNative2 = _$$_REQUIRE(_dependencyMap[5], "react-native");
   var _version = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[6], "./version.json"));
   var _SchedulerService = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[7], "./src/services/SchedulerService"));
-  var _StorageService = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[8], "./src/services/StorageService"));
-  var _CheckInScreen = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[9], "./src/screens/CheckInScreen"));
-  var _ReportScreen = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[10], "./src/screens/ReportScreen"));
-  var _SettingsScreen = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[11], "./src/screens/SettingsScreen"));
-  var _jsxRuntime = _$$_REQUIRE(_dependencyMap[12], "react/jsx-runtime");
+  var _SettingsService = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[8], "./src/services/SettingsService"));
+  var _StorageService = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[9], "./src/services/StorageService"));
+  var _DrawerMenu = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[10], "./src/components/DrawerMenu"));
+  var _CheckInScreen = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[11], "./src/screens/CheckInScreen"));
+  var _ReportScreen = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[12], "./src/screens/ReportScreen"));
+  var _ReportsScreen = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[13], "./src/screens/ReportsScreen"));
+  var _SettingsScreen = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[14], "./src/screens/SettingsScreen"));
+  var _jsxRuntime = _$$_REQUIRE(_dependencyMap[15], "react/jsx-runtime");
   var _jsxFileName = "C:\\Users\\ronen\\TimeAnalyzer\\App.tsx";
   function _interopRequireWildcard(e, t) { if ("function" == typeof WeakMap) var r = new WeakMap(), n = new WeakMap(); return (_interopRequireWildcard = function (e, t) { if (!t && e && e.__esModule) return e; var o, i, f = { __proto__: null, default: e }; if (null === e || "object" != typeof e && "function" != typeof e) return f; if (o = t ? n : r) { if (o.has(e)) return o.get(e); o.set(e, f); } for (var _t in e) "default" !== _t && {}.hasOwnProperty.call(e, _t) && ((i = (o = Object.defineProperty) && Object.getOwnPropertyDescriptor(e, _t)) && (i.get || i.set) ? o(f, _t, i) : f[_t] = e[_t]); return f; })(e, t); }
   var version = exports.version = `v${_version.default.major}.${_version.default.minor}.${_version.default.ticket_id}.${_version.default.sequence}`;
@@ -100054,12 +100057,21 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       _useState4 = (0, _slicedToArray2.default)(_useState3, 2),
       checkInPeriod = _useState4[0],
       setCheckInPeriod = _useState4[1];
+    var _useState5 = (0, _react.useState)(false),
+      _useState6 = (0, _slicedToArray2.default)(_useState5, 2),
+      drawerOpen = _useState6[0],
+      setDrawerOpen = _useState6[1];
+    var _useState7 = (0, _react.useState)('system'),
+      _useState8 = (0, _slicedToArray2.default)(_useState7, 2),
+      themeSetting = _useState8[0],
+      setThemeSetting = _useState8[1];
+    var systemScheme = (0, _reactNative2.useColorScheme)();
+    var isDark = themeSetting === 'dark' ? true : themeSetting === 'light' ? false : systemScheme === 'dark';
     (0, _react.useEffect)(() => {
+      _SettingsService.default.load().then(s => setThemeSetting(s.theme));
       _SchedulerService.default.requestPermission().then(granted => {
         if (granted) _SchedulerService.default.reschedule();
       });
-
-      // Notification tap while app is open
       var unsub = _reactNative.default.onForegroundEvent(({
         type,
         detail
@@ -100074,8 +100086,6 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
           setScreen('checkin');
         }
       });
-
-      // Notification tap when app was closed/backgrounded
       _reactNative.default.getInitialNotification().then(initial => {
         if (!initial) return;
         var id = initial.notification?.id ?? '';
@@ -100089,7 +100099,10 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
     }, []);
     function handleSettingsClose(saved) {
       setScreen('entries');
-      if (saved) _SchedulerService.default.reschedule();
+      if (saved) {
+        _SchedulerService.default.reschedule();
+        _SettingsService.default.load().then(s => setThemeSetting(s.theme));
+      }
     }
     function handleCheckInDone() {
       setScreen('entries');
@@ -100114,37 +100127,51 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       });
       return _handleStartCheckIn.apply(this, arguments);
     }
-    if (screen === 'settings') {
-      return /*#__PURE__*/(0, _jsxRuntime.jsx)(_SettingsScreen.default, {
-        onClose: handleSettingsClose
-      });
+    function handleDrawerNavigate(dest) {
+      if (dest === 'settings') {
+        setScreen('settings');
+      } else {
+        setScreen(dest);
+      }
+      setDrawerOpen(false);
     }
-    if (screen === 'checkin') {
-      var period = checkInPeriod ?? {
-        periodStart: Date.now() - 2 * 60 * 60 * 1000,
-        periodEnd: Date.now()
-      };
-      return /*#__PURE__*/(0, _jsxRuntime.jsx)(_CheckInScreen.default, {
-        periodStart: period.periodStart,
-        periodEnd: period.periodEnd,
+    var drawerScreen = screen === 'settings' ? 'settings' : screen === 'reports' ? 'reports' : 'entries';
+    return /*#__PURE__*/(0, _jsxRuntime.jsx)(_$$_REQUIRE(_dependencyMap[16], "./src/contexts/ThemeContext").ThemeProvider, {
+      isDark: isDark,
+      children: screen === 'settings' ? /*#__PURE__*/(0, _jsxRuntime.jsx)(_SettingsScreen.default, {
+        onClose: handleSettingsClose
+      }) : screen === 'checkin' ? /*#__PURE__*/(0, _jsxRuntime.jsx)(_CheckInScreen.default, {
+        periodStart: checkInPeriod?.periodStart ?? Date.now() - 2 * 60 * 60 * 1000,
+        periodEnd: checkInPeriod?.periodEnd ?? Date.now(),
         onDone: handleCheckInDone,
         onCancel: () => setScreen('entries')
-      });
-    }
-    return /*#__PURE__*/(0, _jsxRuntime.jsx)(_ReportScreen.default, {
-      onStartCheckIn: handleStartCheckIn,
-      onOpenSettings: () => setScreen('settings')
+      }) : /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative2.View, {
+        style: {
+          flex: 1
+        },
+        children: [screen === 'reports' ? /*#__PURE__*/(0, _jsxRuntime.jsx)(_ReportsScreen.default, {
+          onOpenMenu: () => setDrawerOpen(true)
+        }) : /*#__PURE__*/(0, _jsxRuntime.jsx)(_ReportScreen.default, {
+          onStartCheckIn: handleStartCheckIn,
+          onOpenMenu: () => setDrawerOpen(true)
+        }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_DrawerMenu.default, {
+          visible: drawerOpen,
+          currentScreen: drawerScreen,
+          onClose: () => setDrawerOpen(false),
+          onNavigate: handleDrawerNavigate
+        })]
+      })
     });
   }
   function App() {
-    return /*#__PURE__*/(0, _jsxRuntime.jsxs)(_$$_REQUIRE(_dependencyMap[13], "react-native-safe-area-context").SafeAreaProvider, {
+    return /*#__PURE__*/(0, _jsxRuntime.jsxs)(_$$_REQUIRE(_dependencyMap[17], "react-native-safe-area-context").SafeAreaProvider, {
       children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative2.StatusBar, {
         barStyle: "dark-content"
       }), /*#__PURE__*/(0, _jsxRuntime.jsx)(AppContent, {})]
     });
   }
   var _default = exports.default = App;
-},605,[1,178,14,606,71,2,638,639,650,655,668,671,182,658],"App.tsx");
+},605,[1,178,14,606,71,2,638,639,641,650,655,666,670,674,675,182,665,656],"App.tsx");
 __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
   "use strict";
 
@@ -103966,7 +103993,7 @@ __d(function(global, require, _importDefaultUnused, _importAllUnused, module, ex
   "major": 0,
   "minor": 0,
   "ticket_id": 18,
-  "sequence": 3
+  "sequence": 8
 }
 ;
 },638,[],"version.json");
@@ -104754,7 +104781,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
   Object.defineProperty(exports, "__esModule", {
     value: true
   });
-  exports.TRANSCRIPTION_PROVIDERS = exports.FREQUENCY_OPTIONS = exports.DEFAULT_SETTINGS = exports.DAY_LABELS = exports.ANALYSIS_PROVIDERS = void 0;
+  exports.TRANSCRIPTION_PROVIDERS = exports.THEME_OPTIONS = exports.FREQUENCY_OPTIONS = exports.DEFAULT_SETTINGS = exports.DAY_LABELS = exports.ANALYSIS_PROVIDERS = void 0;
   var DEFAULT_SETTINGS = exports.DEFAULT_SETTINGS = {
     checkInDays: [true, true, true, true, true, true, true],
     everyHour: true,
@@ -104762,8 +104789,24 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
     endHour: 19,
     frequencyMinutes: 120,
     transcriptionProvider: 'groq',
-    analysisProvider: 'claude'
+    analysisProvider: 'claude',
+    noteKeyword: 'note',
+    appendKeyword: 'append',
+    theme: 'system'
   };
+  var THEME_OPTIONS = exports.THEME_OPTIONS = [{
+    label: 'System',
+    sublabel: 'Follow device setting',
+    value: 'system'
+  }, {
+    label: 'Light',
+    sublabel: 'Always light',
+    value: 'light'
+  }, {
+    label: 'Dark',
+    sublabel: 'Always dark',
+    value: 'dark'
+  }];
   var FREQUENCY_OPTIONS = exports.FREQUENCY_OPTIONS = [{
     label: '1 min',
     value: 1
@@ -105603,646 +105646,217 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
   var isIOSEmbeeded = exports.isIOSEmbeeded = isIOSEmbedded;
 },654,[1,178,2],"node_modules/@op-engineering/op-sqlite/lib/module/functions.js");
 __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
-  var _interopRequireDefault = _$$_REQUIRE(_dependencyMap[0], "@babel/runtime/helpers/interopRequireDefault");
   Object.defineProperty(exports, "__esModule", {
     value: true
   });
-  exports.default = CheckInScreen;
-  var _asyncToGenerator2 = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[1], "@babel/runtime/helpers/asyncToGenerator"));
-  var _slicedToArray2 = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[2], "@babel/runtime/helpers/slicedToArray"));
-  var _react = _interopRequireWildcard(_$$_REQUIRE(_dependencyMap[3], "react"));
-  var _reactNative = _$$_REQUIRE(_dependencyMap[4], "react-native");
-  var _SchedulerService = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[5], "../services/SchedulerService"));
-  var _StorageService = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[6], "../services/StorageService"));
-  var _TranscriptionService = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[7], "../services/TranscriptionService"));
-  var _jsxRuntime = _$$_REQUIRE(_dependencyMap[8], "react/jsx-runtime");
-  var _jsxFileName = "C:\\Users\\ronen\\TimeAnalyzer\\src\\screens\\CheckInScreen.tsx";
+  exports.default = DrawerMenu;
+  var _react = _interopRequireWildcard(_$$_REQUIRE(_dependencyMap[0], "react"));
+  var _reactNative = _$$_REQUIRE(_dependencyMap[1], "react-native");
+  var _jsxRuntime = _$$_REQUIRE(_dependencyMap[2], "react/jsx-runtime");
+  var _jsxFileName = "C:\\Users\\ronen\\TimeAnalyzer\\src\\components\\DrawerMenu.tsx";
   function _interopRequireWildcard(e, t) { if ("function" == typeof WeakMap) var r = new WeakMap(), n = new WeakMap(); return (_interopRequireWildcard = function (e, t) { if (!t && e && e.__esModule) return e; var o, i, f = { __proto__: null, default: e }; if (null === e || "object" != typeof e && "function" != typeof e) return f; if (o = t ? n : r) { if (o.has(e)) return o.get(e); o.set(e, f); } for (var _t in e) "default" !== _t && {}.hasOwnProperty.call(e, _t) && ((i = (o = Object.defineProperty) && Object.getOwnPropertyDescriptor(e, _t)) && (i.get || i.set) ? o(f, _t, i) : f[_t] = e[_t]); return f; })(e, t); }
-  function formatDuration(ms) {
-    var totalSeconds = Math.floor(ms / 1000);
-    var m = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
-    var s = (totalSeconds % 60).toString().padStart(2, '0');
-    return `${m}:${s}`;
-  }
-  function formatHour(ts) {
-    var d = new Date(ts);
-    return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
-  }
-  function CheckInScreen({
-    periodStart,
-    periodEnd,
-    onDone,
-    onCancel
+  var NAV_ITEMS = [{
+    key: 'entries',
+    label: 'Entries',
+    icon: '📋'
+  }, {
+    key: 'reports',
+    label: 'Reports',
+    icon: '📊'
+  }];
+  var BOTTOM_ITEMS = [{
+    key: 'settings',
+    label: 'Settings',
+    icon: '⚙️'
+  }];
+  var DRAWER_WIDTH = 280;
+  function DrawerMenu({
+    visible,
+    currentScreen,
+    onClose,
+    onNavigate
   }) {
-    var insets = (0, _$$_REQUIRE(_dependencyMap[9], "react-native-safe-area-context").useSafeAreaInsets)();
-    var _useState = (0, _react.useState)('idle'),
-      _useState2 = (0, _slicedToArray2.default)(_useState, 2),
-      phase = _useState2[0],
-      setPhase = _useState2[1];
-    var _useState3 = (0, _react.useState)(0),
-      _useState4 = (0, _slicedToArray2.default)(_useState3, 2),
-      recordingMs = _useState4[0],
-      setRecordingMs = _useState4[1];
-    var _useState5 = (0, _react.useState)(''),
-      _useState6 = (0, _slicedToArray2.default)(_useState5, 2),
-      partialTranscript = _useState6[0],
-      setPartialTranscript = _useState6[1];
-    var _useState7 = (0, _react.useState)(''),
-      _useState8 = (0, _slicedToArray2.default)(_useState7, 2),
-      transcript = _useState8[0],
-      setTranscript = _useState8[1];
-    var _useState9 = (0, _react.useState)([]),
-      _useState0 = (0, _slicedToArray2.default)(_useState9, 2),
-      notes = _useState0[0],
-      setNotes = _useState0[1];
-    var timerRef = (0, _react.useRef)(null);
+    var insets = (0, _$$_REQUIRE(_dependencyMap[3], "react-native-safe-area-context").useSafeAreaInsets)();
+    var _useTheme = (0, _$$_REQUIRE(_dependencyMap[4], "../contexts/ThemeContext").useTheme)(),
+      colors = _useTheme.colors;
+    var slideAnim = (0, _react.useRef)(new _reactNative.Animated.Value(-DRAWER_WIDTH)).current;
+    var opacityAnim = (0, _react.useRef)(new _reactNative.Animated.Value(0)).current;
     (0, _react.useEffect)(() => {
-      return () => {
-        if (timerRef.current) clearInterval(timerRef.current);
-        _TranscriptionService.default.stop().catch(() => {});
-      };
-    }, []);
-    function requestMicPermission() {
-      return _requestMicPermission.apply(this, arguments);
+      if (visible) {
+        _reactNative.Animated.parallel([_reactNative.Animated.timing(slideAnim, {
+          toValue: 0,
+          duration: 220,
+          useNativeDriver: true
+        }), _reactNative.Animated.timing(opacityAnim, {
+          toValue: 1,
+          duration: 220,
+          useNativeDriver: true
+        })]).start();
+      } else {
+        _reactNative.Animated.parallel([_reactNative.Animated.timing(slideAnim, {
+          toValue: -DRAWER_WIDTH,
+          duration: 180,
+          useNativeDriver: true
+        }), _reactNative.Animated.timing(opacityAnim, {
+          toValue: 0,
+          duration: 180,
+          useNativeDriver: true
+        })]).start();
+      }
+    }, [visible]);
+    if (!visible) return null;
+    var styles = makeStyles(colors);
+    function handleNavigate(screen) {
+      onNavigate(screen);
+      onClose();
     }
-    function _requestMicPermission() {
-      _requestMicPermission = (0, _asyncToGenerator2.default)(function* () {
-        if ("android" !== 'android') return true;
-        var granted = yield _reactNative.PermissionsAndroid.request(_reactNative.PermissionsAndroid.PERMISSIONS.RECORD_AUDIO, {
-          title: 'Microphone Permission',
-          message: 'TimeAnalyzer needs the microphone to record your check-in.',
-          buttonPositive: 'Allow'
-        });
-        return granted === _reactNative.PermissionsAndroid.RESULTS.GRANTED;
-      });
-      return _requestMicPermission.apply(this, arguments);
-    }
-    function startRecording() {
-      return _startRecording.apply(this, arguments);
-    }
-    function _startRecording() {
-      _startRecording = (0, _asyncToGenerator2.default)(function* () {
-        var ok = yield requestMicPermission();
-        if (!ok) {
-          _reactNative.Alert.alert('Permission denied', 'Microphone access is required to record a check-in.');
-          return;
-        }
-        setRecordingMs(0);
-        setPartialTranscript('');
-        setPhase('recording');
-        var start = Date.now();
-        timerRef.current = setInterval(() => setRecordingMs(Date.now() - start), 100);
-        try {
-          yield _TranscriptionService.default.start(partial => setPartialTranscript(partial));
-        } catch (e) {
-          if (timerRef.current) {
-            clearInterval(timerRef.current);
-            timerRef.current = null;
-          }
-          _reactNative.Alert.alert('Speech start failed', String(e?.message ?? e));
-          setPhase('idle');
-        }
-      });
-      return _startRecording.apply(this, arguments);
-    }
-    function stopRecording() {
-      return _stopRecording.apply(this, arguments);
-    }
-    function _stopRecording() {
-      _stopRecording = (0, _asyncToGenerator2.default)(function* () {
-        if (timerRef.current) {
-          clearInterval(timerRef.current);
-          timerRef.current = null;
-        }
-        setPhase('transcribing');
-        try {
-          var finalText = yield _TranscriptionService.default.stop();
-          var _parseTranscriptAndNo2 = (0, _$$_REQUIRE(_dependencyMap[10], "../utils/parseTranscript").parseTranscriptAndNotes)(finalText || partialTranscript),
-            parsed = _parseTranscriptAndNo2.transcript,
-            detectedNotes = _parseTranscriptAndNo2.notes;
-          setTranscript(parsed);
-          if (detectedNotes.length > 0) setNotes(detectedNotes);
-          setPhase('confirming');
-        } catch (e) {
-          _reactNative.Alert.alert('Transcription failed', String(e?.message ?? e));
-          setPhase('idle');
-        }
-      });
-      return _stopRecording.apply(this, arguments);
-    }
-    function handleReRecord() {
-      setTranscript('');
-      setPartialTranscript('');
-      setRecordingMs(0);
-      setNotes([]);
-      setPhase('idle');
-    }
-    function addNote() {
-      setNotes(prev => [...prev, '']);
-    }
-    function updateNote(index, text) {
-      setNotes(prev => prev.map((n, i) => i === index ? text : n));
-    }
-    function removeNote(index) {
-      setNotes(prev => prev.filter((_, i) => i !== index));
-    }
-    function handleConfirm() {
-      return _handleConfirm.apply(this, arguments);
-    }
-    function _handleConfirm() {
-      _handleConfirm = (0, _asyncToGenerator2.default)(function* () {
-        var entry = yield _StorageService.default.save({
-          timestampStart: periodStart,
-          timestampEnd: periodEnd,
-          transcript
-        });
-        var now = Date.now();
-        yield Promise.all(notes.filter(n => n.trim().length > 0).map(text => _StorageService.default.saveNote({
-          entryId: entry.id,
-          text: text.trim(),
-          createdAt: now
-        })));
-        var moreToday = yield _SchedulerService.default.hasMoreCheckInsToday();
-        if (!moreToday) {
-          yield _SchedulerService.default.fireEndOfDayReport();
-        }
-        onDone(transcript);
-      });
-      return _handleConfirm.apply(this, arguments);
-    }
-    var canSubmitTyped = transcript.trim().length > 0;
-    function handleTypedSubmit() {
-      var _parseTranscriptAndNo = (0, _$$_REQUIRE(_dependencyMap[10], "../utils/parseTranscript").parseTranscriptAndNotes)(transcript),
-        parsed = _parseTranscriptAndNo.transcript,
-        detectedNotes = _parseTranscriptAndNo.notes;
-      setTranscript(parsed);
-      if (detectedNotes.length > 0) setNotes(prev => [...prev, ...detectedNotes]);
-      setPhase('confirming');
-    }
-    return /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.KeyboardAvoidingView, {
-      style: [styles.container, {
-        paddingTop: insets.top,
-        paddingBottom: insets.bottom
-      }],
-      behavior: "android" === 'ios' ? 'padding' : 'height',
-      children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-        style: styles.header,
-        children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
-          onPress: onCancel,
-          children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-            style: styles.cancel,
-            children: "Cancel"
-          })
-        }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-          style: styles.title,
-          children: "Check-in"
-        }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
-          style: styles.cancelPlaceholder
-        })]
-      }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-        style: styles.periodBadge,
-        children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
-          style: styles.periodText,
-          children: [formatHour(periodStart), " \u2013 ", formatHour(periodEnd)]
-        }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-          style: styles.periodSub,
-          children: "What did you work on?"
-        })]
-      }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-        style: styles.body,
-        children: [phase === 'idle' && /*#__PURE__*/(0, _jsxRuntime.jsxs)(_jsxRuntime.Fragment, {
-          children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TextInput, {
-            style: styles.typeInput,
-            value: transcript,
-            onChangeText: setTranscript,
-            placeholder: "Type what you worked on...",
-            placeholderTextColor: "#aaa",
-            multiline: true,
-            textAlignVertical: "top"
-          }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
-            style: [styles.submitBtn, !canSubmitTyped && styles.submitBtnDisabled],
-            onPress: handleTypedSubmit,
-            disabled: !canSubmitTyped,
-            children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-              style: styles.submitBtnText,
-              children: "Submit"
-            })
-          }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-            style: styles.orRow,
-            children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
-              style: styles.orLine
-            }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-              style: styles.orText,
-              children: "or speak"
-            }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
-              style: styles.orLine
-            })]
-          }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
-            style: styles.recordBtn,
-            onPress: startRecording,
-            children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-              style: styles.recordBtnText,
-              children: "Record"
-            })
-          })]
-        }), phase === 'recording' && /*#__PURE__*/(0, _jsxRuntime.jsxs)(_jsxRuntime.Fragment, {
-          children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-            style: styles.timerBox,
-            children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-              style: styles.timer,
-              children: formatDuration(recordingMs)
-            }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
-              style: styles.recDot
-            })]
-          }), partialTranscript.length > 0 && /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.ScrollView, {
-            style: styles.liveBox,
-            contentContainerStyle: styles.liveContent,
-            children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-              style: styles.liveText,
-              children: partialTranscript
-            })
-          }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
-            style: [styles.recordBtn, styles.stopBtn],
-            onPress: stopRecording,
-            children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-              style: styles.recordBtnText,
-              children: "Stop"
-            })
-          })]
-        }), phase === 'transcribing' && /*#__PURE__*/(0, _jsxRuntime.jsxs)(_jsxRuntime.Fragment, {
-          children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.ActivityIndicator, {
-            size: "large",
-            color: "#007AFF"
-          }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-            style: styles.transcribingLabel,
-            children: "Transcribing\u2026"
-          })]
-        }), phase === 'confirming' && /*#__PURE__*/(0, _jsxRuntime.jsxs)(_jsxRuntime.Fragment, {
+    return /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+      style: _reactNative.StyleSheet.absoluteFill,
+      pointerEvents: "box-none",
+      children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableWithoutFeedback, {
+        onPress: onClose,
+        children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Animated.View, {
+          style: [styles.overlay, {
+            opacity: opacityAnim
+          }]
+        })
+      }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Animated.View, {
+        style: [styles.drawer, {
+          paddingTop: insets.top,
+          paddingBottom: insets.bottom
+        }, {
+          transform: [{
+            translateX: slideAnim
+          }]
+        }],
+        children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+          style: styles.drawerHeader,
           children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-            style: styles.confirmLabel,
-            children: "Review your check-in"
-          }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TextInput, {
-            style: styles.typeInput,
-            value: transcript,
-            onChangeText: setTranscript,
-            multiline: true,
-            textAlignVertical: "top",
-            autoFocus: true
-          }), notes.map((note, i) => /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-            style: styles.noteRow,
-            children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TextInput, {
-              style: styles.noteInput,
-              value: note,
-              onChangeText: t => updateNote(i, t),
-              placeholder: "Add a note\u2026",
-              placeholderTextColor: "#aaa",
-              multiline: true,
-              textAlignVertical: "top"
-            }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
-              onPress: () => removeNote(i),
-              style: styles.noteRemove,
-              children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                style: styles.noteRemoveText,
-                children: "\u2715"
-              })
-            })]
-          }, i)), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
-            style: styles.addNoteBtn,
-            onPress: addNote,
+            style: styles.drawerTitle,
+            children: "TimeAnalyzer"
+          }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
+            onPress: onClose,
+            style: styles.closeBtn,
             children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-              style: styles.addNoteBtnText,
-              children: "+ Add note"
+              style: styles.closeBtnText,
+              children: "\u2715"
             })
-          }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-            style: styles.confirmRow,
-            children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
-              style: styles.rerecordBtn,
-              onPress: handleReRecord,
-              children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                style: styles.rerecordText,
-                children: "Re-record"
-              })
-            }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
-              style: styles.confirmBtn,
-              onPress: handleConfirm,
-              children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                style: styles.confirmText,
-                children: "Confirm"
-              })
-            })]
           })]
+        }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
+          style: styles.navSection,
+          children: NAV_ITEMS.map(item => /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.TouchableOpacity, {
+            style: [styles.navItem, currentScreen === item.key && styles.navItemActive],
+            onPress: () => handleNavigate(item.key),
+            children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+              style: styles.navIcon,
+              children: item.icon
+            }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+              style: [styles.navLabel, currentScreen === item.key && styles.navLabelActive],
+              children: item.label
+            })]
+          }, item.key))
+        }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+          style: styles.bottomSection,
+          children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
+            style: styles.divider
+          }), BOTTOM_ITEMS.map(item => /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.TouchableOpacity, {
+            style: [styles.navItem, currentScreen === item.key && styles.navItemActive],
+            onPress: () => handleNavigate(item.key),
+            children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+              style: styles.navIcon,
+              children: item.icon
+            }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+              style: [styles.navLabel, currentScreen === item.key && styles.navLabelActive],
+              children: item.label
+            })]
+          }, item.key))]
         })]
       })]
     });
   }
-  var styles = _reactNative.StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: '#f2f2f7'
-    },
-    header: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      paddingHorizontal: 16,
-      paddingVertical: 12,
-      backgroundColor: '#fff',
-      borderBottomWidth: _reactNative.StyleSheet.hairlineWidth,
-      borderBottomColor: '#ccc'
-    },
-    title: {
-      fontSize: 17,
-      fontWeight: '600'
-    },
-    cancel: {
-      fontSize: 17,
-      color: '#666'
-    },
-    cancelPlaceholder: {
-      width: 50
-    },
-    periodBadge: {
-      alignItems: 'center',
-      paddingVertical: 20
-    },
-    periodText: {
-      fontSize: 22,
-      fontWeight: '700',
-      color: '#000'
-    },
-    periodSub: {
-      fontSize: 14,
-      color: '#6d6d72',
-      marginTop: 4
-    },
-    body: {
-      flex: 1,
-      alignItems: 'center',
-      justifyContent: 'flex-start',
-      paddingHorizontal: 24,
-      paddingTop: 24,
-      gap: 20
-    },
-    typeInput: {
-      width: '100%',
-      minHeight: 140,
-      backgroundColor: '#fff',
-      borderRadius: 12,
-      padding: 14,
-      fontSize: 16,
-      color: '#000',
-      lineHeight: 24,
-      borderWidth: 1.5,
-      borderColor: '#007AFF'
-    },
-    submitBtn: {
-      width: '100%',
-      paddingVertical: 14,
-      borderRadius: 10,
-      backgroundColor: '#007AFF',
-      alignItems: 'center'
-    },
-    submitBtnDisabled: {
-      backgroundColor: '#b0c8f0'
-    },
-    submitBtnText: {
-      fontSize: 16,
-      color: '#fff',
-      fontWeight: '600'
-    },
-    orRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      width: '100%',
-      gap: 10
-    },
-    orLine: {
-      flex: 1,
-      height: _reactNative.StyleSheet.hairlineWidth,
-      backgroundColor: '#ccc'
-    },
-    orText: {
-      fontSize: 13,
-      color: '#999'
-    },
-    timerBox: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 10,
-      marginTop: 40
-    },
-    timer: {
-      fontSize: 48,
-      fontWeight: '200',
-      color: '#000',
-      fontVariant: ['tabular-nums']
-    },
-    recDot: {
-      width: 12,
-      height: 12,
-      borderRadius: 6,
-      backgroundColor: '#ff3b30'
-    },
-    recordBtn: {
-      width: 120,
-      height: 120,
-      borderRadius: 60,
-      backgroundColor: '#ff3b30',
-      alignItems: 'center',
-      justifyContent: 'center',
-      shadowColor: '#ff3b30',
-      shadowOpacity: 0.4,
-      shadowRadius: 12,
-      elevation: 8
-    },
-    stopBtn: {
-      backgroundColor: '#ff3b30',
-      shadowColor: '#ff3b30'
-    },
-    recordBtnText: {
-      fontSize: 22,
-      fontWeight: '600',
-      color: '#fff'
-    },
-    transcribingLabel: {
-      fontSize: 16,
-      color: '#6d6d72',
-      marginTop: 16
-    },
-    liveBox: {
-      width: '100%',
-      maxHeight: 120,
-      backgroundColor: '#fff',
-      borderRadius: 10
-    },
-    liveContent: {
-      padding: 16
-    },
-    liveText: {
-      fontSize: 15,
-      color: '#333',
-      lineHeight: 22,
-      fontStyle: 'italic'
-    },
-    confirmLabel: {
-      fontSize: 18,
-      fontWeight: '600',
-      color: '#000',
-      alignSelf: 'flex-start'
-    },
-    noteRow: {
-      flexDirection: 'row',
-      alignItems: 'flex-start',
-      width: '100%',
-      gap: 8
-    },
-    noteInput: {
-      flex: 1,
-      minHeight: 60,
-      backgroundColor: '#fff',
-      borderRadius: 10,
-      padding: 12,
-      fontSize: 15,
-      color: '#000',
-      lineHeight: 22,
-      borderWidth: 1,
-      borderColor: '#e0e0e0',
-      textAlignVertical: 'top'
-    },
-    noteRemove: {
-      paddingTop: 14,
-      paddingHorizontal: 4
-    },
-    noteRemoveText: {
-      fontSize: 16,
-      color: '#aaa'
-    },
-    addNoteBtn: {
-      alignSelf: 'flex-start'
-    },
-    addNoteBtnText: {
-      fontSize: 15,
-      color: '#007AFF',
-      fontWeight: '500'
-    },
-    confirmRow: {
-      flexDirection: 'row',
-      gap: 12,
-      width: '100%'
-    },
-    rerecordBtn: {
-      flex: 1,
-      paddingVertical: 14,
-      borderRadius: 10,
-      backgroundColor: '#fff',
-      alignItems: 'center',
-      borderWidth: 1,
-      borderColor: '#ccc'
-    },
-    rerecordText: {
-      fontSize: 16,
-      color: '#333',
-      fontWeight: '500'
-    },
-    confirmBtn: {
-      flex: 1,
-      paddingVertical: 14,
-      borderRadius: 10,
-      backgroundColor: '#007AFF',
-      alignItems: 'center'
-    },
-    confirmText: {
-      fontSize: 16,
-      color: '#fff',
-      fontWeight: '600'
-    }
-  });
-},655,[1,178,14,71,2,639,650,656,182,658,667],"src/screens/CheckInScreen.tsx");
-__d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
-  var _interopRequireDefault = _$$_REQUIRE(_dependencyMap[0], "@babel/runtime/helpers/interopRequireDefault");
-  Object.defineProperty(exports, "__esModule", {
-    value: true
-  });
-  exports.default = void 0;
-  var _asyncToGenerator2 = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[1], "@babel/runtime/helpers/asyncToGenerator"));
-  var _WhisperTranscriptionProvider = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[2], "../providers/transcription/WhisperTranscriptionProvider"));
-  var activeProvider = _WhisperTranscriptionProvider.default;
-  function setProvider(provider) {
-    activeProvider = provider;
-  }
-  function start(_x) {
-    return _start.apply(this, arguments);
-  }
-  function _start() {
-    _start = (0, _asyncToGenerator2.default)(function* (onPartialResult) {
-      return activeProvider.start(onPartialResult);
+  function makeStyles(colors) {
+    return _reactNative.StyleSheet.create({
+      overlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: colors.overlay
+      },
+      drawer: {
+        position: 'absolute',
+        left: 0,
+        top: 0,
+        bottom: 0,
+        width: DRAWER_WIDTH,
+        backgroundColor: colors.surface,
+        shadowColor: '#000',
+        shadowOpacity: 0.2,
+        shadowRadius: 12,
+        elevation: 16
+      },
+      drawerHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 20,
+        paddingVertical: 18,
+        borderBottomWidth: _reactNative.StyleSheet.hairlineWidth,
+        borderBottomColor: colors.border
+      },
+      drawerTitle: {
+        fontSize: 18,
+        fontWeight: '700',
+        color: colors.text
+      },
+      closeBtn: {
+        padding: 4
+      },
+      closeBtnText: {
+        fontSize: 16,
+        color: colors.textSecondary
+      },
+      navSection: {
+        flex: 1,
+        paddingTop: 8
+      },
+      navItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+        paddingVertical: 14,
+        gap: 14,
+        borderRadius: 10,
+        marginHorizontal: 8,
+        marginVertical: 2
+      },
+      navItemActive: {
+        backgroundColor: colors.surfaceSecondary
+      },
+      navIcon: {
+        fontSize: 20
+      },
+      navLabel: {
+        fontSize: 16,
+        color: colors.textSecondary
+      },
+      navLabelActive: {
+        color: colors.accent,
+        fontWeight: '600'
+      },
+      bottomSection: {
+        paddingBottom: 8
+      },
+      divider: {
+        height: _reactNative.StyleSheet.hairlineWidth,
+        backgroundColor: colors.border,
+        marginHorizontal: 20,
+        marginBottom: 8
+      }
     });
-    return _start.apply(this, arguments);
   }
-  function stop() {
-    return _stop.apply(this, arguments);
-  }
-  function _stop() {
-    _stop = (0, _asyncToGenerator2.default)(function* () {
-      return activeProvider.stop();
-    });
-    return _stop.apply(this, arguments);
-  }
-  var TranscriptionService = {
-    start,
-    stop,
-    setProvider
-  };
-  var _default = exports.default = TranscriptionService;
-},656,[1,178,657],"src/services/TranscriptionService.ts");
-__d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
-  var _interopRequireDefault = _$$_REQUIRE(_dependencyMap[0], "@babel/runtime/helpers/interopRequireDefault");
-  Object.defineProperty(exports, "__esModule", {
-    value: true
-  });
-  exports.default = void 0;
-  var _asyncToGenerator2 = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[1], "@babel/runtime/helpers/asyncToGenerator"));
-  var _reactNative = _$$_REQUIRE(_dependencyMap[2], "react-native");
-  var _SettingsService = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[3], "../../services/SettingsService"));
-  var AudioRecorder = _reactNative.NativeModules.AudioRecorder;
-  var WhisperTranscriptionProvider = {
-    start(_onPartialResult) {
-      return (0, _asyncToGenerator2.default)(function* () {
-        yield AudioRecorder.startRecording();
-      })();
-    },
-    stop() {
-      return (0, _asyncToGenerator2.default)(function* () {
-        var audioUri = yield AudioRecorder.stopRecording();
-        var apiKey = yield _SettingsService.default.getGroqApiKey();
-        if (!apiKey) throw new Error('Groq API key not set. Add it in Settings.');
-        var formData = new FormData();
-        formData.append('file', {
-          uri: audioUri,
-          type: 'audio/m4a',
-          name: 'checkin.m4a'
-        });
-        formData.append('model', 'whisper-large-v3-turbo');
-        formData.append('language', 'en');
-        var response = yield fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-            'Content-Type': 'multipart/form-data'
-          },
-          body: formData
-        });
-        if (!response.ok) {
-          var err = yield response.text();
-          throw new Error(`Groq API error ${response.status}: ${err}`);
-        }
-        var json = yield response.json();
-        return json.text ?? '';
-      })();
-    }
-  };
-  var _default = exports.default = WhisperTranscriptionProvider;
-},657,[1,178,2,641],"src/providers/transcription/WhisperTranscriptionProvider.ts");
+},655,[71,2,182,656,665],"src/components/DrawerMenu.tsx");
 __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
   'use client';
 
@@ -106289,7 +105903,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       }
     });
   });
-},658,[659,662,664,666],"node_modules/react-native-safe-area-context/src/index.tsx");
+},656,[657,660,662,664],"node_modules/react-native-safe-area-context/src/index.tsx");
 __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
   var _interopRequireDefault = _$$_REQUIRE(_dependencyMap[0], "@babel/runtime/helpers/interopRequireDefault");
   Object.defineProperty(exports, "__esModule", {
@@ -106445,7 +106059,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
    * @deprecated
    */
   var SafeAreaContext = exports.SafeAreaContext = SafeAreaInsetsContext;
-},659,[1,14,71,2,182,660],"node_modules/react-native-safe-area-context/src/SafeAreaContext.tsx");
+},657,[1,14,71,2,182,658],"node_modules/react-native-safe-area-context/src/SafeAreaContext.tsx");
 __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
   var _interopRequireDefault = _$$_REQUIRE(_dependencyMap[0], "@babel/runtime/helpers/interopRequireDefault");
   Object.defineProperty(exports, "__esModule", {
@@ -106458,7 +106072,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
     }
   });
   var _NativeSafeAreaProvider = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[1], "./specs/NativeSafeAreaProvider"));
-},660,[1,661],"node_modules/react-native-safe-area-context/src/NativeSafeAreaProvider.tsx");
+},658,[1,659],"node_modules/react-native-safe-area-context/src/NativeSafeAreaProvider.tsx");
 __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
   var _interopRequireDefault = _$$_REQUIRE(_dependencyMap[0], "@babel/runtime/helpers/interopRequireDefault");
   Object.defineProperty(exports, "__esModule", {
@@ -106481,7 +106095,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
     }
   };
   var _default = exports.default = _$$_REQUIRE(_dependencyMap[3], "react-native/Libraries/NativeComponent/NativeComponentRegistry").get(nativeComponentName, () => __INTERNAL_VIEW_CONFIG);
-},661,[1,314,102,75],"node_modules/react-native-safe-area-context/src/specs/NativeSafeAreaProvider.ts");
+},659,[1,314,102,75],"node_modules/react-native-safe-area-context/src/specs/NativeSafeAreaProvider.ts");
 __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
   var _interopRequireDefault = _$$_REQUIRE(_dependencyMap[0], "@babel/runtime/helpers/interopRequireDefault");
   Object.defineProperty(exports, "__esModule", {
@@ -106530,7 +106144,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       ref: ref
     });
   });
-},662,[1,71,663,182],"node_modules/react-native-safe-area-context/src/SafeAreaView.tsx");
+},660,[1,71,661,182],"node_modules/react-native-safe-area-context/src/SafeAreaView.tsx");
 __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
   var _interopRequireDefault = _$$_REQUIRE(_dependencyMap[0], "@babel/runtime/helpers/interopRequireDefault");
   Object.defineProperty(exports, "__esModule", {
@@ -106547,7 +106161,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
     }
   };
   var _default = exports.default = _$$_REQUIRE(_dependencyMap[2], "react-native/Libraries/NativeComponent/NativeComponentRegistry").get(nativeComponentName, () => __INTERNAL_VIEW_CONFIG);
-},663,[1,314,75],"node_modules/react-native-safe-area-context/src/specs/NativeSafeAreaView.ts");
+},661,[1,314,75],"node_modules/react-native-safe-area-context/src/specs/NativeSafeAreaView.ts");
 __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
   var _interopRequireDefault = _$$_REQUIRE(_dependencyMap[0], "@babel/runtime/helpers/interopRequireDefault");
   Object.defineProperty(exports, "__esModule", {
@@ -106561,7 +106175,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
    * @deprecated
    */
   var initialWindowSafeAreaInsets = exports.initialWindowSafeAreaInsets = initialWindowMetrics?.insets;
-},664,[1,665],"node_modules/react-native-safe-area-context/src/InitialWindow.native.ts");
+},662,[1,663],"node_modules/react-native-safe-area-context/src/InitialWindow.native.ts");
 __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
   Object.defineProperty(exports, "__esModule", {
     value: true
@@ -106569,24 +106183,747 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
   exports.default = void 0;
   var _reactNative = _$$_REQUIRE(_dependencyMap[0], "react-native");
   var _default = exports.default = _reactNative.TurboModuleRegistry.get('RNCSafeAreaContext');
-},665,[2],"node_modules/react-native-safe-area-context/src/specs/NativeSafeAreaContext.ts");
+},663,[2],"node_modules/react-native-safe-area-context/src/specs/NativeSafeAreaContext.ts");
 __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
   Object.defineProperty(exports, "__esModule", {
     value: true
   });
-},666,[],"node_modules/react-native-safe-area-context/src/SafeArea.types.ts");
+},664,[],"node_modules/react-native-safe-area-context/src/SafeArea.types.ts");
 __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
   Object.defineProperty(exports, "__esModule", {
     value: true
   });
+  exports.ThemeProvider = ThemeProvider;
+  exports.lightColors = exports.darkColors = void 0;
+  exports.useTheme = useTheme;
+  var _react = _interopRequireWildcard(_$$_REQUIRE(_dependencyMap[0], "react"));
+  var _jsxRuntime = _$$_REQUIRE(_dependencyMap[1], "react/jsx-runtime");
+  var _jsxFileName = "C:\\Users\\ronen\\TimeAnalyzer\\src\\contexts\\ThemeContext.tsx";
+  function _interopRequireWildcard(e, t) { if ("function" == typeof WeakMap) var r = new WeakMap(), n = new WeakMap(); return (_interopRequireWildcard = function (e, t) { if (!t && e && e.__esModule) return e; var o, i, f = { __proto__: null, default: e }; if (null === e || "object" != typeof e && "function" != typeof e) return f; if (o = t ? n : r) { if (o.has(e)) return o.get(e); o.set(e, f); } for (var _t in e) "default" !== _t && {}.hasOwnProperty.call(e, _t) && ((i = (o = Object.defineProperty) && Object.getOwnPropertyDescriptor(e, _t)) && (i.get || i.set) ? o(f, _t, i) : f[_t] = e[_t]); return f; })(e, t); }
+  var lightColors = exports.lightColors = {
+    background: '#f2f2f7',
+    surface: '#ffffff',
+    surfaceSecondary: '#f0f6ff',
+    text: '#000000',
+    textSecondary: '#6d6d72',
+    border: '#c6c6c8',
+    accent: '#007AFF',
+    placeholder: '#aaaaaa',
+    recordBtn: '#ff3b30',
+    overlay: 'rgba(0,0,0,0.4)'
+  };
+  var darkColors = exports.darkColors = {
+    background: '#1c1c1e',
+    surface: '#2c2c2e',
+    surfaceSecondary: '#1a2a3a',
+    text: '#ffffff',
+    textSecondary: '#8e8e93',
+    border: '#3a3a3c',
+    accent: '#0a84ff',
+    placeholder: '#636366',
+    recordBtn: '#ff453a',
+    overlay: 'rgba(0,0,0,0.65)'
+  };
+  var ThemeContext = (0, _react.createContext)({
+    isDark: false,
+    colors: lightColors
+  });
+  function ThemeProvider({
+    isDark,
+    children
+  }) {
+    return /*#__PURE__*/(0, _jsxRuntime.jsx)(ThemeContext.Provider, {
+      value: {
+        isDark,
+        colors: isDark ? darkColors : lightColors
+      },
+      children: children
+    });
+  }
+  function useTheme() {
+    return (0, _react.useContext)(ThemeContext);
+  }
+},665,[71,182],"src/contexts/ThemeContext.tsx");
+__d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
+  var _interopRequireDefault = _$$_REQUIRE(_dependencyMap[0], "@babel/runtime/helpers/interopRequireDefault");
+  Object.defineProperty(exports, "__esModule", {
+    value: true
+  });
+  exports.default = CheckInScreen;
+  var _asyncToGenerator2 = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[1], "@babel/runtime/helpers/asyncToGenerator"));
+  var _slicedToArray2 = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[2], "@babel/runtime/helpers/slicedToArray"));
+  var _react = _interopRequireWildcard(_$$_REQUIRE(_dependencyMap[3], "react"));
+  var _reactNative = _$$_REQUIRE(_dependencyMap[4], "react-native");
+  var _SchedulerService = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[5], "../services/SchedulerService"));
+  var _SettingsService = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[6], "../services/SettingsService"));
+  var _StorageService = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[7], "../services/StorageService"));
+  var _TranscriptionService = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[8], "../services/TranscriptionService"));
+  var _jsxRuntime = _$$_REQUIRE(_dependencyMap[9], "react/jsx-runtime");
+  var _jsxFileName = "C:\\Users\\ronen\\TimeAnalyzer\\src\\screens\\CheckInScreen.tsx";
+  function _interopRequireWildcard(e, t) { if ("function" == typeof WeakMap) var r = new WeakMap(), n = new WeakMap(); return (_interopRequireWildcard = function (e, t) { if (!t && e && e.__esModule) return e; var o, i, f = { __proto__: null, default: e }; if (null === e || "object" != typeof e && "function" != typeof e) return f; if (o = t ? n : r) { if (o.has(e)) return o.get(e); o.set(e, f); } for (var _t in e) "default" !== _t && {}.hasOwnProperty.call(e, _t) && ((i = (o = Object.defineProperty) && Object.getOwnPropertyDescriptor(e, _t)) && (i.get || i.set) ? o(f, _t, i) : f[_t] = e[_t]); return f; })(e, t); }
+  function formatDuration(ms) {
+    var totalSeconds = Math.floor(ms / 1000);
+    var m = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
+    var s = (totalSeconds % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+  }
+  function formatHour(ts) {
+    var d = new Date(ts);
+    return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+  }
+  function CheckInScreen({
+    periodStart,
+    periodEnd,
+    onDone,
+    onCancel
+  }) {
+    var insets = (0, _$$_REQUIRE(_dependencyMap[10], "react-native-safe-area-context").useSafeAreaInsets)();
+    var _useTheme = (0, _$$_REQUIRE(_dependencyMap[11], "../contexts/ThemeContext").useTheme)(),
+      colors = _useTheme.colors;
+    var _useState = (0, _react.useState)('idle'),
+      _useState2 = (0, _slicedToArray2.default)(_useState, 2),
+      phase = _useState2[0],
+      setPhase = _useState2[1];
+    var _useState3 = (0, _react.useState)(0),
+      _useState4 = (0, _slicedToArray2.default)(_useState3, 2),
+      recordingMs = _useState4[0],
+      setRecordingMs = _useState4[1];
+    var _useState5 = (0, _react.useState)(''),
+      _useState6 = (0, _slicedToArray2.default)(_useState5, 2),
+      partialTranscript = _useState6[0],
+      setPartialTranscript = _useState6[1];
+    var _useState7 = (0, _react.useState)(''),
+      _useState8 = (0, _slicedToArray2.default)(_useState7, 2),
+      transcript = _useState8[0],
+      setTranscript = _useState8[1];
+    var _useState9 = (0, _react.useState)([]),
+      _useState0 = (0, _slicedToArray2.default)(_useState9, 2),
+      notes = _useState0[0],
+      setNotes = _useState0[1];
+    var _useState1 = (0, _react.useState)('note'),
+      _useState10 = (0, _slicedToArray2.default)(_useState1, 2),
+      noteKeyword = _useState10[0],
+      setNoteKeyword = _useState10[1];
+    var timerRef = (0, _react.useRef)(null);
+    (0, _react.useEffect)(() => {
+      _SettingsService.default.load().then(s => setNoteKeyword(s.noteKeyword));
+      return () => {
+        if (timerRef.current) clearInterval(timerRef.current);
+        _TranscriptionService.default.stop().catch(() => {});
+      };
+    }, []);
+    function requestMicPermission() {
+      return _requestMicPermission.apply(this, arguments);
+    }
+    function _requestMicPermission() {
+      _requestMicPermission = (0, _asyncToGenerator2.default)(function* () {
+        if ("android" !== 'android') return true;
+        var granted = yield _reactNative.PermissionsAndroid.request(_reactNative.PermissionsAndroid.PERMISSIONS.RECORD_AUDIO, {
+          title: 'Microphone Permission',
+          message: 'TimeAnalyzer needs the microphone to record your check-in.',
+          buttonPositive: 'Allow'
+        });
+        return granted === _reactNative.PermissionsAndroid.RESULTS.GRANTED;
+      });
+      return _requestMicPermission.apply(this, arguments);
+    }
+    function startRecording() {
+      return _startRecording.apply(this, arguments);
+    }
+    function _startRecording() {
+      _startRecording = (0, _asyncToGenerator2.default)(function* () {
+        var ok = yield requestMicPermission();
+        if (!ok) {
+          _reactNative.Alert.alert('Permission denied', 'Microphone access is required to record a check-in.');
+          return;
+        }
+        setRecordingMs(0);
+        setPartialTranscript('');
+        setPhase('recording');
+        var start = Date.now();
+        timerRef.current = setInterval(() => setRecordingMs(Date.now() - start), 100);
+        try {
+          yield _TranscriptionService.default.start(partial => setPartialTranscript(partial));
+        } catch (e) {
+          if (timerRef.current) {
+            clearInterval(timerRef.current);
+            timerRef.current = null;
+          }
+          _reactNative.Alert.alert('Speech start failed', String(e?.message ?? e));
+          setPhase('idle');
+        }
+      });
+      return _startRecording.apply(this, arguments);
+    }
+    function stopRecording() {
+      return _stopRecording.apply(this, arguments);
+    }
+    function _stopRecording() {
+      _stopRecording = (0, _asyncToGenerator2.default)(function* () {
+        if (timerRef.current) {
+          clearInterval(timerRef.current);
+          timerRef.current = null;
+        }
+        setPhase('transcribing');
+        try {
+          var finalText = yield _TranscriptionService.default.stop();
+          var _parseTranscriptAndNo2 = (0, _$$_REQUIRE(_dependencyMap[12], "../utils/parseTranscript").parseTranscriptAndNotes)(finalText || partialTranscript, noteKeyword),
+            parsed = _parseTranscriptAndNo2.transcript,
+            detectedNotes = _parseTranscriptAndNo2.notes;
+          setTranscript(parsed);
+          if (detectedNotes.length > 0) setNotes(detectedNotes);
+          setPhase('confirming');
+        } catch (e) {
+          _reactNative.Alert.alert('Transcription failed', String(e?.message ?? e));
+          setPhase('idle');
+        }
+      });
+      return _stopRecording.apply(this, arguments);
+    }
+    function handleReRecord() {
+      setTranscript('');
+      setPartialTranscript('');
+      setRecordingMs(0);
+      setNotes([]);
+      setPhase('idle');
+    }
+    function addNote() {
+      setNotes(prev => [...prev, '']);
+    }
+    function updateNote(index, text) {
+      setNotes(prev => prev.map((n, i) => i === index ? text : n));
+    }
+    function removeNote(index) {
+      setNotes(prev => prev.filter((_, i) => i !== index));
+    }
+    function handleConfirm() {
+      return _handleConfirm.apply(this, arguments);
+    }
+    function _handleConfirm() {
+      _handleConfirm = (0, _asyncToGenerator2.default)(function* () {
+        var entry = yield _StorageService.default.save({
+          timestampStart: periodStart,
+          timestampEnd: periodEnd,
+          transcript
+        });
+        var now = Date.now();
+        yield Promise.all(notes.filter(n => n.trim().length > 0).map(text => _StorageService.default.saveNote({
+          entryId: entry.id,
+          text: text.trim(),
+          createdAt: now
+        })));
+        var moreToday = yield _SchedulerService.default.hasMoreCheckInsToday();
+        if (!moreToday) {
+          yield _SchedulerService.default.fireEndOfDayReport();
+        }
+        onDone(transcript);
+      });
+      return _handleConfirm.apply(this, arguments);
+    }
+    var canSubmitTyped = transcript.trim().length > 0;
+    function handleTypedSubmit() {
+      var _parseTranscriptAndNo = (0, _$$_REQUIRE(_dependencyMap[12], "../utils/parseTranscript").parseTranscriptAndNotes)(transcript, noteKeyword),
+        parsed = _parseTranscriptAndNo.transcript,
+        detectedNotes = _parseTranscriptAndNo.notes;
+      setTranscript(parsed);
+      if (detectedNotes.length > 0) setNotes(prev => [...prev, ...detectedNotes]);
+      setPhase('confirming');
+    }
+    var styles = makeStyles(colors);
+    return /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.KeyboardAvoidingView, {
+      style: [styles.container, {
+        paddingTop: insets.top,
+        paddingBottom: insets.bottom
+      }],
+      behavior: "android" === 'ios' ? 'padding' : 'height',
+      children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+        style: styles.header,
+        children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
+          onPress: onCancel,
+          children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+            style: styles.cancel,
+            children: "Cancel"
+          })
+        }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+          style: styles.title,
+          children: "Check-in"
+        }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
+          style: styles.cancelPlaceholder
+        })]
+      }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+        style: styles.periodBadge,
+        children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
+          style: styles.periodText,
+          children: [formatHour(periodStart), " \u2013 ", formatHour(periodEnd)]
+        }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+          style: styles.periodSub,
+          children: "What did you work on?"
+        })]
+      }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+        style: styles.body,
+        children: [phase === 'idle' && /*#__PURE__*/(0, _jsxRuntime.jsxs)(_jsxRuntime.Fragment, {
+          children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TextInput, {
+            style: styles.typeInput,
+            value: transcript,
+            onChangeText: setTranscript,
+            placeholder: "Type what you worked on...",
+            placeholderTextColor: colors.placeholder,
+            multiline: true,
+            textAlignVertical: "top"
+          }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
+            style: [styles.submitBtn, !canSubmitTyped && styles.submitBtnDisabled],
+            onPress: handleTypedSubmit,
+            disabled: !canSubmitTyped,
+            children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+              style: styles.submitBtnText,
+              children: "Submit"
+            })
+          }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+            style: styles.orRow,
+            children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
+              style: styles.orLine
+            }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+              style: styles.orText,
+              children: "or speak"
+            }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
+              style: styles.orLine
+            })]
+          }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
+            style: styles.recordBtn,
+            onPress: startRecording,
+            children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+              style: styles.recordBtnText,
+              children: "Record"
+            })
+          })]
+        }), phase === 'recording' && /*#__PURE__*/(0, _jsxRuntime.jsxs)(_jsxRuntime.Fragment, {
+          children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+            style: styles.timerBox,
+            children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+              style: styles.timer,
+              children: formatDuration(recordingMs)
+            }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
+              style: styles.recDot
+            })]
+          }), partialTranscript.length > 0 && /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.ScrollView, {
+            style: styles.liveBox,
+            contentContainerStyle: styles.liveContent,
+            children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+              style: styles.liveText,
+              children: partialTranscript
+            })
+          }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
+            style: [styles.recordBtn, styles.stopBtn],
+            onPress: stopRecording,
+            children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+              style: styles.recordBtnText,
+              children: "Stop"
+            })
+          })]
+        }), phase === 'transcribing' && /*#__PURE__*/(0, _jsxRuntime.jsxs)(_jsxRuntime.Fragment, {
+          children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.ActivityIndicator, {
+            size: "large",
+            color: colors.accent
+          }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+            style: styles.transcribingLabel,
+            children: "Transcribing\u2026"
+          })]
+        }), phase === 'confirming' && /*#__PURE__*/(0, _jsxRuntime.jsxs)(_jsxRuntime.Fragment, {
+          children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+            style: styles.confirmLabel,
+            children: "Review your check-in"
+          }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TextInput, {
+            style: styles.typeInput,
+            value: transcript,
+            onChangeText: setTranscript,
+            multiline: true,
+            textAlignVertical: "top",
+            autoFocus: true
+          }), notes.map((note, i) => /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+            style: styles.noteRow,
+            children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TextInput, {
+              style: styles.noteInput,
+              value: note,
+              onChangeText: t => updateNote(i, t),
+              placeholder: "Add a note\u2026",
+              placeholderTextColor: colors.placeholder,
+              multiline: true,
+              textAlignVertical: "top"
+            }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
+              onPress: () => removeNote(i),
+              style: styles.noteRemove,
+              children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                style: styles.noteRemoveText,
+                children: "\u2715"
+              })
+            })]
+          }, i)), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
+            style: styles.addNoteBtn,
+            onPress: addNote,
+            children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+              style: styles.addNoteBtnText,
+              children: "+ Add note"
+            })
+          }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+            style: styles.confirmRow,
+            children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
+              style: styles.rerecordBtn,
+              onPress: handleReRecord,
+              children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                style: styles.rerecordText,
+                children: "Re-record"
+              })
+            }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
+              style: styles.confirmBtn,
+              onPress: handleConfirm,
+              children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                style: styles.confirmText,
+                children: "Confirm"
+              })
+            })]
+          })]
+        })]
+      })]
+    });
+  }
+  function makeStyles(colors) {
+    return _reactNative.StyleSheet.create({
+      container: {
+        flex: 1,
+        backgroundColor: colors.background
+      },
+      header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        backgroundColor: colors.surface,
+        borderBottomWidth: _reactNative.StyleSheet.hairlineWidth,
+        borderBottomColor: colors.border
+      },
+      title: {
+        fontSize: 17,
+        fontWeight: '600',
+        color: colors.text
+      },
+      cancel: {
+        fontSize: 17,
+        color: colors.textSecondary
+      },
+      cancelPlaceholder: {
+        width: 50
+      },
+      periodBadge: {
+        alignItems: 'center',
+        paddingVertical: 20
+      },
+      periodText: {
+        fontSize: 22,
+        fontWeight: '700',
+        color: colors.text
+      },
+      periodSub: {
+        fontSize: 14,
+        color: colors.textSecondary,
+        marginTop: 4
+      },
+      body: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'flex-start',
+        paddingHorizontal: 24,
+        paddingTop: 24,
+        gap: 20
+      },
+      typeInput: {
+        width: '100%',
+        minHeight: 140,
+        backgroundColor: colors.surface,
+        borderRadius: 12,
+        padding: 14,
+        fontSize: 16,
+        color: colors.text,
+        lineHeight: 24,
+        borderWidth: 1.5,
+        borderColor: colors.accent
+      },
+      submitBtn: {
+        width: '100%',
+        paddingVertical: 14,
+        borderRadius: 10,
+        backgroundColor: colors.accent,
+        alignItems: 'center'
+      },
+      submitBtnDisabled: {
+        backgroundColor: colors.placeholder
+      },
+      submitBtnText: {
+        fontSize: 16,
+        color: '#fff',
+        fontWeight: '600'
+      },
+      orRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        width: '100%',
+        gap: 10
+      },
+      orLine: {
+        flex: 1,
+        height: _reactNative.StyleSheet.hairlineWidth,
+        backgroundColor: colors.border
+      },
+      orText: {
+        fontSize: 13,
+        color: colors.textSecondary
+      },
+      timerBox: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        marginTop: 40
+      },
+      timer: {
+        fontSize: 48,
+        fontWeight: '200',
+        color: colors.text,
+        fontVariant: ['tabular-nums']
+      },
+      recDot: {
+        width: 12,
+        height: 12,
+        borderRadius: 6,
+        backgroundColor: colors.recordBtn
+      },
+      recordBtn: {
+        width: 120,
+        height: 120,
+        borderRadius: 60,
+        backgroundColor: colors.recordBtn,
+        alignItems: 'center',
+        justifyContent: 'center',
+        shadowColor: colors.recordBtn,
+        shadowOpacity: 0.4,
+        shadowRadius: 12,
+        elevation: 8
+      },
+      stopBtn: {
+        backgroundColor: colors.recordBtn,
+        shadowColor: colors.recordBtn
+      },
+      recordBtnText: {
+        fontSize: 22,
+        fontWeight: '600',
+        color: '#fff'
+      },
+      transcribingLabel: {
+        fontSize: 16,
+        color: colors.textSecondary,
+        marginTop: 16
+      },
+      liveBox: {
+        width: '100%',
+        maxHeight: 120,
+        backgroundColor: colors.surface,
+        borderRadius: 10
+      },
+      liveContent: {
+        padding: 16
+      },
+      liveText: {
+        fontSize: 15,
+        color: colors.textSecondary,
+        lineHeight: 22,
+        fontStyle: 'italic'
+      },
+      confirmLabel: {
+        fontSize: 18,
+        fontWeight: '600',
+        color: colors.text,
+        alignSelf: 'flex-start'
+      },
+      noteRow: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        width: '100%',
+        gap: 8
+      },
+      noteInput: {
+        flex: 1,
+        minHeight: 60,
+        backgroundColor: colors.surface,
+        borderRadius: 10,
+        padding: 12,
+        fontSize: 15,
+        color: colors.text,
+        lineHeight: 22,
+        borderWidth: 1,
+        borderColor: colors.border,
+        textAlignVertical: 'top'
+      },
+      noteRemove: {
+        paddingTop: 14,
+        paddingHorizontal: 4
+      },
+      noteRemoveText: {
+        fontSize: 16,
+        color: colors.placeholder
+      },
+      addNoteBtn: {
+        alignSelf: 'flex-start'
+      },
+      addNoteBtnText: {
+        fontSize: 15,
+        color: colors.accent,
+        fontWeight: '500'
+      },
+      confirmRow: {
+        flexDirection: 'row',
+        gap: 12,
+        width: '100%'
+      },
+      rerecordBtn: {
+        flex: 1,
+        paddingVertical: 14,
+        borderRadius: 10,
+        backgroundColor: colors.surface,
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: colors.border
+      },
+      rerecordText: {
+        fontSize: 16,
+        color: colors.text,
+        fontWeight: '500'
+      },
+      confirmBtn: {
+        flex: 1,
+        paddingVertical: 14,
+        borderRadius: 10,
+        backgroundColor: colors.accent,
+        alignItems: 'center'
+      },
+      confirmText: {
+        fontSize: 16,
+        color: '#fff',
+        fontWeight: '600'
+      }
+    });
+  }
+},666,[1,178,14,71,2,639,641,650,667,182,656,665,669],"src/screens/CheckInScreen.tsx");
+__d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
+  var _interopRequireDefault = _$$_REQUIRE(_dependencyMap[0], "@babel/runtime/helpers/interopRequireDefault");
+  Object.defineProperty(exports, "__esModule", {
+    value: true
+  });
+  exports.default = void 0;
+  var _asyncToGenerator2 = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[1], "@babel/runtime/helpers/asyncToGenerator"));
+  var _WhisperTranscriptionProvider = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[2], "../providers/transcription/WhisperTranscriptionProvider"));
+  var activeProvider = _WhisperTranscriptionProvider.default;
+  function setProvider(provider) {
+    activeProvider = provider;
+  }
+  function start(_x) {
+    return _start.apply(this, arguments);
+  }
+  function _start() {
+    _start = (0, _asyncToGenerator2.default)(function* (onPartialResult) {
+      return activeProvider.start(onPartialResult);
+    });
+    return _start.apply(this, arguments);
+  }
+  function stop() {
+    return _stop.apply(this, arguments);
+  }
+  function _stop() {
+    _stop = (0, _asyncToGenerator2.default)(function* () {
+      return activeProvider.stop();
+    });
+    return _stop.apply(this, arguments);
+  }
+  var TranscriptionService = {
+    start,
+    stop,
+    setProvider
+  };
+  var _default = exports.default = TranscriptionService;
+},667,[1,178,668],"src/services/TranscriptionService.ts");
+__d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
+  var _interopRequireDefault = _$$_REQUIRE(_dependencyMap[0], "@babel/runtime/helpers/interopRequireDefault");
+  Object.defineProperty(exports, "__esModule", {
+    value: true
+  });
+  exports.default = void 0;
+  var _asyncToGenerator2 = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[1], "@babel/runtime/helpers/asyncToGenerator"));
+  var _reactNative = _$$_REQUIRE(_dependencyMap[2], "react-native");
+  var _SettingsService = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[3], "../../services/SettingsService"));
+  var AudioRecorder = _reactNative.NativeModules.AudioRecorder;
+  var WhisperTranscriptionProvider = {
+    start(_onPartialResult) {
+      return (0, _asyncToGenerator2.default)(function* () {
+        yield AudioRecorder.startRecording();
+      })();
+    },
+    stop() {
+      return (0, _asyncToGenerator2.default)(function* () {
+        var audioUri = yield AudioRecorder.stopRecording();
+        var apiKey = yield _SettingsService.default.getGroqApiKey();
+        if (!apiKey) throw new Error('Groq API key not set. Add it in Settings.');
+        var formData = new FormData();
+        formData.append('file', {
+          uri: audioUri,
+          type: 'audio/m4a',
+          name: 'checkin.m4a'
+        });
+        formData.append('model', 'whisper-large-v3-turbo');
+        formData.append('language', 'en');
+        var response = yield fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            'Content-Type': 'multipart/form-data'
+          },
+          body: formData
+        });
+        if (!response.ok) {
+          var err = yield response.text();
+          throw new Error(`Groq API error ${response.status}: ${err}`);
+        }
+        var json = yield response.json();
+        return json.text ?? '';
+      })();
+    }
+  };
+  var _default = exports.default = WhisperTranscriptionProvider;
+},668,[1,178,2,641],"src/providers/transcription/WhisperTranscriptionProvider.ts");
+__d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
+  Object.defineProperty(exports, "__esModule", {
+    value: true
+  });
+  exports.applyTranscription = applyTranscription;
   exports.parseTranscriptAndNotes = parseTranscriptAndNotes;
-  // Explicit separator: "note:" / "note," / "note-" / "note–"
-  var NOTE_MARKER = /\bnote\s*[,.:–\-]\s*/i;
-  function parseTranscriptAndNotes(raw) {
-    // Speech recognition rarely outputs colons. Normalize "note" at the start of a
-    // new sentence (after . ! ?) without an explicit separator, e.g.:
-    //   "Worked on auth. Note check the PR" → "Worked on auth. Note: check the PR"
-    var normalized = raw.replace(/([.!?]\s+)(note)(?!\s*[,.:–\-])\s/gi, '$1$2: ');
+  /**
+   * Apply a transcription result to existing text.
+   * If the transcription starts with appendKeyword + space, the rest is appended.
+   * Otherwise the existing text is replaced entirely.
+   */
+  function applyTranscription(existing, raw, appendKeyword = 'append') {
+    var trimmed = raw.trim();
+    var escaped = appendKeyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    var match = trimmed.match(new RegExp(`^${escaped}\\s+([\\s\\S]+)`, 'i'));
+    if (match) {
+      var toAppend = match[1].trim();
+      return existing.trim() ? `${existing.trim()} ${toAppend}` : toAppend;
+    }
+    return trimmed;
+  }
+  function parseTranscriptAndNotes(raw, noteKeyword = 'note') {
+    var escaped = noteKeyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    var NOTE_MARKER = new RegExp(`\\b${escaped}\\s*[,.:–\\-]\\s*`, 'gi');
+    // Speech recognition rarely outputs colons — normalize keyword after sentence
+    // boundary without explicit separator, e.g. "Done. Note check PR" → "Done. Note: check PR"
+    var normalized = raw.replace(new RegExp(`([.!?]\\s+)(${escaped})(?!\\s*[,.:–\\-])\\s`, 'gi'), '$1$2: ');
     var parts = normalized.split(NOTE_MARKER);
     var transcript = parts[0].trim();
     var notes = parts.slice(1).map(n => n.trim()).filter(n => n.length > 0);
@@ -106595,7 +106932,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       notes
     };
   }
-},667,[],"src/utils/parseTranscript.ts");
+},669,[],"src/utils/parseTranscript.ts");
 __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
   var _interopRequireDefault = _$$_REQUIRE(_dependencyMap[0], "@babel/runtime/helpers/interopRequireDefault");
   Object.defineProperty(exports, "__esModule", {
@@ -106634,10 +106971,12 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
   }
   function ReportScreen({
     onStartCheckIn,
-    onOpenSettings,
+    onOpenMenu,
     initialDate
   }) {
     var insets = (0, _$$_REQUIRE(_dependencyMap[8], "react-native-safe-area-context").useSafeAreaInsets)();
+    var _useTheme = (0, _$$_REQUIRE(_dependencyMap[9], "../contexts/ThemeContext").useTheme)(),
+      colors = _useTheme.colors;
     var _useState = (0, _react.useState)(initialDate ?? new Date()),
       _useState2 = (0, _slicedToArray2.default)(_useState, 2),
       currentDate = _useState2[0],
@@ -106675,6 +107014,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       setCurrentDate(d => new Date(d.getTime() + 86_400_000));
     }
     var canGoForward = !isToday(currentDate);
+    var styles = makeStyles(colors);
     function handleEntrySaved(updated) {
       setEntries(prev => prev.map(e => e.id === updated.id ? updated : e));
       setSelectedEntry(null);
@@ -106693,7 +107033,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
         style: styles.topBar,
         children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
-          onPress: onOpenSettings,
+          onPress: onOpenMenu,
           style: styles.menuBtn,
           children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
             style: styles.menuIcon,
@@ -106730,7 +107070,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         style: styles.centered,
         children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.ActivityIndicator, {
           size: "large",
-          color: "#007AFF"
+          color: colors.accent
         })
       }) : entries.length === 0 ? /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
         style: styles.centered,
@@ -106769,128 +107109,130 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       })]
     });
   }
-  var styles = _reactNative.StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: '#f2f2f7'
-    },
-    topBar: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      paddingHorizontal: 16,
-      paddingVertical: 10,
-      backgroundColor: '#fff',
-      borderBottomWidth: _reactNative.StyleSheet.hairlineWidth,
-      borderBottomColor: '#e0e0e0'
-    },
-    menuBtn: {
-      padding: 4,
-      width: 36
-    },
-    menuIcon: {
-      fontSize: 22,
-      color: '#007AFF'
-    },
-    appTitle: {
-      fontSize: 18,
-      fontWeight: '700',
-      color: '#000'
-    },
-    topBarSpacer: {
-      width: 36
-    },
-    dayNav: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      paddingHorizontal: 8,
-      paddingVertical: 12,
-      backgroundColor: '#fff',
-      borderBottomWidth: _reactNative.StyleSheet.hairlineWidth,
-      borderBottomColor: '#e0e0e0'
-    },
-    navBtn: {
-      padding: 8
-    },
-    navArrow: {
-      fontSize: 28,
-      color: '#007AFF',
-      fontWeight: '300'
-    },
-    navArrowDisabled: {
-      color: '#ccc'
-    },
-    dayLabel: {
-      fontSize: 16,
-      fontWeight: '600',
-      color: '#000'
-    },
-    centered: {
-      flex: 1,
-      alignItems: 'center',
-      justifyContent: 'center'
-    },
-    emptyText: {
-      fontSize: 16,
-      color: '#6d6d72'
-    },
-    list: {
-      padding: 16,
-      gap: 12,
-      paddingBottom: 100
-    },
-    entryCardHeader: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: 8
-    },
-    entryId: {
-      fontSize: 11,
-      color: '#c0c0c0',
-      fontWeight: '500'
-    },
-    entryCard: {
-      backgroundColor: '#fff',
-      borderRadius: 12,
-      padding: 16,
-      shadowColor: '#000',
-      shadowOpacity: 0.05,
-      shadowRadius: 4,
-      elevation: 2
-    },
-    timeRange: {
-      fontSize: 14,
-      fontWeight: '700',
-      color: '#007AFF'
-    },
-    transcript: {
-      fontSize: 15,
-      color: '#000',
-      lineHeight: 22
-    },
-    fab: {
-      position: 'absolute',
-      right: 24,
-      width: 60,
-      height: 60,
-      borderRadius: 30,
-      backgroundColor: '#007AFF',
-      alignItems: 'center',
-      justifyContent: 'center',
-      shadowColor: '#007AFF',
-      shadowOpacity: 0.4,
-      shadowRadius: 8,
-      elevation: 8
-    },
-    fabIcon: {
-      fontSize: 32,
-      color: '#fff',
-      lineHeight: 36
-    }
-  });
-},668,[1,178,14,71,2,669,650,182,658],"src/screens/ReportScreen.tsx");
+  function makeStyles(colors) {
+    return _reactNative.StyleSheet.create({
+      container: {
+        flex: 1,
+        backgroundColor: colors.background
+      },
+      topBar: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        backgroundColor: colors.surface,
+        borderBottomWidth: _reactNative.StyleSheet.hairlineWidth,
+        borderBottomColor: colors.border
+      },
+      menuBtn: {
+        padding: 4,
+        width: 36
+      },
+      menuIcon: {
+        fontSize: 22,
+        color: colors.accent
+      },
+      appTitle: {
+        fontSize: 18,
+        fontWeight: '700',
+        color: colors.text
+      },
+      topBarSpacer: {
+        width: 36
+      },
+      dayNav: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 8,
+        paddingVertical: 12,
+        backgroundColor: colors.surface,
+        borderBottomWidth: _reactNative.StyleSheet.hairlineWidth,
+        borderBottomColor: colors.border
+      },
+      navBtn: {
+        padding: 8
+      },
+      navArrow: {
+        fontSize: 28,
+        color: colors.accent,
+        fontWeight: '300'
+      },
+      navArrowDisabled: {
+        color: colors.border
+      },
+      dayLabel: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: colors.text
+      },
+      centered: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center'
+      },
+      emptyText: {
+        fontSize: 16,
+        color: colors.textSecondary
+      },
+      list: {
+        padding: 16,
+        gap: 12,
+        paddingBottom: 100
+      },
+      entryCardHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 8
+      },
+      entryId: {
+        fontSize: 11,
+        color: colors.border,
+        fontWeight: '500'
+      },
+      entryCard: {
+        backgroundColor: colors.surface,
+        borderRadius: 12,
+        padding: 16,
+        shadowColor: '#000',
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+        elevation: 2
+      },
+      timeRange: {
+        fontSize: 14,
+        fontWeight: '700',
+        color: colors.accent
+      },
+      transcript: {
+        fontSize: 15,
+        color: colors.text,
+        lineHeight: 22
+      },
+      fab: {
+        position: 'absolute',
+        right: 24,
+        width: 60,
+        height: 60,
+        borderRadius: 30,
+        backgroundColor: colors.accent,
+        alignItems: 'center',
+        justifyContent: 'center',
+        shadowColor: colors.accent,
+        shadowOpacity: 0.4,
+        shadowRadius: 8,
+        elevation: 8
+      },
+      fabIcon: {
+        fontSize: 32,
+        color: '#fff',
+        lineHeight: 36
+      }
+    });
+  }
+},670,[1,178,14,71,2,671,650,182,656,665],"src/screens/ReportScreen.tsx");
 __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
   var _interopRequireDefault = _$$_REQUIRE(_dependencyMap[0], "@babel/runtime/helpers/interopRequireDefault");
   Object.defineProperty(exports, "__esModule", {
@@ -106902,8 +107244,10 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
   var _react = _interopRequireWildcard(_$$_REQUIRE(_dependencyMap[3], "react"));
   var _reactNative = _$$_REQUIRE(_dependencyMap[4], "react-native");
   var _StorageService = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[5], "../services/StorageService"));
-  var _NoteDetailScreen = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[6], "./NoteDetailScreen"));
-  var _jsxRuntime = _$$_REQUIRE(_dependencyMap[7], "react/jsx-runtime");
+  var _DictateBar = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[6], "../components/DictateBar"));
+  var _SettingsService = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[7], "../services/SettingsService"));
+  var _NoteDetailScreen = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[8], "./NoteDetailScreen"));
+  var _jsxRuntime = _$$_REQUIRE(_dependencyMap[9], "react/jsx-runtime");
   var _jsxFileName = "C:\\Users\\ronen\\TimeAnalyzer\\src\\screens\\EntryDetailScreen.tsx";
   function _interopRequireWildcard(e, t) { if ("function" == typeof WeakMap) var r = new WeakMap(), n = new WeakMap(); return (_interopRequireWildcard = function (e, t) { if (!t && e && e.__esModule) return e; var o, i, f = { __proto__: null, default: e }; if (null === e || "object" != typeof e && "function" != typeof e) return f; if (o = t ? n : r) { if (o.has(e)) return o.get(e); o.set(e, f); } for (var _t in e) "default" !== _t && {}.hasOwnProperty.call(e, _t) && ((i = (o = Object.defineProperty) && Object.getOwnPropertyDescriptor(e, _t)) && (i.get || i.set) ? o(f, _t, i) : f[_t] = e[_t]); return f; })(e, t); }
   function tsToTimeString(ts) {
@@ -106925,7 +107269,9 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
     onSave,
     onClose
   }) {
-    var insets = (0, _$$_REQUIRE(_dependencyMap[8], "react-native-safe-area-context").useSafeAreaInsets)();
+    var insets = (0, _$$_REQUIRE(_dependencyMap[10], "react-native-safe-area-context").useSafeAreaInsets)();
+    var _useTheme = (0, _$$_REQUIRE(_dependencyMap[11], "../contexts/ThemeContext").useTheme)(),
+      colors = _useTheme.colors;
     var _useState = (0, _react.useState)(false),
       _useState2 = (0, _slicedToArray2.default)(_useState, 2),
       editing = _useState2[0],
@@ -106958,8 +107304,13 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       _useState14 = (0, _slicedToArray2.default)(_useState13, 2),
       selectedNote = _useState14[0],
       setSelectedNote = _useState14[1];
+    var _useState15 = (0, _react.useState)('append'),
+      _useState16 = (0, _slicedToArray2.default)(_useState15, 2),
+      appendKeyword = _useState16[0],
+      setAppendKeyword = _useState16[1];
     (0, _react.useEffect)(() => {
       _StorageService.default.getNotesByEntryId(entry.id).then(setNotes);
+      _SettingsService.default.load().then(s => setAppendKeyword(s.appendKeyword));
     }, [entry.id]);
     function handleCancel() {
       setTranscript(entry.transcript);
@@ -106994,8 +107345,6 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
           transcript: transcript.trim()
         };
         yield _StorageService.default.update(updated);
-
-        // save edited notes
         yield Promise.all(Object.entries(editingNotes).map(([idStr, text]) => {
           var note = notes.find(n => n.id === parseInt(idStr, 10));
           if (!note) return Promise.resolve();
@@ -107055,6 +107404,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         onClose: () => setSelectedNote(null)
       });
     }
+    var styles = makeStyles(colors);
     return /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
       style: [styles.container, {
         paddingTop: insets.top,
@@ -107125,13 +107475,17 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
           children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
             style: styles.label,
             children: "TRANSCRIPT"
-          }), editing ? /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TextInput, {
-            style: styles.transcriptInput,
-            value: transcript,
-            onChangeText: setTranscript,
-            multiline: true,
-            autoFocus: true,
-            textAlignVertical: "top"
+          }), editing ? /*#__PURE__*/(0, _jsxRuntime.jsxs)(_jsxRuntime.Fragment, {
+            children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TextInput, {
+              style: styles.transcriptInput,
+              value: transcript,
+              onChangeText: setTranscript,
+              multiline: true,
+              autoFocus: true,
+              textAlignVertical: "top"
+            }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_DictateBar.default, {
+              onResult: raw => setTranscript(prev => (0, _$$_REQUIRE(_dependencyMap[12], "../utils/parseTranscript").applyTranscription)(prev, raw, appendKeyword))
+            })]
           }) : /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
             style: styles.transcriptText,
             children: entry.transcript
@@ -107181,7 +107535,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
             value: newNoteText,
             onChangeText: setNewNoteText,
             placeholder: "New note\u2026",
-            placeholderTextColor: "#aaa",
+            placeholderTextColor: colors.placeholder,
             multiline: true,
             textAlignVertical: "top"
           }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
@@ -107197,186 +107551,368 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       })]
     });
   }
-  var styles = _reactNative.StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: '#f2f2f7'
-    },
-    header: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      paddingHorizontal: 16,
-      paddingVertical: 12,
-      backgroundColor: '#fff',
-      borderBottomWidth: _reactNative.StyleSheet.hairlineWidth,
-      borderBottomColor: '#ccc'
-    },
-    headerTitle: {
-      fontSize: 17,
-      fontWeight: '600'
-    },
-    headerId: {
-      fontSize: 13,
-      fontWeight: '400',
-      color: '#c0c0c0'
-    },
-    headerBtn: {
-      fontSize: 17,
-      color: '#007AFF'
-    },
-    editBtn: {
-      color: '#007AFF'
-    },
-    saveBtn: {
-      fontWeight: '600'
-    },
-    body: {
-      padding: 16,
-      gap: 20,
-      paddingBottom: 40
-    },
-    section: {
-      backgroundColor: '#fff',
-      borderRadius: 12,
-      padding: 16
-    },
-    label: {
-      fontSize: 11,
-      fontWeight: '600',
-      color: '#6d6d72',
-      letterSpacing: 0.5,
-      marginBottom: 10
-    },
-    timeRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 8
-    },
-    timeDisplay: {
-      fontSize: 18,
-      fontWeight: '600',
-      color: '#000'
-    },
-    timeInput: {
-      fontSize: 18,
-      fontWeight: '600',
-      color: '#000',
-      borderBottomWidth: 1.5,
-      borderBottomColor: '#007AFF',
-      paddingVertical: 4,
-      minWidth: 60,
-      textAlign: 'center'
-    },
-    timeSep: {
-      fontSize: 18,
-      color: '#000'
-    },
-    transcriptText: {
-      fontSize: 16,
-      color: '#000',
-      lineHeight: 24
-    },
-    transcriptInput: {
-      fontSize: 16,
-      color: '#000',
-      lineHeight: 24,
-      minHeight: 120,
-      borderWidth: 1,
-      borderColor: '#007AFF',
-      borderRadius: 8,
-      padding: 10
-    },
-    notesGroupLabel: {
-      fontSize: 11,
-      fontWeight: '600',
-      color: '#6d6d72',
-      letterSpacing: 0.5,
-      marginLeft: 4,
-      marginBottom: 8
-    },
-    emptyNotes: {
-      fontSize: 14,
-      color: '#aaa',
-      marginLeft: 4
-    },
-    noteCard: {
-      backgroundColor: '#fff',
-      borderRadius: 12,
-      padding: 14,
-      shadowColor: '#000',
-      shadowOpacity: 0.04,
-      shadowRadius: 3,
-      elevation: 1,
-      borderLeftWidth: 3,
-      borderLeftColor: '#007AFF'
-    },
-    noteCardHeader: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: 6
-    },
-    noteCardMeta: {
-      fontSize: 11,
-      color: '#b0b0b0',
-      fontWeight: '500'
-    },
-    noteDeleteText: {
-      fontSize: 15,
-      color: '#ff3b30',
-      paddingHorizontal: 4
-    },
-    noteText: {
-      fontSize: 15,
-      color: '#000',
-      lineHeight: 22
-    },
-    noteEditInput: {
-      fontSize: 15,
-      color: '#000',
-      lineHeight: 22,
-      borderWidth: 1,
-      borderColor: '#007AFF',
-      borderRadius: 8,
-      padding: 8,
-      minHeight: 60,
-      textAlignVertical: 'top'
-    },
-    addNoteCard: {
-      backgroundColor: '#fff',
-      borderRadius: 12,
-      padding: 14,
-      flexDirection: 'row',
-      alignItems: 'flex-end',
-      gap: 10,
-      borderWidth: _reactNative.StyleSheet.hairlineWidth,
-      borderColor: '#e0e0e0',
-      borderStyle: 'dashed'
-    },
-    addNoteInput: {
-      flex: 1,
-      fontSize: 15,
-      color: '#000',
-      minHeight: 44,
-      textAlignVertical: 'top'
-    },
-    addNoteBtn: {
-      paddingHorizontal: 14,
-      paddingVertical: 8,
-      backgroundColor: '#007AFF',
-      borderRadius: 8
-    },
-    addNoteBtnDisabled: {
-      backgroundColor: '#b0c8f0'
-    },
-    addNoteBtnText: {
-      fontSize: 15,
-      color: '#fff',
-      fontWeight: '600'
-    }
+  function makeStyles(colors) {
+    return _reactNative.StyleSheet.create({
+      container: {
+        flex: 1,
+        backgroundColor: colors.background
+      },
+      header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        backgroundColor: colors.surface,
+        borderBottomWidth: _reactNative.StyleSheet.hairlineWidth,
+        borderBottomColor: colors.border
+      },
+      headerTitle: {
+        fontSize: 17,
+        fontWeight: '600',
+        color: colors.text
+      },
+      headerId: {
+        fontSize: 13,
+        fontWeight: '400',
+        color: colors.border
+      },
+      headerBtn: {
+        fontSize: 17,
+        color: colors.accent
+      },
+      editBtn: {
+        color: colors.accent
+      },
+      saveBtn: {
+        fontWeight: '600'
+      },
+      body: {
+        padding: 16,
+        gap: 20,
+        paddingBottom: 40
+      },
+      section: {
+        backgroundColor: colors.surface,
+        borderRadius: 12,
+        padding: 16
+      },
+      label: {
+        fontSize: 11,
+        fontWeight: '600',
+        color: colors.textSecondary,
+        letterSpacing: 0.5,
+        marginBottom: 10
+      },
+      timeRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8
+      },
+      timeDisplay: {
+        fontSize: 18,
+        fontWeight: '600',
+        color: colors.text
+      },
+      timeInput: {
+        fontSize: 18,
+        fontWeight: '600',
+        color: colors.text,
+        borderBottomWidth: 1.5,
+        borderBottomColor: colors.accent,
+        paddingVertical: 4,
+        minWidth: 60,
+        textAlign: 'center'
+      },
+      timeSep: {
+        fontSize: 18,
+        color: colors.text
+      },
+      transcriptText: {
+        fontSize: 16,
+        color: colors.text,
+        lineHeight: 24
+      },
+      transcriptInput: {
+        fontSize: 16,
+        color: colors.text,
+        lineHeight: 24,
+        minHeight: 120,
+        borderWidth: 1,
+        borderColor: colors.accent,
+        borderRadius: 8,
+        padding: 10
+      },
+      notesGroupLabel: {
+        fontSize: 11,
+        fontWeight: '600',
+        color: colors.textSecondary,
+        letterSpacing: 0.5,
+        marginLeft: 4,
+        marginBottom: 8
+      },
+      emptyNotes: {
+        fontSize: 14,
+        color: colors.placeholder,
+        marginLeft: 4
+      },
+      noteCard: {
+        backgroundColor: colors.surface,
+        borderRadius: 12,
+        padding: 14,
+        shadowColor: '#000',
+        shadowOpacity: 0.04,
+        shadowRadius: 3,
+        elevation: 1,
+        borderLeftWidth: 3,
+        borderLeftColor: colors.accent
+      },
+      noteCardHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 6
+      },
+      noteCardMeta: {
+        fontSize: 11,
+        color: colors.placeholder,
+        fontWeight: '500'
+      },
+      noteDeleteText: {
+        fontSize: 15,
+        color: colors.recordBtn,
+        paddingHorizontal: 4
+      },
+      noteText: {
+        fontSize: 15,
+        color: colors.text,
+        lineHeight: 22
+      },
+      noteEditInput: {
+        fontSize: 15,
+        color: colors.text,
+        lineHeight: 22,
+        borderWidth: 1,
+        borderColor: colors.accent,
+        borderRadius: 8,
+        padding: 8,
+        minHeight: 60,
+        textAlignVertical: 'top'
+      },
+      addNoteCard: {
+        backgroundColor: colors.surface,
+        borderRadius: 12,
+        padding: 14,
+        flexDirection: 'row',
+        alignItems: 'flex-end',
+        gap: 10,
+        borderWidth: _reactNative.StyleSheet.hairlineWidth,
+        borderColor: colors.border,
+        borderStyle: 'dashed'
+      },
+      addNoteInput: {
+        flex: 1,
+        fontSize: 15,
+        color: colors.text,
+        minHeight: 44,
+        textAlignVertical: 'top'
+      },
+      addNoteBtn: {
+        paddingHorizontal: 14,
+        paddingVertical: 8,
+        backgroundColor: colors.accent,
+        borderRadius: 8
+      },
+      addNoteBtnDisabled: {
+        backgroundColor: colors.placeholder
+      },
+      addNoteBtnText: {
+        fontSize: 15,
+        color: '#fff',
+        fontWeight: '600'
+      }
+    });
+  }
+},671,[1,178,14,71,2,650,672,641,673,182,656,665,669],"src/screens/EntryDetailScreen.tsx");
+__d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
+  var _interopRequireDefault = _$$_REQUIRE(_dependencyMap[0], "@babel/runtime/helpers/interopRequireDefault");
+  Object.defineProperty(exports, "__esModule", {
+    value: true
   });
-},669,[1,178,14,71,2,650,670,182,658],"src/screens/EntryDetailScreen.tsx");
+  exports.default = DictateBar;
+  var _asyncToGenerator2 = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[1], "@babel/runtime/helpers/asyncToGenerator"));
+  var _slicedToArray2 = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[2], "@babel/runtime/helpers/slicedToArray"));
+  var _react = _interopRequireWildcard(_$$_REQUIRE(_dependencyMap[3], "react"));
+  var _reactNative = _$$_REQUIRE(_dependencyMap[4], "react-native");
+  var _TranscriptionService = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[5], "../services/TranscriptionService"));
+  var _jsxRuntime = _$$_REQUIRE(_dependencyMap[6], "react/jsx-runtime");
+  var _jsxFileName = "C:\\Users\\ronen\\TimeAnalyzer\\src\\components\\DictateBar.tsx";
+  function _interopRequireWildcard(e, t) { if ("function" == typeof WeakMap) var r = new WeakMap(), n = new WeakMap(); return (_interopRequireWildcard = function (e, t) { if (!t && e && e.__esModule) return e; var o, i, f = { __proto__: null, default: e }; if (null === e || "object" != typeof e && "function" != typeof e) return f; if (o = t ? n : r) { if (o.has(e)) return o.get(e); o.set(e, f); } for (var _t in e) "default" !== _t && {}.hasOwnProperty.call(e, _t) && ((i = (o = Object.defineProperty) && Object.getOwnPropertyDescriptor(e, _t)) && (i.get || i.set) ? o(f, _t, i) : f[_t] = e[_t]); return f; })(e, t); }
+  function DictateBar({
+    onResult
+  }) {
+    var _useTheme = (0, _$$_REQUIRE(_dependencyMap[7], "../contexts/ThemeContext").useTheme)(),
+      colors = _useTheme.colors;
+    var _useState = (0, _react.useState)('idle'),
+      _useState2 = (0, _slicedToArray2.default)(_useState, 2),
+      phase = _useState2[0],
+      setPhase = _useState2[1];
+    var _useState3 = (0, _react.useState)(''),
+      _useState4 = (0, _slicedToArray2.default)(_useState3, 2),
+      partial = _useState4[0],
+      setPartial = _useState4[1];
+    var partialRef = (0, _react.useRef)('');
+    function requestMic() {
+      return _requestMic.apply(this, arguments);
+    }
+    function _requestMic() {
+      _requestMic = (0, _asyncToGenerator2.default)(function* () {
+        if ("android" !== 'android') return true;
+        var granted = yield _reactNative.PermissionsAndroid.request(_reactNative.PermissionsAndroid.PERMISSIONS.RECORD_AUDIO, {
+          title: 'Microphone Permission',
+          message: 'TimeAnalyzer needs the microphone to transcribe.',
+          buttonPositive: 'Allow'
+        });
+        return granted === _reactNative.PermissionsAndroid.RESULTS.GRANTED;
+      });
+      return _requestMic.apply(this, arguments);
+    }
+    function handleStart() {
+      return _handleStart.apply(this, arguments);
+    }
+    function _handleStart() {
+      _handleStart = (0, _asyncToGenerator2.default)(function* () {
+        var ok = yield requestMic();
+        if (!ok) {
+          _reactNative.Alert.alert('Permission denied', 'Microphone access is required.');
+          return;
+        }
+        partialRef.current = '';
+        setPartial('');
+        setPhase('recording');
+        try {
+          yield _TranscriptionService.default.start(p => {
+            partialRef.current = p;
+            setPartial(p);
+          });
+        } catch (e) {
+          _reactNative.Alert.alert('Failed to start', String(e?.message ?? e));
+          setPhase('idle');
+        }
+      });
+      return _handleStart.apply(this, arguments);
+    }
+    function handleStop() {
+      return _handleStop.apply(this, arguments);
+    }
+    function _handleStop() {
+      _handleStop = (0, _asyncToGenerator2.default)(function* () {
+        setPhase('transcribing');
+        try {
+          var result = yield _TranscriptionService.default.stop();
+          onResult((result || partialRef.current).trim());
+        } catch (e) {
+          _reactNative.Alert.alert('Transcription failed', String(e?.message ?? e));
+        } finally {
+          setPartial('');
+          partialRef.current = '';
+          setPhase('idle');
+        }
+      });
+      return _handleStop.apply(this, arguments);
+    }
+    var styles = makeStyles(colors);
+    if (phase === 'transcribing') {
+      return /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+        style: styles.row,
+        children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.ActivityIndicator, {
+          size: "small",
+          color: colors.accent
+        }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+          style: styles.statusText,
+          children: "Transcribing\u2026"
+        })]
+      });
+    }
+    if (phase === 'recording') {
+      return /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+        style: styles.row,
+        children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
+          style: styles.recDot
+        }), partial.length > 0 && /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+          style: styles.partial,
+          numberOfLines: 1,
+          children: partial
+        }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
+          style: styles.stopBtn,
+          onPress: handleStop,
+          children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+            style: styles.stopBtnText,
+            children: "Stop"
+          })
+        })]
+      });
+    }
+    return /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
+      style: styles.dictateBtn,
+      onPress: handleStart,
+      children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+        style: styles.dictateBtnText,
+        children: "\uD83C\uDFA4 Dictate"
+      })
+    });
+  }
+  function makeStyles(colors) {
+    return _reactNative.StyleSheet.create({
+      row: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        paddingVertical: 6
+      },
+      recDot: {
+        width: 10,
+        height: 10,
+        borderRadius: 5,
+        backgroundColor: colors.recordBtn
+      },
+      partial: {
+        flex: 1,
+        fontSize: 13,
+        color: colors.textSecondary,
+        fontStyle: 'italic'
+      },
+      stopBtn: {
+        paddingHorizontal: 14,
+        paddingVertical: 6,
+        backgroundColor: colors.recordBtn,
+        borderRadius: 8
+      },
+      stopBtnText: {
+        fontSize: 13,
+        color: '#fff',
+        fontWeight: '600'
+      },
+      statusText: {
+        fontSize: 13,
+        color: colors.textSecondary,
+        marginLeft: 6
+      },
+      dictateBtn: {
+        alignSelf: 'flex-start',
+        paddingHorizontal: 14,
+        paddingVertical: 7,
+        backgroundColor: colors.surfaceSecondary,
+        borderRadius: 20
+      },
+      dictateBtnText: {
+        fontSize: 14,
+        color: colors.text,
+        fontWeight: '500'
+      }
+    });
+  }
+},672,[1,178,14,71,2,667,182,665],"src/components/DictateBar.tsx");
 __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
   var _interopRequireDefault = _$$_REQUIRE(_dependencyMap[0], "@babel/runtime/helpers/interopRequireDefault");
   Object.defineProperty(exports, "__esModule", {
@@ -107387,8 +107923,10 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
   var _slicedToArray2 = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[2], "@babel/runtime/helpers/slicedToArray"));
   var _react = _interopRequireWildcard(_$$_REQUIRE(_dependencyMap[3], "react"));
   var _reactNative = _$$_REQUIRE(_dependencyMap[4], "react-native");
-  var _StorageService = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[5], "../services/StorageService"));
-  var _jsxRuntime = _$$_REQUIRE(_dependencyMap[6], "react/jsx-runtime");
+  var _DictateBar = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[5], "../components/DictateBar"));
+  var _SettingsService = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[6], "../services/SettingsService"));
+  var _StorageService = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[7], "../services/StorageService"));
+  var _jsxRuntime = _$$_REQUIRE(_dependencyMap[8], "react/jsx-runtime");
   var _jsxFileName = "C:\\Users\\ronen\\TimeAnalyzer\\src\\screens\\NoteDetailScreen.tsx";
   function _interopRequireWildcard(e, t) { if ("function" == typeof WeakMap) var r = new WeakMap(), n = new WeakMap(); return (_interopRequireWildcard = function (e, t) { if (!t && e && e.__esModule) return e; var o, i, f = { __proto__: null, default: e }; if (null === e || "object" != typeof e && "function" != typeof e) return f; if (o = t ? n : r) { if (o.has(e)) return o.get(e); o.set(e, f); } for (var _t in e) "default" !== _t && {}.hasOwnProperty.call(e, _t) && ((i = (o = Object.defineProperty) && Object.getOwnPropertyDescriptor(e, _t)) && (i.get || i.set) ? o(f, _t, i) : f[_t] = e[_t]); return f; })(e, t); }
   function NoteDetailScreen({
@@ -107396,12 +107934,21 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
     onSave,
     onClose
   }) {
-    var insets = (0, _$$_REQUIRE(_dependencyMap[7], "react-native-safe-area-context").useSafeAreaInsets)();
+    var insets = (0, _$$_REQUIRE(_dependencyMap[9], "react-native-safe-area-context").useSafeAreaInsets)();
+    var _useTheme = (0, _$$_REQUIRE(_dependencyMap[10], "../contexts/ThemeContext").useTheme)(),
+      colors = _useTheme.colors;
     var _useState = (0, _react.useState)(note.text),
       _useState2 = (0, _slicedToArray2.default)(_useState, 2),
       text = _useState2[0],
       setText = _useState2[1];
+    var _useState3 = (0, _react.useState)('append'),
+      _useState4 = (0, _slicedToArray2.default)(_useState3, 2),
+      appendKeyword = _useState4[0],
+      setAppendKeyword = _useState4[1];
     var dirty = text.trim() !== note.text;
+    (0, _react.useEffect)(() => {
+      _SettingsService.default.load().then(s => setAppendKeyword(s.appendKeyword));
+    }, []);
     function handleSave() {
       return _handleSave.apply(this, arguments);
     }
@@ -107421,6 +107968,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       });
       return _handleSave.apply(this, arguments);
     }
+    var styles = makeStyles(colors);
     return /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.KeyboardAvoidingView, {
       style: [styles.container, {
         paddingTop: insets.top,
@@ -107468,67 +108016,165 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
           textAlignVertical: "top",
           autoFocus: true,
           placeholder: "Note text\u2026",
-          placeholderTextColor: "#aaa"
+          placeholderTextColor: colors.placeholder
+        }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_DictateBar.default, {
+          onResult: raw => setText(prev => (0, _$$_REQUIRE(_dependencyMap[11], "../utils/parseTranscript").applyTranscription)(prev, raw, appendKeyword))
         })]
       })]
     });
   }
-  var styles = _reactNative.StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: '#f2f2f7'
-    },
-    header: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      paddingHorizontal: 16,
-      paddingVertical: 12,
-      backgroundColor: '#fff',
-      borderBottomWidth: _reactNative.StyleSheet.hairlineWidth,
-      borderBottomColor: '#ccc'
-    },
-    headerTitle: {
-      fontSize: 17,
-      fontWeight: '600'
-    },
-    headerId: {
-      fontSize: 13,
-      fontWeight: '400',
-      color: '#c0c0c0'
-    },
-    headerBtn: {
-      fontSize: 17,
-      color: '#007AFF'
-    },
-    saveBtn: {
-      fontWeight: '600'
-    },
-    saveBtnDisabled: {
-      color: '#b0c8f0'
-    },
-    body: {
-      padding: 20,
-      gap: 16
-    },
-    meta: {
-      fontSize: 12,
-      color: '#b0b0b0',
-      fontWeight: '500'
-    },
-    textInput: {
-      fontSize: 17,
-      color: '#000',
-      lineHeight: 26,
-      minHeight: 200,
-      backgroundColor: '#fff',
-      borderRadius: 12,
-      padding: 16,
-      borderWidth: 1.5,
-      borderColor: '#007AFF'
-    }
+  function makeStyles(colors) {
+    return _reactNative.StyleSheet.create({
+      container: {
+        flex: 1,
+        backgroundColor: colors.background
+      },
+      header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        backgroundColor: colors.surface,
+        borderBottomWidth: _reactNative.StyleSheet.hairlineWidth,
+        borderBottomColor: colors.border
+      },
+      headerTitle: {
+        fontSize: 17,
+        fontWeight: '600',
+        color: colors.text
+      },
+      headerId: {
+        fontSize: 13,
+        fontWeight: '400',
+        color: colors.border
+      },
+      headerBtn: {
+        fontSize: 17,
+        color: colors.accent
+      },
+      saveBtn: {
+        fontWeight: '600'
+      },
+      saveBtnDisabled: {
+        color: colors.placeholder
+      },
+      body: {
+        padding: 20,
+        gap: 16
+      },
+      meta: {
+        fontSize: 12,
+        color: colors.placeholder,
+        fontWeight: '500'
+      },
+      textInput: {
+        fontSize: 17,
+        color: colors.text,
+        lineHeight: 26,
+        minHeight: 200,
+        backgroundColor: colors.surface,
+        borderRadius: 12,
+        padding: 16,
+        borderWidth: 1.5,
+        borderColor: colors.accent
+      }
+    });
+  }
+},673,[1,178,14,71,2,672,641,650,182,656,665,669],"src/screens/NoteDetailScreen.tsx");
+__d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
+  var _interopRequireDefault = _$$_REQUIRE(_dependencyMap[0], "@babel/runtime/helpers/interopRequireDefault");
+  Object.defineProperty(exports, "__esModule", {
+    value: true
   });
-},670,[1,178,14,71,2,650,182,658],"src/screens/NoteDetailScreen.tsx");
+  exports.default = ReportsScreen;
+  var _react = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[1], "react"));
+  var _reactNative = _$$_REQUIRE(_dependencyMap[2], "react-native");
+  var _jsxRuntime = _$$_REQUIRE(_dependencyMap[3], "react/jsx-runtime");
+  var _jsxFileName = "C:\\Users\\ronen\\TimeAnalyzer\\src\\screens\\ReportsScreen.tsx";
+  function ReportsScreen({
+    onOpenMenu
+  }) {
+    var insets = (0, _$$_REQUIRE(_dependencyMap[4], "react-native-safe-area-context").useSafeAreaInsets)();
+    var _useTheme = (0, _$$_REQUIRE(_dependencyMap[5], "../contexts/ThemeContext").useTheme)(),
+      colors = _useTheme.colors;
+    var styles = makeStyles(colors);
+    return /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+      style: [styles.container, {
+        paddingTop: insets.top
+      }],
+      children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+        style: styles.header,
+        children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
+          onPress: onOpenMenu,
+          style: styles.menuBtn,
+          children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+            style: styles.menuIcon,
+            children: "\u2630"
+          })
+        }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+          style: styles.title,
+          children: "Reports"
+        }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
+          style: styles.menuBtn
+        })]
+      }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+        style: styles.empty,
+        children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+          style: styles.emptyIcon,
+          children: "\uD83D\uDCCA"
+        }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+          style: styles.emptyText,
+          children: "Reports coming soon"
+        })]
+      })]
+    });
+  }
+  function makeStyles(colors) {
+    return _reactNative.StyleSheet.create({
+      container: {
+        flex: 1,
+        backgroundColor: colors.background
+      },
+      header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        backgroundColor: colors.surface,
+        borderBottomWidth: _reactNative.StyleSheet.hairlineWidth,
+        borderBottomColor: colors.border
+      },
+      menuBtn: {
+        padding: 4,
+        width: 36
+      },
+      menuIcon: {
+        fontSize: 22,
+        color: colors.accent
+      },
+      title: {
+        fontSize: 17,
+        fontWeight: '600',
+        color: colors.text
+      },
+      empty: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 12
+      },
+      emptyIcon: {
+        fontSize: 48
+      },
+      emptyText: {
+        fontSize: 16,
+        color: colors.textSecondary
+      }
+    });
+  }
+},674,[1,71,2,182,656,665],"src/screens/ReportsScreen.tsx");
 __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
   var _interopRequireDefault = _$$_REQUIRE(_dependencyMap[0], "@babel/runtime/helpers/interopRequireDefault");
   Object.defineProperty(exports, "__esModule", {
@@ -107547,6 +108193,8 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
     onClose
   }) {
     var insets = (0, _$$_REQUIRE(_dependencyMap[7], "react-native-safe-area-context").useSafeAreaInsets)();
+    var _useTheme = (0, _$$_REQUIRE(_dependencyMap[8], "../contexts/ThemeContext").useTheme)(),
+      colors = _useTheme.colors;
     var _useState = (0, _react.useState)(null),
       _useState2 = (0, _slicedToArray2.default)(_useState, 2),
       settings = _useState2[0],
@@ -107563,6 +108211,10 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       _useState8 = (0, _slicedToArray2.default)(_useState7, 2),
       openaiKey = _useState8[0],
       setOpenaiKey = _useState8[1];
+    var _useState9 = (0, _react.useState)(new Set(['schedule'])),
+      _useState0 = (0, _slicedToArray2.default)(_useState9, 2),
+      expanded = _useState0[0],
+      setExpanded = _useState0[1];
     (0, _react.useEffect)(() => {
       Promise.all([_SettingsService.default.load(), _SettingsService.default.getGroqApiKey(), _SettingsService.default.getClaudeApiKey(), _SettingsService.default.getOpenAIApiKey()]).then(([s, gk, ck, ok]) => {
         setSettings(s);
@@ -107573,8 +108225,19 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
     }, []);
     if (!settings) {
       return /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
-        style: styles.loading,
+        style: {
+          flex: 1,
+          alignItems: 'center',
+          justifyContent: 'center'
+        },
         children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.ActivityIndicator, {})
+      });
+    }
+    function toggleSection(key) {
+      setExpanded(prev => {
+        var next = new Set(prev);
+        if (next.has(key)) next.delete(key);else next.add(key);
+        return next;
       });
     }
     function toggleDay(i) {
@@ -107598,9 +108261,27 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       return _handleSave.apply(this, arguments);
     }
     var set = patch => setSettings(s => ({
-      ...(s ?? _$$_REQUIRE(_dependencyMap[8], "../types/Settings").DEFAULT_SETTINGS),
+      ...(s ?? _$$_REQUIRE(_dependencyMap[9], "../types/Settings").DEFAULT_SETTINGS),
       ...patch
     }));
+    var styles = makeStyles(colors);
+    function SectionHeader({
+      sectionKey,
+      title
+    }) {
+      var open = expanded.has(sectionKey);
+      return /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.TouchableOpacity, {
+        style: styles.sectionHeader,
+        onPress: () => toggleSection(sectionKey),
+        children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+          style: styles.sectionHeaderText,
+          children: title
+        }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+          style: styles.chevron,
+          children: open ? '▲' : '▼'
+        })]
+      });
+    }
     return /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
       style: [styles.container, {
         paddingTop: insets.top,
@@ -107626,346 +108307,444 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         })]
       }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.ScrollView, {
         contentContainerStyle: styles.body,
-        children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-          style: styles.groupHeader,
-          children: "SCHEDULE"
-        }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-          style: styles.sectionLabel,
-          children: "FREQUENCY"
-        }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
-          style: styles.card,
-          children: _$$_REQUIRE(_dependencyMap[8], "../types/Settings").FREQUENCY_OPTIONS.map((opt, i) => /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.TouchableOpacity, {
-            style: [styles.row, i > 0 && styles.rowBorder],
-            onPress: () => set({
-              frequencyMinutes: opt.value
-            }),
-            children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-              style: styles.rowLabel,
-              children: opt.label
-            }), settings.frequencyMinutes === opt.value && /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-              style: styles.checkmark,
-              children: "\u2713"
-            })]
-          }, opt.value))
-        }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-          style: styles.sectionLabel,
-          children: "WORKING HOURS"
-        }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-          style: styles.card,
-          children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-            style: styles.row,
-            children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-              style: styles.rowLabel,
-              children: "All day"
-            }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Switch, {
-              value: settings.everyHour,
-              onValueChange: v => set({
-                everyHour: v
-              })
-            })]
-          }), !settings.everyHour && /*#__PURE__*/(0, _jsxRuntime.jsxs)(_jsxRuntime.Fragment, {
-            children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-              style: [styles.row, styles.rowBorder],
+        children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(SectionHeader, {
+          sectionKey: "schedule",
+          title: "SCHEDULE"
+        }), expanded.has('schedule') && /*#__PURE__*/(0, _jsxRuntime.jsxs)(_jsxRuntime.Fragment, {
+          children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+            style: styles.sectionLabel,
+            children: "FREQUENCY"
+          }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
+            style: styles.card,
+            children: _$$_REQUIRE(_dependencyMap[9], "../types/Settings").FREQUENCY_OPTIONS.map((opt, i) => /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.TouchableOpacity, {
+              style: [styles.row, i > 0 && styles.rowBorder],
+              onPress: () => set({
+                frequencyMinutes: opt.value
+              }),
               children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
                 style: styles.rowLabel,
-                children: "Start"
-              }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-                style: styles.stepper,
-                children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
-                  onPress: () => set({
-                    startHour: Math.max(0, settings.startHour - 1)
-                  }),
-                  children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                    style: styles.stepperBtn,
-                    children: "\u2212"
-                  })
-                }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
-                  style: styles.stepperVal,
-                  children: [settings.startHour.toString().padStart(2, '0'), ":00"]
-                }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
-                  onPress: () => set({
-                    startHour: Math.min(settings.endHour - 1, settings.startHour + 1)
-                  }),
-                  children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                    style: styles.stepperBtn,
-                    children: "+"
-                  })
+                children: opt.label
+              }), settings.frequencyMinutes === opt.value && /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                style: styles.checkmark,
+                children: "\u2713"
+              })]
+            }, opt.value))
+          }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+            style: styles.sectionLabel,
+            children: "WORKING HOURS"
+          }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+            style: styles.card,
+            children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+              style: styles.row,
+              children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                style: styles.rowLabel,
+                children: "All day"
+              }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Switch, {
+                value: settings.everyHour,
+                onValueChange: v => set({
+                  everyHour: v
+                })
+              })]
+            }), !settings.everyHour && /*#__PURE__*/(0, _jsxRuntime.jsxs)(_jsxRuntime.Fragment, {
+              children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+                style: [styles.row, styles.rowBorder],
+                children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                  style: styles.rowLabel,
+                  children: "Start"
+                }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+                  style: styles.stepper,
+                  children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
+                    onPress: () => set({
+                      startHour: Math.max(0, settings.startHour - 1)
+                    }),
+                    children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                      style: styles.stepperBtn,
+                      children: "\u2212"
+                    })
+                  }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
+                    style: styles.stepperVal,
+                    children: [settings.startHour.toString().padStart(2, '0'), ":00"]
+                  }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
+                    onPress: () => set({
+                      startHour: Math.min(settings.endHour - 1, settings.startHour + 1)
+                    }),
+                    children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                      style: styles.stepperBtn,
+                      children: "+"
+                    })
+                  })]
                 })]
+              }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+                style: [styles.row, styles.rowBorder],
+                children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                  style: styles.rowLabel,
+                  children: "End"
+                }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+                  style: styles.stepper,
+                  children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
+                    onPress: () => set({
+                      endHour: Math.max(settings.startHour + 1, settings.endHour - 1)
+                    }),
+                    children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                      style: styles.stepperBtn,
+                      children: "\u2212"
+                    })
+                  }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
+                    style: styles.stepperVal,
+                    children: [settings.endHour.toString().padStart(2, '0'), ":00"]
+                  }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
+                    onPress: () => set({
+                      endHour: Math.min(24, settings.endHour + 1)
+                    }),
+                    children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                      style: styles.stepperBtn,
+                      children: "+"
+                    })
+                  })]
+                })]
+              })]
+            })]
+          }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+            style: styles.sectionLabel,
+            children: "CHECK-IN DAYS"
+          }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
+            style: styles.card,
+            children: _$$_REQUIRE(_dependencyMap[9], "../types/Settings").DAY_LABELS.map((label, i) => /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+              style: [styles.row, i > 0 && styles.rowBorder],
+              children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                style: styles.rowLabel,
+                children: label
+              }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Switch, {
+                value: settings.checkInDays[i],
+                onValueChange: () => toggleDay(i)
+              })]
+            }, label))
+          })]
+        }), /*#__PURE__*/(0, _jsxRuntime.jsx)(SectionHeader, {
+          sectionKey: "providers",
+          title: "PROVIDERS"
+        }), expanded.has('providers') && /*#__PURE__*/(0, _jsxRuntime.jsxs)(_jsxRuntime.Fragment, {
+          children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+            style: styles.sectionLabel,
+            children: "TRANSCRIPTION"
+          }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+            style: styles.card,
+            children: [_$$_REQUIRE(_dependencyMap[9], "../types/Settings").TRANSCRIPTION_PROVIDERS.map((p, i) => /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.TouchableOpacity, {
+              style: [styles.row, i > 0 && styles.rowBorder],
+              onPress: () => set({
+                transcriptionProvider: p.value
+              }),
+              children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+                children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                  style: styles.rowLabel,
+                  children: p.label
+                }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                  style: styles.rowSub,
+                  children: p.sublabel
+                })]
+              }), settings.transcriptionProvider === p.value && /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                style: styles.checkmark,
+                children: "\u2713"
+              })]
+            }, p.value)), settings.transcriptionProvider === 'groq' && /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+              style: [styles.row, styles.rowBorder],
+              children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                style: styles.keyLabel,
+                children: "API Key"
+              }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TextInput, {
+                style: styles.keyInput,
+                value: groqKey,
+                onChangeText: setGroqKey,
+                placeholder: "gsk_...",
+                placeholderTextColor: colors.placeholder,
+                autoCapitalize: "none",
+                autoCorrect: false,
+                secureTextEntry: true
+              })]
+            })]
+          }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+            style: styles.sectionLabel,
+            children: "ANALYSIS"
+          }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+            style: styles.card,
+            children: [_$$_REQUIRE(_dependencyMap[9], "../types/Settings").ANALYSIS_PROVIDERS.map((p, i) => /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.TouchableOpacity, {
+              style: [styles.row, i > 0 && styles.rowBorder],
+              onPress: () => set({
+                analysisProvider: p.value
+              }),
+              children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+                children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                  style: styles.rowLabel,
+                  children: p.label
+                }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                  style: styles.rowSub,
+                  children: p.sublabel
+                })]
+              }), settings.analysisProvider === p.value && /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                style: styles.checkmark,
+                children: "\u2713"
+              })]
+            }, p.value)), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+              style: styles.rowBorder,
+              children: [settings.analysisProvider === 'claude' && /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+                style: styles.row,
+                children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                  style: styles.keyLabel,
+                  children: "API Key"
+                }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TextInput, {
+                  style: styles.keyInput,
+                  value: claudeKey,
+                  onChangeText: setClaudeKey,
+                  placeholder: "sk-ant-...",
+                  placeholderTextColor: colors.placeholder,
+                  autoCapitalize: "none",
+                  autoCorrect: false,
+                  secureTextEntry: true
+                })]
+              }), settings.analysisProvider === 'openai' && /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+                style: styles.row,
+                children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                  style: styles.keyLabel,
+                  children: "API Key"
+                }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TextInput, {
+                  style: styles.keyInput,
+                  value: openaiKey,
+                  onChangeText: setOpenaiKey,
+                  placeholder: "sk-...",
+                  placeholderTextColor: colors.placeholder,
+                  autoCapitalize: "none",
+                  autoCorrect: false,
+                  secureTextEntry: true
+                })]
+              })]
+            })]
+          })]
+        }), /*#__PURE__*/(0, _jsxRuntime.jsx)(SectionHeader, {
+          sectionKey: "keywords",
+          title: "KEYWORDS"
+        }), expanded.has('keywords') && /*#__PURE__*/(0, _jsxRuntime.jsxs)(_jsxRuntime.Fragment, {
+          children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+            style: styles.sectionLabel,
+            children: "VOICE COMMANDS"
+          }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+            style: styles.card,
+            children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+              style: styles.row,
+              children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+                children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                  style: styles.rowLabel,
+                  children: "Note keyword"
+                }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                  style: styles.rowSub,
+                  children: "Splits speech into a new note"
+                })]
+              }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TextInput, {
+                style: styles.keywordInput,
+                value: settings.noteKeyword,
+                onChangeText: v => set({
+                  noteKeyword: v.toLowerCase().trim() || 'note'
+                }),
+                autoCapitalize: "none",
+                autoCorrect: false,
+                returnKeyType: "done"
               })]
             }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
               style: [styles.row, styles.rowBorder],
-              children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                style: styles.rowLabel,
-                children: "End"
-              }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-                style: styles.stepper,
-                children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
-                  onPress: () => set({
-                    endHour: Math.max(settings.startHour + 1, settings.endHour - 1)
-                  }),
-                  children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                    style: styles.stepperBtn,
-                    children: "\u2212"
-                  })
-                }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
-                  style: styles.stepperVal,
-                  children: [settings.endHour.toString().padStart(2, '0'), ":00"]
-                }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
-                  onPress: () => set({
-                    endHour: Math.min(24, settings.endHour + 1)
-                  }),
-                  children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                    style: styles.stepperBtn,
-                    children: "+"
-                  })
+              children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+                children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                  style: styles.rowLabel,
+                  children: "Append keyword"
+                }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                  style: styles.rowSub,
+                  children: "Appends dictation to existing text"
                 })]
+              }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TextInput, {
+                style: styles.keywordInput,
+                value: settings.appendKeyword,
+                onChangeText: v => set({
+                  appendKeyword: v.toLowerCase().trim() || 'append'
+                }),
+                autoCapitalize: "none",
+                autoCorrect: false,
+                returnKeyType: "done"
               })]
             })]
           })]
-        }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-          style: styles.sectionLabel,
-          children: "CHECK-IN DAYS"
-        }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
-          style: styles.card,
-          children: _$$_REQUIRE(_dependencyMap[8], "../types/Settings").DAY_LABELS.map((label, i) => /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-            style: [styles.row, i > 0 && styles.rowBorder],
-            children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-              style: styles.rowLabel,
-              children: label
-            }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Switch, {
-              value: settings.checkInDays[i],
-              onValueChange: () => toggleDay(i)
-            })]
-          }, label))
-        }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-          style: [styles.groupHeader, styles.groupHeaderSpaced],
-          children: "PROVIDERS"
-        }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-          style: styles.sectionLabel,
-          children: "TRANSCRIPTION"
-        }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-          style: styles.card,
-          children: [_$$_REQUIRE(_dependencyMap[8], "../types/Settings").TRANSCRIPTION_PROVIDERS.map((p, i) => /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.TouchableOpacity, {
-            style: [styles.row, i > 0 && styles.rowBorder],
-            onPress: () => set({
-              transcriptionProvider: p.value
-            }),
-            children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-              children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                style: styles.rowLabel,
-                children: p.label
-              }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                style: styles.rowSub,
-                children: p.sublabel
+        }), /*#__PURE__*/(0, _jsxRuntime.jsx)(SectionHeader, {
+          sectionKey: "theme",
+          title: "THEME"
+        }), expanded.has('theme') && /*#__PURE__*/(0, _jsxRuntime.jsxs)(_jsxRuntime.Fragment, {
+          children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+            style: styles.sectionLabel,
+            children: "APPEARANCE"
+          }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
+            style: styles.card,
+            children: _$$_REQUIRE(_dependencyMap[9], "../types/Settings").THEME_OPTIONS.map((opt, i) => /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.TouchableOpacity, {
+              style: [styles.row, i > 0 && styles.rowBorder],
+              onPress: () => set({
+                theme: opt.value
+              }),
+              children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+                children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                  style: styles.rowLabel,
+                  children: opt.label
+                }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                  style: styles.rowSub,
+                  children: opt.sublabel
+                })]
+              }), settings.theme === opt.value && /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                style: styles.checkmark,
+                children: "\u2713"
               })]
-            }), settings.transcriptionProvider === p.value && /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-              style: styles.checkmark,
-              children: "\u2713"
-            })]
-          }, p.value)), settings.transcriptionProvider === 'groq' && /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-            style: [styles.row, styles.rowBorder],
-            children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-              style: styles.keyLabel,
-              children: "API Key"
-            }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TextInput, {
-              style: styles.keyInput,
-              value: groqKey,
-              onChangeText: setGroqKey,
-              placeholder: "gsk_...",
-              placeholderTextColor: "#aaa",
-              autoCapitalize: "none",
-              autoCorrect: false,
-              secureTextEntry: true
-            })]
-          })]
-        }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-          style: styles.sectionLabel,
-          children: "ANALYSIS"
-        }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-          style: styles.card,
-          children: [_$$_REQUIRE(_dependencyMap[8], "../types/Settings").ANALYSIS_PROVIDERS.map((p, i) => /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.TouchableOpacity, {
-            style: [styles.row, i > 0 && styles.rowBorder],
-            onPress: () => set({
-              analysisProvider: p.value
-            }),
-            children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-              children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                style: styles.rowLabel,
-                children: p.label
-              }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                style: styles.rowSub,
-                children: p.sublabel
-              })]
-            }), settings.analysisProvider === p.value && /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-              style: styles.checkmark,
-              children: "\u2713"
-            })]
-          }, p.value)), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-            style: styles.rowBorder,
-            children: [settings.analysisProvider === 'claude' && /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-              style: styles.row,
-              children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                style: styles.keyLabel,
-                children: "API Key"
-              }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TextInput, {
-                style: styles.keyInput,
-                value: claudeKey,
-                onChangeText: setClaudeKey,
-                placeholder: "sk-ant-...",
-                placeholderTextColor: "#aaa",
-                autoCapitalize: "none",
-                autoCorrect: false,
-                secureTextEntry: true
-              })]
-            }), settings.analysisProvider === 'openai' && /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-              style: styles.row,
-              children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                style: styles.keyLabel,
-                children: "API Key"
-              }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TextInput, {
-                style: styles.keyInput,
-                value: openaiKey,
-                onChangeText: setOpenaiKey,
-                placeholder: "sk-...",
-                placeholderTextColor: "#aaa",
-                autoCapitalize: "none",
-                autoCorrect: false,
-                secureTextEntry: true
-              })]
-            })]
+            }, opt.value))
           })]
         })]
       })]
     });
   }
-  var styles = _reactNative.StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: '#f2f2f7'
-    },
-    loading: {
-      flex: 1,
-      alignItems: 'center',
-      justifyContent: 'center'
-    },
-    header: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      paddingHorizontal: 16,
-      paddingVertical: 12,
-      backgroundColor: '#fff',
-      borderBottomWidth: _reactNative.StyleSheet.hairlineWidth,
-      borderBottomColor: '#ccc'
-    },
-    title: {
-      fontSize: 17,
-      fontWeight: '600'
-    },
-    cancel: {
-      fontSize: 17,
-      color: '#666'
-    },
-    save: {
-      fontSize: 17,
-      color: '#007AFF',
-      fontWeight: '600'
-    },
-    body: {
-      paddingVertical: 20,
-      paddingHorizontal: 16,
-      gap: 6,
-      paddingBottom: 40
-    },
-    groupHeader: {
-      fontSize: 13,
-      fontWeight: '700',
-      color: '#007AFF',
-      marginTop: 4,
-      marginBottom: 8,
-      marginLeft: 2,
-      letterSpacing: 0.5
-    },
-    groupHeaderSpaced: {
-      marginTop: 24
-    },
-    sectionLabel: {
-      fontSize: 11,
-      fontWeight: '500',
-      color: '#6d6d72',
-      marginBottom: 4,
-      marginTop: 10,
-      marginLeft: 4,
-      letterSpacing: 0.3
-    },
-    card: {
-      backgroundColor: '#fff',
-      borderRadius: 10,
-      overflow: 'hidden'
-    },
-    row: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      paddingHorizontal: 16,
-      paddingVertical: 12,
-      minHeight: 48
-    },
-    rowBorder: {
-      borderTopWidth: _reactNative.StyleSheet.hairlineWidth,
-      borderTopColor: '#e0e0e0'
-    },
-    rowLabel: {
-      fontSize: 16,
-      color: '#000'
-    },
-    rowSub: {
-      fontSize: 12,
-      color: '#8e8e93',
-      marginTop: 2
-    },
-    checkmark: {
-      fontSize: 18,
-      color: '#007AFF'
-    },
-    stepper: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 16
-    },
-    stepperBtn: {
-      fontSize: 22,
-      color: '#007AFF',
-      width: 28,
-      textAlign: 'center'
-    },
-    stepperVal: {
-      fontSize: 16,
-      fontWeight: '500',
-      width: 52,
-      textAlign: 'center'
-    },
-    keyLabel: {
-      fontSize: 15,
-      color: '#6d6d72',
-      width: 64
-    },
-    keyInput: {
-      flex: 1,
-      fontSize: 14,
-      color: '#000',
-      fontFamily: 'monospace',
-      paddingVertical: 4,
-      textAlign: 'right'
-    }
-  });
-},671,[1,178,14,71,2,641,182,658,648],"src/screens/SettingsScreen.tsx");
+  function makeStyles(colors) {
+    return _reactNative.StyleSheet.create({
+      container: {
+        flex: 1,
+        backgroundColor: colors.background
+      },
+      header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        backgroundColor: colors.surface,
+        borderBottomWidth: _reactNative.StyleSheet.hairlineWidth,
+        borderBottomColor: colors.border
+      },
+      title: {
+        fontSize: 17,
+        fontWeight: '600',
+        color: colors.text
+      },
+      cancel: {
+        fontSize: 17,
+        color: colors.textSecondary
+      },
+      save: {
+        fontSize: 17,
+        color: colors.accent,
+        fontWeight: '600'
+      },
+      body: {
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        gap: 6,
+        paddingBottom: 40
+      },
+      sectionHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingVertical: 14,
+        paddingHorizontal: 4,
+        marginTop: 8
+      },
+      sectionHeaderText: {
+        fontSize: 13,
+        fontWeight: '700',
+        color: colors.accent,
+        letterSpacing: 0.5
+      },
+      chevron: {
+        fontSize: 11,
+        color: colors.accent
+      },
+      sectionLabel: {
+        fontSize: 11,
+        fontWeight: '500',
+        color: colors.textSecondary,
+        marginBottom: 4,
+        marginTop: 6,
+        marginLeft: 4,
+        letterSpacing: 0.3
+      },
+      card: {
+        backgroundColor: colors.surface,
+        borderRadius: 10,
+        overflow: 'hidden'
+      },
+      row: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        minHeight: 48
+      },
+      rowBorder: {
+        borderTopWidth: _reactNative.StyleSheet.hairlineWidth,
+        borderTopColor: colors.border
+      },
+      rowLabel: {
+        fontSize: 16,
+        color: colors.text
+      },
+      rowSub: {
+        fontSize: 12,
+        color: colors.textSecondary,
+        marginTop: 2
+      },
+      checkmark: {
+        fontSize: 18,
+        color: colors.accent
+      },
+      stepper: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 16
+      },
+      stepperBtn: {
+        fontSize: 22,
+        color: colors.accent,
+        width: 28,
+        textAlign: 'center'
+      },
+      stepperVal: {
+        fontSize: 16,
+        fontWeight: '500',
+        width: 52,
+        textAlign: 'center',
+        color: colors.text
+      },
+      keyLabel: {
+        fontSize: 15,
+        color: colors.textSecondary,
+        width: 64
+      },
+      keyInput: {
+        flex: 1,
+        fontSize: 14,
+        color: colors.text,
+        fontFamily: 'monospace',
+        paddingVertical: 4,
+        textAlign: 'right'
+      },
+      keywordInput: {
+        fontSize: 15,
+        color: colors.accent,
+        fontWeight: '500',
+        minWidth: 80,
+        textAlign: 'right',
+        borderBottomWidth: 1,
+        borderBottomColor: colors.accent,
+        paddingVertical: 2
+      }
+    });
+  }
+},675,[1,178,14,71,2,641,182,656,665,648],"src/screens/SettingsScreen.tsx");
 __d(function(global, require, _importDefaultUnused, _importAllUnused, module, exports, _dependencyMapUnused) {
   module.exports = {
   "name": "TimeAnalyzerTemp",
   "displayName": "TimeAnalyzer"
 }
 ;
-},672,[],"app.json");
+},676,[],"app.json");
 __r(109);
 __r(0);

@@ -12,7 +12,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import StorageService from '../services/StorageService';
 import { LogEntry } from '../types/LogEntry';
 import { Note } from '../types/Note';
+import DictateBar from '../components/DictateBar';
+import SettingsService from '../services/SettingsService';
 import NoteDetailScreen from './NoteDetailScreen';
+import { applyTranscription } from '../utils/parseTranscript';
+import { ColorPalette, useTheme } from '../contexts/ThemeContext';
 
 interface Props {
   entry: LogEntry;
@@ -38,6 +42,7 @@ function applyTimeString(originalTs: number, timeStr: string): number | null {
 
 export default function EntryDetailScreen({ entry, onSave, onClose }: Props) {
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
   const [editing, setEditing] = useState(false);
   const [transcript, setTranscript] = useState(entry.transcript);
   const [startTime, setStartTime] = useState(tsToTimeString(entry.timestampStart));
@@ -46,9 +51,11 @@ export default function EntryDetailScreen({ entry, onSave, onClose }: Props) {
   const [editingNotes, setEditingNotes] = useState<Record<number, string>>({});
   const [newNoteText, setNewNoteText] = useState('');
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
+  const [appendKeyword, setAppendKeyword] = useState('append');
 
   useEffect(() => {
     StorageService.getNotesByEntryId(entry.id).then(setNotes);
+    SettingsService.load().then(s => setAppendKeyword(s.appendKeyword));
   }, [entry.id]);
 
   function handleCancel() {
@@ -85,7 +92,6 @@ export default function EntryDetailScreen({ entry, onSave, onClose }: Props) {
 
     await StorageService.update(updated);
 
-    // save edited notes
     await Promise.all(
       Object.entries(editingNotes).map(([idStr, text]) => {
         const note = notes.find(n => n.id === parseInt(idStr, 10));
@@ -134,6 +140,8 @@ export default function EntryDetailScreen({ entry, onSave, onClose }: Props) {
       />
     );
   }
+
+  const styles = makeStyles(colors);
 
   return (
     <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
@@ -192,14 +200,17 @@ export default function EntryDetailScreen({ entry, onSave, onClose }: Props) {
         <View style={styles.section}>
           <Text style={styles.label}>TRANSCRIPT</Text>
           {editing ? (
-            <TextInput
-              style={styles.transcriptInput}
-              value={transcript}
-              onChangeText={setTranscript}
-              multiline
-              autoFocus
-              textAlignVertical="top"
-            />
+            <>
+              <TextInput
+                style={styles.transcriptInput}
+                value={transcript}
+                onChangeText={setTranscript}
+                multiline
+                autoFocus
+                textAlignVertical="top"
+              />
+              <DictateBar onResult={raw => setTranscript(prev => applyTranscription(prev, raw, appendKeyword))} />
+            </>
           ) : (
             <Text style={styles.transcriptText}>{entry.transcript}</Text>
           )}
@@ -249,7 +260,7 @@ export default function EntryDetailScreen({ entry, onSave, onClose }: Props) {
             value={newNoteText}
             onChangeText={setNewNoteText}
             placeholder="New note…"
-            placeholderTextColor="#aaa"
+            placeholderTextColor={colors.placeholder}
             multiline
             textAlignVertical="top"
           />
@@ -265,124 +276,126 @@ export default function EntryDetailScreen({ entry, onSave, onClose }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f2f2f7' },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#fff',
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#ccc',
-  },
-  headerTitle: { fontSize: 17, fontWeight: '600' },
-  headerId: { fontSize: 13, fontWeight: '400', color: '#c0c0c0' },
-  headerBtn: { fontSize: 17, color: '#007AFF' },
-  editBtn: { color: '#007AFF' },
-  saveBtn: { fontWeight: '600' },
-  body: { padding: 16, gap: 20, paddingBottom: 40 },
-  section: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-  },
-  label: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#6d6d72',
-    letterSpacing: 0.5,
-    marginBottom: 10,
-  },
-  timeRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  timeDisplay: { fontSize: 18, fontWeight: '600', color: '#000' },
-  timeInput: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#000',
-    borderBottomWidth: 1.5,
-    borderBottomColor: '#007AFF',
-    paddingVertical: 4,
-    minWidth: 60,
-    textAlign: 'center',
-  },
-  timeSep: { fontSize: 18, color: '#000' },
-  transcriptText: { fontSize: 16, color: '#000', lineHeight: 24 },
-  transcriptInput: {
-    fontSize: 16,
-    color: '#000',
-    lineHeight: 24,
-    minHeight: 120,
-    borderWidth: 1,
-    borderColor: '#007AFF',
-    borderRadius: 8,
-    padding: 10,
-  },
-  notesGroupLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#6d6d72',
-    letterSpacing: 0.5,
-    marginLeft: 4,
-    marginBottom: 8,
-  },
-  emptyNotes: { fontSize: 14, color: '#aaa', marginLeft: 4 },
-  noteCard: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 14,
-    shadowColor: '#000',
-    shadowOpacity: 0.04,
-    shadowRadius: 3,
-    elevation: 1,
-    borderLeftWidth: 3,
-    borderLeftColor: '#007AFF',
-  },
-  noteCardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  noteCardMeta: { fontSize: 11, color: '#b0b0b0', fontWeight: '500' },
-  noteDeleteText: { fontSize: 15, color: '#ff3b30', paddingHorizontal: 4 },
-  noteText: { fontSize: 15, color: '#000', lineHeight: 22 },
-  noteEditInput: {
-    fontSize: 15,
-    color: '#000',
-    lineHeight: 22,
-    borderWidth: 1,
-    borderColor: '#007AFF',
-    borderRadius: 8,
-    padding: 8,
-    minHeight: 60,
-    textAlignVertical: 'top',
-  },
-  addNoteCard: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 14,
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: 10,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#e0e0e0',
-    borderStyle: 'dashed',
-  },
-  addNoteInput: {
-    flex: 1,
-    fontSize: 15,
-    color: '#000',
-    minHeight: 44,
-    textAlignVertical: 'top',
-  },
-  addNoteBtn: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    backgroundColor: '#007AFF',
-    borderRadius: 8,
-  },
-  addNoteBtnDisabled: { backgroundColor: '#b0c8f0' },
-  addNoteBtnText: { fontSize: 15, color: '#fff', fontWeight: '600' },
-});
+function makeStyles(colors: ColorPalette) {
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.background },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      backgroundColor: colors.surface,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.border,
+    },
+    headerTitle: { fontSize: 17, fontWeight: '600', color: colors.text },
+    headerId: { fontSize: 13, fontWeight: '400', color: colors.border },
+    headerBtn: { fontSize: 17, color: colors.accent },
+    editBtn: { color: colors.accent },
+    saveBtn: { fontWeight: '600' },
+    body: { padding: 16, gap: 20, paddingBottom: 40 },
+    section: {
+      backgroundColor: colors.surface,
+      borderRadius: 12,
+      padding: 16,
+    },
+    label: {
+      fontSize: 11,
+      fontWeight: '600',
+      color: colors.textSecondary,
+      letterSpacing: 0.5,
+      marginBottom: 10,
+    },
+    timeRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    timeDisplay: { fontSize: 18, fontWeight: '600', color: colors.text },
+    timeInput: {
+      fontSize: 18,
+      fontWeight: '600',
+      color: colors.text,
+      borderBottomWidth: 1.5,
+      borderBottomColor: colors.accent,
+      paddingVertical: 4,
+      minWidth: 60,
+      textAlign: 'center',
+    },
+    timeSep: { fontSize: 18, color: colors.text },
+    transcriptText: { fontSize: 16, color: colors.text, lineHeight: 24 },
+    transcriptInput: {
+      fontSize: 16,
+      color: colors.text,
+      lineHeight: 24,
+      minHeight: 120,
+      borderWidth: 1,
+      borderColor: colors.accent,
+      borderRadius: 8,
+      padding: 10,
+    },
+    notesGroupLabel: {
+      fontSize: 11,
+      fontWeight: '600',
+      color: colors.textSecondary,
+      letterSpacing: 0.5,
+      marginLeft: 4,
+      marginBottom: 8,
+    },
+    emptyNotes: { fontSize: 14, color: colors.placeholder, marginLeft: 4 },
+    noteCard: {
+      backgroundColor: colors.surface,
+      borderRadius: 12,
+      padding: 14,
+      shadowColor: '#000',
+      shadowOpacity: 0.04,
+      shadowRadius: 3,
+      elevation: 1,
+      borderLeftWidth: 3,
+      borderLeftColor: colors.accent,
+    },
+    noteCardHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 6,
+    },
+    noteCardMeta: { fontSize: 11, color: colors.placeholder, fontWeight: '500' },
+    noteDeleteText: { fontSize: 15, color: colors.recordBtn, paddingHorizontal: 4 },
+    noteText: { fontSize: 15, color: colors.text, lineHeight: 22 },
+    noteEditInput: {
+      fontSize: 15,
+      color: colors.text,
+      lineHeight: 22,
+      borderWidth: 1,
+      borderColor: colors.accent,
+      borderRadius: 8,
+      padding: 8,
+      minHeight: 60,
+      textAlignVertical: 'top',
+    },
+    addNoteCard: {
+      backgroundColor: colors.surface,
+      borderRadius: 12,
+      padding: 14,
+      flexDirection: 'row',
+      alignItems: 'flex-end',
+      gap: 10,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: colors.border,
+      borderStyle: 'dashed',
+    },
+    addNoteInput: {
+      flex: 1,
+      fontSize: 15,
+      color: colors.text,
+      minHeight: 44,
+      textAlignVertical: 'top',
+    },
+    addNoteBtn: {
+      paddingHorizontal: 14,
+      paddingVertical: 8,
+      backgroundColor: colors.accent,
+      borderRadius: 8,
+    },
+    addNoteBtnDisabled: { backgroundColor: colors.placeholder },
+    addNoteBtnText: { fontSize: 15, color: '#fff', fontWeight: '600' },
+  });
+}

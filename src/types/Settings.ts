@@ -1,6 +1,7 @@
 export type FrequencyMinutes = 1 | 2 | 30 | 60 | 120 | 240 | 480 | 1440;
 export type TranscriptionProvider = 'groq';
 export type AnalysisProvider = 'claude' | 'openai';
+export type Theme = 'system' | 'light' | 'dark';
 
 export interface Settings {
   checkInDays: [boolean, boolean, boolean, boolean, boolean, boolean, boolean]; // Sun–Sat
@@ -10,6 +11,9 @@ export interface Settings {
   frequencyMinutes: FrequencyMinutes;
   transcriptionProvider: TranscriptionProvider;
   analysisProvider: AnalysisProvider;
+  noteKeyword: string;   // spoken word that starts a note (default: "note")
+  appendKeyword: string; // spoken word that appends transcription (default: "append")
+  theme: Theme;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -20,7 +24,16 @@ export const DEFAULT_SETTINGS: Settings = {
   frequencyMinutes: 120,
   transcriptionProvider: 'groq',
   analysisProvider: 'claude',
+  noteKeyword: 'note',
+  appendKeyword: 'append',
+  theme: 'system',
 };
+
+export const THEME_OPTIONS: { label: string; sublabel: string; value: Theme }[] = [
+  { label: 'System', sublabel: 'Follow device setting', value: 'system' },
+  { label: 'Light', sublabel: 'Always light', value: 'light' },
+  { label: 'Dark', sublabel: 'Always dark', value: 'dark' },
+];
 
 export const FREQUENCY_OPTIONS: { label: string; value: FrequencyMinutes }[] = [
   { label: '1 min', value: 1 },

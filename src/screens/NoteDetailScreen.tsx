@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Alert,
   KeyboardAvoidingView,
@@ -11,8 +11,12 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import DictateBar from '../components/DictateBar';
+import SettingsService from '../services/SettingsService';
 import StorageService from '../services/StorageService';
 import { Note } from '../types/Note';
+import { applyTranscription } from '../utils/parseTranscript';
+import { ColorPalette, useTheme } from '../contexts/ThemeContext';
 
 interface Props {
   note: Note;
@@ -22,8 +26,14 @@ interface Props {
 
 export default function NoteDetailScreen({ note, onSave, onClose }: Props) {
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
   const [text, setText] = useState(note.text);
+  const [appendKeyword, setAppendKeyword] = useState('append');
   const dirty = text.trim() !== note.text;
+
+  useEffect(() => {
+    SettingsService.load().then(s => setAppendKeyword(s.appendKeyword));
+  }, []);
 
   async function handleSave() {
     const trimmed = text.trim();
@@ -35,6 +45,8 @@ export default function NoteDetailScreen({ note, onSave, onClose }: Props) {
     await StorageService.updateNote(updated);
     onSave(updated);
   }
+
+  const styles = makeStyles(colors);
 
   return (
     <KeyboardAvoidingView
@@ -72,41 +84,44 @@ export default function NoteDetailScreen({ note, onSave, onClose }: Props) {
           textAlignVertical="top"
           autoFocus
           placeholder="Note text…"
-          placeholderTextColor="#aaa"
+          placeholderTextColor={colors.placeholder}
         />
+        <DictateBar onResult={raw => setText(prev => applyTranscription(prev, raw, appendKeyword))} />
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f2f2f7' },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#fff',
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#ccc',
-  },
-  headerTitle: { fontSize: 17, fontWeight: '600' },
-  headerId: { fontSize: 13, fontWeight: '400', color: '#c0c0c0' },
-  headerBtn: { fontSize: 17, color: '#007AFF' },
-  saveBtn: { fontWeight: '600' },
-  saveBtnDisabled: { color: '#b0c8f0' },
-  body: { padding: 20, gap: 16 },
-  meta: { fontSize: 12, color: '#b0b0b0', fontWeight: '500' },
-  textInput: {
-    fontSize: 17,
-    color: '#000',
-    lineHeight: 26,
-    minHeight: 200,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1.5,
-    borderColor: '#007AFF',
-  },
-});
+function makeStyles(colors: ColorPalette) {
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.background },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      backgroundColor: colors.surface,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.border,
+    },
+    headerTitle: { fontSize: 17, fontWeight: '600', color: colors.text },
+    headerId: { fontSize: 13, fontWeight: '400', color: colors.border },
+    headerBtn: { fontSize: 17, color: colors.accent },
+    saveBtn: { fontWeight: '600' },
+    saveBtnDisabled: { color: colors.placeholder },
+    body: { padding: 20, gap: 16 },
+    meta: { fontSize: 12, color: colors.placeholder, fontWeight: '500' },
+    textInput: {
+      fontSize: 17,
+      color: colors.text,
+      lineHeight: 26,
+      minHeight: 200,
+      backgroundColor: colors.surface,
+      borderRadius: 12,
+      padding: 16,
+      borderWidth: 1.5,
+      borderColor: colors.accent,
+    },
+  });
+}

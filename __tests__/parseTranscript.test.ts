@@ -1,4 +1,4 @@
-import { parseTranscriptAndNotes } from '../src/utils/parseTranscript';
+import { applyTranscription, parseTranscriptAndNotes } from '../src/utils/parseTranscript';
 
 test('no marker — returns full text as transcript, no notes', () => {
   const { transcript, notes } = parseTranscriptAndNotes('Worked on auth debugging.');
@@ -66,4 +66,21 @@ test('empty string — returns empty transcript and no notes', () => {
   const { transcript, notes } = parseTranscriptAndNotes('');
   expect(transcript).toBe('');
   expect(notes).toHaveLength(0);
+});
+
+// applyTranscription
+test('applyTranscription: "append ..." appends to existing text', () => {
+  expect(applyTranscription('Worked on auth.', 'append check the PR')).toBe('Worked on auth. check the PR');
+});
+
+test('applyTranscription: without "append" replaces existing text', () => {
+  expect(applyTranscription('Old text.', 'New text.')).toBe('New text.');
+});
+
+test('applyTranscription: "append" case insensitive', () => {
+  expect(applyTranscription('Existing.', 'APPEND more stuff')).toBe('Existing. more stuff');
+});
+
+test('applyTranscription: "append" into empty string gives just the appended part', () => {
+  expect(applyTranscription('', 'append check the PR')).toBe('check the PR');
 });

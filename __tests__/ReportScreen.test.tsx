@@ -16,11 +16,11 @@ beforeEach(() => {
   jest.spyOn(StorageService, 'getByDateRange').mockResolvedValue([]);
 });
 
-async function render(onStartCheckIn = jest.fn(), onOpenSettings = jest.fn()) {
+async function render(onStartCheckIn = jest.fn(), onOpenMenu = jest.fn()) {
   let renderer!: ReactTestRenderer.ReactTestRenderer;
   await ReactTestRenderer.act(async () => {
     renderer = ReactTestRenderer.create(
-      <ReportScreen onStartCheckIn={onStartCheckIn} onOpenSettings={onOpenSettings} />,
+      <ReportScreen onStartCheckIn={onStartCheckIn} onOpenMenu={onOpenMenu} />,
     );
   });
   return renderer;

@@ -14,9 +14,11 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import SchedulerService from '../services/SchedulerService';
+import SettingsService from '../services/SettingsService';
 import StorageService from '../services/StorageService';
 import TranscriptionService from '../services/TranscriptionService';
 import { parseTranscriptAndNotes } from '../utils/parseTranscript';
+import { ColorPalette, useTheme } from '../contexts/ThemeContext';
 
 type Phase = 'idle' | 'recording' | 'transcribing' | 'confirming';
 
@@ -41,14 +43,17 @@ function formatHour(ts: number): string {
 
 export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel }: Props) {
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
   const [phase, setPhase] = useState<Phase>('idle');
   const [recordingMs, setRecordingMs] = useState(0);
   const [partialTranscript, setPartialTranscript] = useState('');
   const [transcript, setTranscript] = useState('');
   const [notes, setNotes] = useState<string[]>([]);
+  const [noteKeyword, setNoteKeyword] = useState('note');
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
+    SettingsService.load().then(s => setNoteKeyword(s.noteKeyword));
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
       TranscriptionService.stop().catch(() => {});
@@ -100,7 +105,7 @@ export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel
 
     try {
       const finalText = await TranscriptionService.stop();
-      const { transcript: parsed, notes: detectedNotes } = parseTranscriptAndNotes(finalText || partialTranscript);
+      const { transcript: parsed, notes: detectedNotes } = parseTranscriptAndNotes(finalText || partialTranscript, noteKeyword);
       setTranscript(parsed);
       if (detectedNotes.length > 0) setNotes(detectedNotes);
       setPhase('confirming');
@@ -152,11 +157,13 @@ export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel
   const canSubmitTyped = transcript.trim().length > 0;
 
   function handleTypedSubmit() {
-    const { transcript: parsed, notes: detectedNotes } = parseTranscriptAndNotes(transcript);
+    const { transcript: parsed, notes: detectedNotes } = parseTranscriptAndNotes(transcript, noteKeyword);
     setTranscript(parsed);
     if (detectedNotes.length > 0) setNotes(prev => [...prev, ...detectedNotes]);
     setPhase('confirming');
   }
+
+  const styles = makeStyles(colors);
 
   return (
     <KeyboardAvoidingView
@@ -185,7 +192,7 @@ export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel
               value={transcript}
               onChangeText={setTranscript}
               placeholder="Type what you worked on..."
-              placeholderTextColor="#aaa"
+              placeholderTextColor={colors.placeholder}
               multiline
               textAlignVertical="top"
             />
@@ -227,7 +234,7 @@ export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel
 
         {phase === 'transcribing' && (
           <>
-            <ActivityIndicator size="large" color="#007AFF" />
+            <ActivityIndicator size="large" color={colors.accent} />
             <Text style={styles.transcribingLabel}>Transcribing…</Text>
           </>
         )}
@@ -251,7 +258,7 @@ export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel
                   value={note}
                   onChangeText={t => updateNote(i, t)}
                   placeholder="Add a note…"
-                  placeholderTextColor="#aaa"
+                  placeholderTextColor={colors.placeholder}
                   multiline
                   textAlignVertical="top"
                 />
@@ -280,126 +287,128 @@ export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f2f2f7' },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#fff',
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#ccc',
-  },
-  title: { fontSize: 17, fontWeight: '600' },
-  cancel: { fontSize: 17, color: '#666' },
-  cancelPlaceholder: { width: 50 },
-  periodBadge: {
-    alignItems: 'center',
-    paddingVertical: 20,
-  },
-  periodText: { fontSize: 22, fontWeight: '700', color: '#000' },
-  periodSub: { fontSize: 14, color: '#6d6d72', marginTop: 4 },
-  body: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-    paddingHorizontal: 24,
-    paddingTop: 24,
-    gap: 20,
-  },
-  typeInput: {
-    width: '100%',
-    minHeight: 140,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 14,
-    fontSize: 16,
-    color: '#000',
-    lineHeight: 24,
-    borderWidth: 1.5,
-    borderColor: '#007AFF',
-  },
-  submitBtn: {
-    width: '100%',
-    paddingVertical: 14,
-    borderRadius: 10,
-    backgroundColor: '#007AFF',
-    alignItems: 'center',
-  },
-  submitBtnDisabled: { backgroundColor: '#b0c8f0' },
-  submitBtnText: { fontSize: 16, color: '#fff', fontWeight: '600' },
-  orRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    width: '100%',
-    gap: 10,
-  },
-  orLine: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: '#ccc' },
-  orText: { fontSize: 13, color: '#999' },
-  timerBox: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 40 },
-  timer: { fontSize: 48, fontWeight: '200', color: '#000', fontVariant: ['tabular-nums'] },
-  recDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: '#ff3b30' },
-  recordBtn: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: '#ff3b30',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#ff3b30',
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  stopBtn: { backgroundColor: '#ff3b30', shadowColor: '#ff3b30' },
-  recordBtnText: { fontSize: 22, fontWeight: '600', color: '#fff' },
-  transcribingLabel: { fontSize: 16, color: '#6d6d72', marginTop: 16 },
-  liveBox: {
-    width: '100%',
-    maxHeight: 120,
-    backgroundColor: '#fff',
-    borderRadius: 10,
-  },
-  liveContent: { padding: 16 },
-  liveText: { fontSize: 15, color: '#333', lineHeight: 22, fontStyle: 'italic' },
-  confirmLabel: { fontSize: 18, fontWeight: '600', color: '#000', alignSelf: 'flex-start' },
-  noteRow: { flexDirection: 'row', alignItems: 'flex-start', width: '100%', gap: 8 },
-  noteInput: {
-    flex: 1,
-    minHeight: 60,
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    padding: 12,
-    fontSize: 15,
-    color: '#000',
-    lineHeight: 22,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    textAlignVertical: 'top',
-  },
-  noteRemove: { paddingTop: 14, paddingHorizontal: 4 },
-  noteRemoveText: { fontSize: 16, color: '#aaa' },
-  addNoteBtn: { alignSelf: 'flex-start' },
-  addNoteBtnText: { fontSize: 15, color: '#007AFF', fontWeight: '500' },
-  confirmRow: { flexDirection: 'row', gap: 12, width: '100%' },
-  rerecordBtn: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 10,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#ccc',
-  },
-  rerecordText: { fontSize: 16, color: '#333', fontWeight: '500' },
-  confirmBtn: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 10,
-    backgroundColor: '#007AFF',
-    alignItems: 'center',
-  },
-  confirmText: { fontSize: 16, color: '#fff', fontWeight: '600' },
-});
+function makeStyles(colors: ColorPalette) {
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.background },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      backgroundColor: colors.surface,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.border,
+    },
+    title: { fontSize: 17, fontWeight: '600', color: colors.text },
+    cancel: { fontSize: 17, color: colors.textSecondary },
+    cancelPlaceholder: { width: 50 },
+    periodBadge: {
+      alignItems: 'center',
+      paddingVertical: 20,
+    },
+    periodText: { fontSize: 22, fontWeight: '700', color: colors.text },
+    periodSub: { fontSize: 14, color: colors.textSecondary, marginTop: 4 },
+    body: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'flex-start',
+      paddingHorizontal: 24,
+      paddingTop: 24,
+      gap: 20,
+    },
+    typeInput: {
+      width: '100%',
+      minHeight: 140,
+      backgroundColor: colors.surface,
+      borderRadius: 12,
+      padding: 14,
+      fontSize: 16,
+      color: colors.text,
+      lineHeight: 24,
+      borderWidth: 1.5,
+      borderColor: colors.accent,
+    },
+    submitBtn: {
+      width: '100%',
+      paddingVertical: 14,
+      borderRadius: 10,
+      backgroundColor: colors.accent,
+      alignItems: 'center',
+    },
+    submitBtnDisabled: { backgroundColor: colors.placeholder },
+    submitBtnText: { fontSize: 16, color: '#fff', fontWeight: '600' },
+    orRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      width: '100%',
+      gap: 10,
+    },
+    orLine: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: colors.border },
+    orText: { fontSize: 13, color: colors.textSecondary },
+    timerBox: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 40 },
+    timer: { fontSize: 48, fontWeight: '200', color: colors.text, fontVariant: ['tabular-nums'] },
+    recDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: colors.recordBtn },
+    recordBtn: {
+      width: 120,
+      height: 120,
+      borderRadius: 60,
+      backgroundColor: colors.recordBtn,
+      alignItems: 'center',
+      justifyContent: 'center',
+      shadowColor: colors.recordBtn,
+      shadowOpacity: 0.4,
+      shadowRadius: 12,
+      elevation: 8,
+    },
+    stopBtn: { backgroundColor: colors.recordBtn, shadowColor: colors.recordBtn },
+    recordBtnText: { fontSize: 22, fontWeight: '600', color: '#fff' },
+    transcribingLabel: { fontSize: 16, color: colors.textSecondary, marginTop: 16 },
+    liveBox: {
+      width: '100%',
+      maxHeight: 120,
+      backgroundColor: colors.surface,
+      borderRadius: 10,
+    },
+    liveContent: { padding: 16 },
+    liveText: { fontSize: 15, color: colors.textSecondary, lineHeight: 22, fontStyle: 'italic' },
+    confirmLabel: { fontSize: 18, fontWeight: '600', color: colors.text, alignSelf: 'flex-start' },
+    noteRow: { flexDirection: 'row', alignItems: 'flex-start', width: '100%', gap: 8 },
+    noteInput: {
+      flex: 1,
+      minHeight: 60,
+      backgroundColor: colors.surface,
+      borderRadius: 10,
+      padding: 12,
+      fontSize: 15,
+      color: colors.text,
+      lineHeight: 22,
+      borderWidth: 1,
+      borderColor: colors.border,
+      textAlignVertical: 'top',
+    },
+    noteRemove: { paddingTop: 14, paddingHorizontal: 4 },
+    noteRemoveText: { fontSize: 16, color: colors.placeholder },
+    addNoteBtn: { alignSelf: 'flex-start' },
+    addNoteBtnText: { fontSize: 15, color: colors.accent, fontWeight: '500' },
+    confirmRow: { flexDirection: 'row', gap: 12, width: '100%' },
+    rerecordBtn: {
+      flex: 1,
+      paddingVertical: 14,
+      borderRadius: 10,
+      backgroundColor: colors.surface,
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    rerecordText: { fontSize: 16, color: colors.text, fontWeight: '500' },
+    confirmBtn: {
+      flex: 1,
+      paddingVertical: 14,
+      borderRadius: 10,
+      backgroundColor: colors.accent,
+      alignItems: 'center',
+    },
+    confirmText: { fontSize: 16, color: '#fff', fontWeight: '600' },
+  });
+}

@@ -1,17 +1,22 @@
 import notifee, { EventType } from '@notifee/react-native';
 import React, { useEffect, useState } from 'react';
-import { StatusBar } from 'react-native';
+import { StatusBar, useColorScheme, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import v from './version.json';
 import SchedulerService from './src/services/SchedulerService';
+import SettingsService from './src/services/SettingsService';
 import StorageService from './src/services/StorageService';
+import DrawerMenu, { DrawerScreen } from './src/components/DrawerMenu';
+import { ThemeProvider } from './src/contexts/ThemeContext';
 import CheckInScreen from './src/screens/CheckInScreen';
 import ReportScreen from './src/screens/ReportScreen';
+import ReportsScreen from './src/screens/ReportsScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
+import { Theme } from './src/types/Settings';
 
 export const version = `v${v.major}.${v.minor}.${v.ticket_id}.${v.sequence}`;
 
-type Screen = 'entries' | 'checkin' | 'settings';
+type Screen = 'entries' | 'checkin' | 'settings' | 'reports';
 type Period = { periodStart: number; periodEnd: number };
 
 // ID format: checkin-{periodStart}-{fireAt}
@@ -24,13 +29,21 @@ function parsePeriodFromId(id: string): Period | null {
 function AppContent(): React.JSX.Element {
   const [screen, setScreen] = useState<Screen>('entries');
   const [checkInPeriod, setCheckInPeriod] = useState<Period | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [themeSetting, setThemeSetting] = useState<Theme>('system');
+  const systemScheme = useColorScheme();
+
+  const isDark =
+    themeSetting === 'dark' ? true :
+    themeSetting === 'light' ? false :
+    systemScheme === 'dark';
 
   useEffect(() => {
+    SettingsService.load().then(s => setThemeSetting(s.theme));
     SchedulerService.requestPermission().then(granted => {
       if (granted) SchedulerService.reschedule();
     });
 
-    // Notification tap while app is open
     const unsub = notifee.onForegroundEvent(({ type, detail }) => {
       if (type !== EventType.PRESS) return;
       const id = detail.notification?.id ?? '';
@@ -43,7 +56,6 @@ function AppContent(): React.JSX.Element {
       }
     });
 
-    // Notification tap when app was closed/backgrounded
     notifee.getInitialNotification().then(initial => {
       if (!initial) return;
       const id = initial.notification?.id ?? '';
@@ -59,7 +71,10 @@ function AppContent(): React.JSX.Element {
 
   function handleSettingsClose(saved: boolean) {
     setScreen('entries');
-    if (saved) SchedulerService.reschedule();
+    if (saved) {
+      SchedulerService.reschedule();
+      SettingsService.load().then(s => setThemeSetting(s.theme));
+    }
   }
 
   function handleCheckInDone() {
@@ -78,30 +93,49 @@ function AppContent(): React.JSX.Element {
     setScreen('checkin');
   }
 
-  if (screen === 'settings') {
-    return <SettingsScreen onClose={handleSettingsClose} />;
+  function handleDrawerNavigate(dest: DrawerScreen) {
+    if (dest === 'settings') {
+      setScreen('settings');
+    } else {
+      setScreen(dest);
+    }
+    setDrawerOpen(false);
   }
 
-  if (screen === 'checkin') {
-    const period = checkInPeriod ?? {
-      periodStart: Date.now() - 2 * 60 * 60 * 1000,
-      periodEnd: Date.now(),
-    };
-    return (
-      <CheckInScreen
-        periodStart={period.periodStart}
-        periodEnd={period.periodEnd}
-        onDone={handleCheckInDone}
-        onCancel={() => setScreen('entries')}
-      />
-    );
-  }
+  const drawerScreen: DrawerScreen =
+    screen === 'settings' ? 'settings' :
+    screen === 'reports'  ? 'reports'  : 'entries';
 
   return (
-    <ReportScreen
-      onStartCheckIn={handleStartCheckIn}
-      onOpenSettings={() => setScreen('settings')}
-    />
+    <ThemeProvider isDark={isDark}>
+      {screen === 'settings' ? (
+        <SettingsScreen onClose={handleSettingsClose} />
+      ) : screen === 'checkin' ? (
+        <CheckInScreen
+          periodStart={checkInPeriod?.periodStart ?? Date.now() - 2 * 60 * 60 * 1000}
+          periodEnd={checkInPeriod?.periodEnd ?? Date.now()}
+          onDone={handleCheckInDone}
+          onCancel={() => setScreen('entries')}
+        />
+      ) : (
+        <View style={{ flex: 1 }}>
+          {screen === 'reports' ? (
+            <ReportsScreen onOpenMenu={() => setDrawerOpen(true)} />
+          ) : (
+            <ReportScreen
+              onStartCheckIn={handleStartCheckIn}
+              onOpenMenu={() => setDrawerOpen(true)}
+            />
+          )}
+          <DrawerMenu
+            visible={drawerOpen}
+            currentScreen={drawerScreen}
+            onClose={() => setDrawerOpen(false)}
+            onNavigate={handleDrawerNavigate}
+          />
+        </View>
+      )}
+    </ThemeProvider>
   );
 }
 

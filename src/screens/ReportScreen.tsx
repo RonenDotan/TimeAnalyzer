@@ -11,10 +11,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import EntryDetailScreen from './EntryDetailScreen';
 import StorageService from '../services/StorageService';
 import { LogEntry } from '../types/LogEntry';
+import { ColorPalette, useTheme } from '../contexts/ThemeContext';
 
 interface Props {
   onStartCheckIn: () => void;
-  onOpenSettings: () => void;
+  onOpenMenu: () => void;
   initialDate?: Date;
 }
 
@@ -48,8 +49,9 @@ function isToday(date: Date): boolean {
   );
 }
 
-export default function ReportScreen({ onStartCheckIn, onOpenSettings, initialDate }: Props) {
+export default function ReportScreen({ onStartCheckIn, onOpenMenu, initialDate }: Props) {
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
   const [currentDate, setCurrentDate] = useState<Date>(initialDate ?? new Date());
   const [entries, setEntries] = useState<LogEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -75,6 +77,7 @@ export default function ReportScreen({ onStartCheckIn, onOpenSettings, initialDa
   }
 
   const canGoForward = !isToday(currentDate);
+  const styles = makeStyles(colors);
 
   function handleEntrySaved(updated: LogEntry) {
     setEntries(prev => prev.map(e => e.id === updated.id ? updated : e));
@@ -94,7 +97,7 @@ export default function ReportScreen({ onStartCheckIn, onOpenSettings, initialDa
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.topBar}>
-        <TouchableOpacity onPress={onOpenSettings} style={styles.menuBtn}>
+        <TouchableOpacity onPress={onOpenMenu} style={styles.menuBtn}>
           <Text style={styles.menuIcon}>☰</Text>
         </TouchableOpacity>
         <Text style={styles.appTitle}>TimeAnalyzer</Text>
@@ -116,7 +119,7 @@ export default function ReportScreen({ onStartCheckIn, onOpenSettings, initialDa
 
       {loading ? (
         <View style={styles.centered}>
-          <ActivityIndicator size="large" color="#007AFF" />
+          <ActivityIndicator size="large" color={colors.accent} />
         </View>
       ) : entries.length === 0 ? (
         <View style={styles.centered}>
@@ -150,70 +153,72 @@ export default function ReportScreen({ onStartCheckIn, onOpenSettings, initialDa
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f2f2f7' },
-  topBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    backgroundColor: '#fff',
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#e0e0e0',
-  },
-  menuBtn: { padding: 4, width: 36 },
-  menuIcon: { fontSize: 22, color: '#007AFF' },
-  appTitle: { fontSize: 18, fontWeight: '700', color: '#000' },
-  topBarSpacer: { width: 36 },
-  dayNav: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 8,
-    paddingVertical: 12,
-    backgroundColor: '#fff',
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#e0e0e0',
-  },
-  navBtn: { padding: 8 },
-  navArrow: { fontSize: 28, color: '#007AFF', fontWeight: '300' },
-  navArrowDisabled: { color: '#ccc' },
-  dayLabel: { fontSize: 16, fontWeight: '600', color: '#000' },
-  centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  emptyText: { fontSize: 16, color: '#6d6d72' },
-  list: { padding: 16, gap: 12, paddingBottom: 100 },
-  entryCardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  entryId: { fontSize: 11, color: '#c0c0c0', fontWeight: '500' },
-  entryCard: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  timeRange: { fontSize: 14, fontWeight: '700', color: '#007AFF' },
-  transcript: { fontSize: 15, color: '#000', lineHeight: 22 },
-  fab: {
-    position: 'absolute',
-    right: 24,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#007AFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#007AFF',
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  fabIcon: { fontSize: 32, color: '#fff', lineHeight: 36 },
-});
+function makeStyles(colors: ColorPalette) {
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.background },
+    topBar: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: 16,
+      paddingVertical: 10,
+      backgroundColor: colors.surface,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.border,
+    },
+    menuBtn: { padding: 4, width: 36 },
+    menuIcon: { fontSize: 22, color: colors.accent },
+    appTitle: { fontSize: 18, fontWeight: '700', color: colors.text },
+    topBarSpacer: { width: 36 },
+    dayNav: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 8,
+      paddingVertical: 12,
+      backgroundColor: colors.surface,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.border,
+    },
+    navBtn: { padding: 8 },
+    navArrow: { fontSize: 28, color: colors.accent, fontWeight: '300' },
+    navArrowDisabled: { color: colors.border },
+    dayLabel: { fontSize: 16, fontWeight: '600', color: colors.text },
+    centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+    emptyText: { fontSize: 16, color: colors.textSecondary },
+    list: { padding: 16, gap: 12, paddingBottom: 100 },
+    entryCardHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 8,
+    },
+    entryId: { fontSize: 11, color: colors.border, fontWeight: '500' },
+    entryCard: {
+      backgroundColor: colors.surface,
+      borderRadius: 12,
+      padding: 16,
+      shadowColor: '#000',
+      shadowOpacity: 0.05,
+      shadowRadius: 4,
+      elevation: 2,
+    },
+    timeRange: { fontSize: 14, fontWeight: '700', color: colors.accent },
+    transcript: { fontSize: 15, color: colors.text, lineHeight: 22 },
+    fab: {
+      position: 'absolute',
+      right: 24,
+      width: 60,
+      height: 60,
+      borderRadius: 30,
+      backgroundColor: colors.accent,
+      alignItems: 'center',
+      justifyContent: 'center',
+      shadowColor: colors.accent,
+      shadowOpacity: 0.4,
+      shadowRadius: 8,
+      elevation: 8,
+    },
+    fabIcon: { fontSize: 32, color: '#fff', lineHeight: 36 },
+  });
+}
