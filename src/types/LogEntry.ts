@@ -1,5 +1,5 @@
 export interface LogEntry {
-  id: string;
+  id: number;
   timestampStart: number; // Unix epoch ms
   timestampEnd: number;   // Unix epoch ms
   transcript: string;

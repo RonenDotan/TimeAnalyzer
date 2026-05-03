@@ -129,9 +129,12 @@ export default function ReportScreen({ onStartCheckIn, onOpenSettings, initialDa
               key={entry.id}
               style={styles.entryCard}
               onPress={() => setSelectedEntry(entry)}>
-              <Text style={styles.timeRange}>
-                {formatTime(entry.timestampStart)} – {formatTime(entry.timestampEnd)}
-              </Text>
+              <View style={styles.entryCardHeader}>
+                <Text style={styles.timeRange}>
+                  {formatTime(entry.timestampStart)} – {formatTime(entry.timestampEnd)}
+                </Text>
+                <Text style={styles.entryId}>#{entry.id}</Text>
+              </View>
               <Text style={styles.transcript}>{entry.transcript}</Text>
             </TouchableOpacity>
           ))}
@@ -180,6 +183,13 @@ const styles = StyleSheet.create({
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   emptyText: { fontSize: 16, color: '#6d6d72' },
   list: { padding: 16, gap: 12, paddingBottom: 100 },
+  entryCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  entryId: { fontSize: 11, color: '#c0c0c0', fontWeight: '500' },
   entryCard: {
     backgroundColor: '#fff',
     borderRadius: 12,
@@ -189,7 +199,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
-  timeRange: { fontSize: 14, fontWeight: '700', color: '#007AFF', marginBottom: 8 },
+  timeRange: { fontSize: 14, fontWeight: '700', color: '#007AFF' },
   transcript: { fontSize: 15, color: '#000', lineHeight: 22 },
   fab: {
     position: 'absolute',

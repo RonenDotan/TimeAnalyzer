@@ -8,7 +8,7 @@ function setProvider(provider: StorageProvider): void {
   activeProvider = provider;
 }
 
-async function save(entry: LogEntry): Promise<void> {
+async function save(entry: Omit<LogEntry, 'id'>): Promise<LogEntry> {
   return activeProvider.save(entry);
 }
 
@@ -24,7 +24,7 @@ async function getByDateRange(start: Date, end: Date): Promise<LogEntry[]> {
   return activeProvider.getByDateRange(start, end);
 }
 
-async function deleteEntry(id: string): Promise<void> {
+async function deleteEntry(id: number): Promise<void> {
   return activeProvider.delete(id);
 }
 

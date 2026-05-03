@@ -83,7 +83,7 @@ export default function EntryDetailScreen({ entry, onSave, onClose }: Props) {
         <TouchableOpacity onPress={editing ? handleCancel : onClose}>
           <Text style={styles.headerBtn}>{editing ? 'Cancel' : 'Back'}</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Entry</Text>
+        <Text style={styles.headerTitle}>Entry <Text style={styles.headerId}>#{entry.id}</Text></Text>
         {editing ? (
           <TouchableOpacity onPress={handleSave}>
             <Text style={[styles.headerBtn, styles.saveBtn]}>Save</Text>
@@ -160,6 +160,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#ccc',
   },
   headerTitle: { fontSize: 17, fontWeight: '600' },
+  headerId: { fontSize: 13, fontWeight: '400', color: '#c0c0c0' },
   headerBtn: { fontSize: 17, color: '#007AFF' },
   editBtn: { color: '#007AFF' },
   saveBtn: { fontWeight: '600' },
