@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Alert,
   ScrollView,
@@ -11,6 +11,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import StorageService from '../services/StorageService';
 import { LogEntry } from '../types/LogEntry';
+import { Note } from '../types/Note';
 
 interface Props {
   entry: LogEntry;
@@ -40,11 +41,19 @@ export default function EntryDetailScreen({ entry, onSave, onClose }: Props) {
   const [transcript, setTranscript] = useState(entry.transcript);
   const [startTime, setStartTime] = useState(tsToTimeString(entry.timestampStart));
   const [endTime, setEndTime] = useState(tsToTimeString(entry.timestampEnd));
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [editingNotes, setEditingNotes] = useState<Record<number, string>>({});
+  const [newNoteText, setNewNoteText] = useState('');
+
+  useEffect(() => {
+    StorageService.getNotesByEntryId(entry.id).then(setNotes);
+  }, [entry.id]);
 
   function handleCancel() {
     setTranscript(entry.transcript);
     setStartTime(tsToTimeString(entry.timestampStart));
     setEndTime(tsToTimeString(entry.timestampEnd));
+    setEditingNotes({});
     setEditing(false);
   }
 
@@ -73,8 +82,42 @@ export default function EntryDetailScreen({ entry, onSave, onClose }: Props) {
     };
 
     await StorageService.update(updated);
+
+    // save edited notes
+    await Promise.all(
+      Object.entries(editingNotes).map(([idStr, text]) => {
+        const note = notes.find(n => n.id === parseInt(idStr, 10));
+        if (!note) return Promise.resolve();
+        return StorageService.updateNote({ ...note, text: text.trim() });
+      }),
+    );
+
+    const refreshed = await StorageService.getNotesByEntryId(entry.id);
+    setNotes(refreshed);
+    setEditingNotes({});
     setEditing(false);
     onSave(updated);
+  }
+
+  async function handleAddNote() {
+    if (!newNoteText.trim()) return;
+    const saved = await StorageService.saveNote({
+      entryId: entry.id,
+      text: newNoteText.trim(),
+      createdAt: Date.now(),
+    });
+    setNotes(prev => [...prev, saved]);
+    setNewNoteText('');
+  }
+
+  async function handleDeleteNote(id: number) {
+    await StorageService.deleteNote(id);
+    setNotes(prev => prev.filter(n => n.id !== id));
+    setEditingNotes(prev => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
   }
 
   return (
@@ -83,7 +126,9 @@ export default function EntryDetailScreen({ entry, onSave, onClose }: Props) {
         <TouchableOpacity onPress={editing ? handleCancel : onClose}>
           <Text style={styles.headerBtn}>{editing ? 'Cancel' : 'Back'}</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Entry <Text style={styles.headerId}>#{entry.id}</Text></Text>
+        <Text style={styles.headerTitle}>
+          Entry <Text style={styles.headerId}>#{entry.id}</Text>
+        </Text>
         {editing ? (
           <TouchableOpacity onPress={handleSave}>
             <Text style={[styles.headerBtn, styles.saveBtn]}>Save</Text>
@@ -96,6 +141,7 @@ export default function EntryDetailScreen({ entry, onSave, onClose }: Props) {
       </View>
 
       <ScrollView contentContainerStyle={styles.body}>
+        {/* Time range */}
         <View style={styles.section}>
           <Text style={styles.label}>TIME RANGE</Text>
           <View style={styles.timeRow}>
@@ -127,6 +173,7 @@ export default function EntryDetailScreen({ entry, onSave, onClose }: Props) {
           </View>
         </View>
 
+        {/* Transcript */}
         <View style={styles.section}>
           <Text style={styles.label}>TRANSCRIPT</Text>
           {editing ? (
@@ -141,6 +188,58 @@ export default function EntryDetailScreen({ entry, onSave, onClose }: Props) {
           ) : (
             <Text style={styles.transcriptText}>{entry.transcript}</Text>
           )}
+        </View>
+
+        {/* Notes */}
+        <Text style={styles.notesGroupLabel}>NOTES</Text>
+
+        {notes.length === 0 && (
+          <Text style={styles.emptyNotes}>No notes yet.</Text>
+        )}
+
+        {notes.map(note => (
+          <View key={note.id} style={styles.noteCard}>
+            <View style={styles.noteCardHeader}>
+              <Text style={styles.noteCardMeta}>
+                #{note.id} · {new Date(note.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </Text>
+              {editing && (
+                <TouchableOpacity onPress={() => handleDeleteNote(note.id)}>
+                  <Text style={styles.noteDeleteText}>✕</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+            {editing ? (
+              <TextInput
+                style={styles.noteEditInput}
+                value={editingNotes[note.id] ?? note.text}
+                onChangeText={t => setEditingNotes(prev => ({ ...prev, [note.id]: t }))}
+                multiline
+                textAlignVertical="top"
+              />
+            ) : (
+              <Text style={styles.noteText}>{note.text}</Text>
+            )}
+          </View>
+        ))}
+
+        {/* Add new note — always available */}
+        <View style={styles.addNoteCard}>
+          <TextInput
+            style={styles.addNoteInput}
+            value={newNoteText}
+            onChangeText={setNewNoteText}
+            placeholder="New note…"
+            placeholderTextColor="#aaa"
+            multiline
+            textAlignVertical="top"
+          />
+          <TouchableOpacity
+            style={[styles.addNoteBtn, !newNoteText.trim() && styles.addNoteBtnDisabled]}
+            onPress={handleAddNote}
+            disabled={!newNoteText.trim()}>
+            <Text style={styles.addNoteBtnText}>Add</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </View>
@@ -164,7 +263,7 @@ const styles = StyleSheet.create({
   headerBtn: { fontSize: 17, color: '#007AFF' },
   editBtn: { color: '#007AFF' },
   saveBtn: { fontWeight: '600' },
-  body: { padding: 16, gap: 20 },
+  body: { padding: 16, gap: 20, paddingBottom: 40 },
   section: {
     backgroundColor: '#fff',
     borderRadius: 12,
@@ -201,4 +300,70 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 10,
   },
+  notesGroupLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#6d6d72',
+    letterSpacing: 0.5,
+    marginLeft: 4,
+    marginBottom: 8,
+  },
+  emptyNotes: { fontSize: 14, color: '#aaa', marginLeft: 4 },
+  noteCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 14,
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1,
+    borderLeftWidth: 3,
+    borderLeftColor: '#007AFF',
+  },
+  noteCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  noteCardMeta: { fontSize: 11, color: '#b0b0b0', fontWeight: '500' },
+  noteDeleteText: { fontSize: 15, color: '#ff3b30', paddingHorizontal: 4 },
+  noteText: { fontSize: 15, color: '#000', lineHeight: 22 },
+  noteEditInput: {
+    fontSize: 15,
+    color: '#000',
+    lineHeight: 22,
+    borderWidth: 1,
+    borderColor: '#007AFF',
+    borderRadius: 8,
+    padding: 8,
+    minHeight: 60,
+    textAlignVertical: 'top',
+  },
+  addNoteCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 14,
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#e0e0e0',
+    borderStyle: 'dashed',
+  },
+  addNoteInput: {
+    flex: 1,
+    fontSize: 15,
+    color: '#000',
+    minHeight: 44,
+    textAlignVertical: 'top',
+  },
+  addNoteBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    backgroundColor: '#007AFF',
+    borderRadius: 8,
+  },
+  addNoteBtnDisabled: { backgroundColor: '#b0c8f0' },
+  addNoteBtnText: { fontSize: 15, color: '#fff', fontWeight: '600' },
 });

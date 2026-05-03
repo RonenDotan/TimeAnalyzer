@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import SchedulerService from '../services/SchedulerService';
 import StorageService from '../services/StorageService';
 import TranscriptionService from '../services/TranscriptionService';
+import { parseTranscriptAndNotes } from '../utils/parseTranscript';
 
 type Phase = 'idle' | 'recording' | 'transcribing' | 'confirming';
 
@@ -44,6 +45,7 @@ export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel
   const [recordingMs, setRecordingMs] = useState(0);
   const [partialTranscript, setPartialTranscript] = useState('');
   const [transcript, setTranscript] = useState('');
+  const [notes, setNotes] = useState<string[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
@@ -98,7 +100,9 @@ export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel
 
     try {
       const finalText = await TranscriptionService.stop();
-      setTranscript(finalText || partialTranscript);
+      const { transcript: parsed, notes: detectedNotes } = parseTranscriptAndNotes(finalText || partialTranscript);
+      setTranscript(parsed);
+      if (detectedNotes.length > 0) setNotes(detectedNotes);
       setPhase('confirming');
     } catch (e: any) {
       Alert.alert('Transcription failed', String(e?.message ?? e));
@@ -110,15 +114,34 @@ export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel
     setTranscript('');
     setPartialTranscript('');
     setRecordingMs(0);
+    setNotes([]);
     setPhase('idle');
   }
 
+  function addNote() {
+    setNotes(prev => [...prev, '']);
+  }
+
+  function updateNote(index: number, text: string) {
+    setNotes(prev => prev.map((n, i) => i === index ? text : n));
+  }
+
+  function removeNote(index: number) {
+    setNotes(prev => prev.filter((_, i) => i !== index));
+  }
+
   async function handleConfirm() {
-    await StorageService.save({
+    const entry = await StorageService.save({
       timestampStart: periodStart,
       timestampEnd: periodEnd,
       transcript,
     });
+    const now = Date.now();
+    await Promise.all(
+      notes
+        .filter(n => n.trim().length > 0)
+        .map(text => StorageService.saveNote({ entryId: entry.id, text: text.trim(), createdAt: now })),
+    );
     const moreToday = await SchedulerService.hasMoreCheckInsToday();
     if (!moreToday) {
       await SchedulerService.fireEndOfDayReport();
@@ -127,6 +150,13 @@ export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel
   }
 
   const canSubmitTyped = transcript.trim().length > 0;
+
+  function handleTypedSubmit() {
+    const { transcript: parsed, notes: detectedNotes } = parseTranscriptAndNotes(transcript);
+    setTranscript(parsed);
+    if (detectedNotes.length > 0) setNotes(prev => [...prev, ...detectedNotes]);
+    setPhase('confirming');
+  }
 
   return (
     <KeyboardAvoidingView
@@ -161,7 +191,7 @@ export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel
             />
             <TouchableOpacity
               style={[styles.submitBtn, !canSubmitTyped && styles.submitBtnDisabled]}
-              onPress={handleConfirm}
+              onPress={handleTypedSubmit}
               disabled={!canSubmitTyped}>
               <Text style={styles.submitBtnText}>Submit</Text>
             </TouchableOpacity>
@@ -213,6 +243,28 @@ export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel
               textAlignVertical="top"
               autoFocus
             />
+
+            {notes.map((note, i) => (
+              <View key={i} style={styles.noteRow}>
+                <TextInput
+                  style={styles.noteInput}
+                  value={note}
+                  onChangeText={t => updateNote(i, t)}
+                  placeholder="Add a note…"
+                  placeholderTextColor="#aaa"
+                  multiline
+                  textAlignVertical="top"
+                />
+                <TouchableOpacity onPress={() => removeNote(i)} style={styles.noteRemove}>
+                  <Text style={styles.noteRemoveText}>✕</Text>
+                </TouchableOpacity>
+              </View>
+            ))}
+
+            <TouchableOpacity style={styles.addNoteBtn} onPress={addNote}>
+              <Text style={styles.addNoteBtnText}>+ Add note</Text>
+            </TouchableOpacity>
+
             <View style={styles.confirmRow}>
               <TouchableOpacity style={styles.rerecordBtn} onPress={handleReRecord}>
                 <Text style={styles.rerecordText}>Re-record</Text>
@@ -313,6 +365,24 @@ const styles = StyleSheet.create({
   liveContent: { padding: 16 },
   liveText: { fontSize: 15, color: '#333', lineHeight: 22, fontStyle: 'italic' },
   confirmLabel: { fontSize: 18, fontWeight: '600', color: '#000', alignSelf: 'flex-start' },
+  noteRow: { flexDirection: 'row', alignItems: 'flex-start', width: '100%', gap: 8 },
+  noteInput: {
+    flex: 1,
+    minHeight: 60,
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    padding: 12,
+    fontSize: 15,
+    color: '#000',
+    lineHeight: 22,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    textAlignVertical: 'top',
+  },
+  noteRemove: { paddingTop: 14, paddingHorizontal: 4 },
+  noteRemoveText: { fontSize: 16, color: '#aaa' },
+  addNoteBtn: { alignSelf: 'flex-start' },
+  addNoteBtnText: { fontSize: 15, color: '#007AFF', fontWeight: '500' },
   confirmRow: { flexDirection: 'row', gap: 12, width: '100%' },
   rerecordBtn: {
     flex: 1,
