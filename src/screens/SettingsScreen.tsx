@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import SettingsService from '../services/SettingsService';
+import { version } from '../../App';
 import {
   ANALYSIS_PROVIDERS,
   DAY_LABELS,
@@ -340,6 +341,7 @@ export default function SettingsScreen({ onClose }: Props) {
           </>
         )}
 
+        <Text style={styles.versionText}>{version}</Text>
       </ScrollView>
     </View>
   );
@@ -410,6 +412,13 @@ function makeStyles(colors: ColorPalette) {
       fontFamily: 'monospace',
       paddingVertical: 4,
       textAlign: 'right',
+    },
+    versionText: {
+      fontSize: 12,
+      color: colors.textSecondary,
+      textAlign: 'center',
+      paddingTop: 24,
+      paddingBottom: 8,
     },
     keywordInput: {
       fontSize: 15,

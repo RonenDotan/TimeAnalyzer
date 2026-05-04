@@ -53,7 +53,7 @@ function parseTimeToken(token: string): number | null {
   return h <= 23 ? h * 60 + min : null;
 }
 
-const BLOCK_SEPARATORS = /,\s*|\s+(?:and\s+then|after\s+that|then)\s+/i;
+const BLOCK_SEPARATORS = /,\s*|\s+(?:and\s+then|after\s+that|then|and)\s+/i;
 
 export function parseDayPlan(raw: string): ParsedBlock[] {
   const blocks: ParsedBlock[] = [];
@@ -76,7 +76,6 @@ export function parseDayPlan(raw: string): ParsedBlock[] {
       ? endMin + 12 * 60
       : endMin;
     if (resolvedEnd <= startMin) continue;
-    if (!activity) continue;
 
     blocks.push({ startMin, endMin: resolvedEnd, activity });
   }

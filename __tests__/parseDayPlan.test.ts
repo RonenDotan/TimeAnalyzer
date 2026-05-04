@@ -61,6 +61,21 @@ describe('parseDayPlan', () => {
     expect(parseDayPlan('no time blocks here')).toHaveLength(0);
   });
 
+  it('parses time range with no activity label', () => {
+    const blocks = parseDayPlan('14 to 16');
+    expect(blocks).toHaveLength(1);
+    expect(blocks[0].startMin).toBe(840);
+    expect(blocks[0].endMin).toBe(960);
+    expect(blocks[0].activity).toBe('');
+  });
+
+  it('parses "and" as separator', () => {
+    const blocks = parseDayPlan('8 to 10 coding and 10 to 12 meetings');
+    expect(blocks).toHaveLength(2);
+    expect(blocks[0].activity).toBe('coding');
+    expect(blocks[1].activity).toBe('meetings');
+  });
+
   it('parses HH:MM format with dashes', () => {
     const blocks = parseDayPlan('09:00-11:30 deep work');
     expect(blocks).toHaveLength(1);

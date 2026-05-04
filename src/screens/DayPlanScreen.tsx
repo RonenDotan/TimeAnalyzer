@@ -39,12 +39,18 @@ function parsedToEdit(b: ParsedBlock): EditBlock {
 }
 
 function parseTimeText(text: string): number | null {
-  const m = text.trim().match(/^(\d{1,2}):(\d{2})$/);
+  const m = text.trim().match(/^(\d{1,2})(?::(\d{2}))?$/);
   if (!m) return null;
   const h = parseInt(m[1], 10);
-  const min = parseInt(m[2], 10);
+  const min = parseInt(m[2] ?? '0', 10);
   if (h > 23 || min > 59) return null;
   return h * 60 + min;
+}
+
+function normalizeTimeText(text: string): string {
+  const min = parseTimeText(text);
+  if (min === null) return text;
+  return formatMin(min);
 }
 
 function formatHeader(dateStr: string): string {
@@ -261,7 +267,8 @@ export default function DayPlanScreen({ initialDate, onClose }: Props) {
                   style={styles.timeInput}
                   value={block.startText}
                   onChangeText={v => updateBlock(i, { startText: v })}
-                  placeholder="08:00"
+                  onBlur={() => updateBlock(i, { startText: normalizeTimeText(block.startText) })}
+                  placeholder="14"
                   placeholderTextColor={colors.placeholder}
                   keyboardType="numeric"
                   maxLength={5}
@@ -271,7 +278,8 @@ export default function DayPlanScreen({ initialDate, onClose }: Props) {
                   style={styles.timeInput}
                   value={block.endText}
                   onChangeText={v => updateBlock(i, { endText: v })}
-                  placeholder="10:00"
+                  onBlur={() => updateBlock(i, { endText: normalizeTimeText(block.endText) })}
+                  placeholder="16"
                   placeholderTextColor={colors.placeholder}
                   keyboardType="numeric"
                   maxLength={5}
