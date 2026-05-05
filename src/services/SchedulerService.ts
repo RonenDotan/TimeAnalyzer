@@ -1,4 +1,4 @@
-import notifee, { AndroidImportance, TriggerType } from '@notifee/react-native';
+import notifee, { AndroidImportance, AndroidVisibility, TriggerType } from '@notifee/react-native';
 import config from '../config';
 import SettingsService from './SettingsService';
 import { Settings } from '../types/Settings';
@@ -72,8 +72,20 @@ async function ensureChannel(): Promise<void> {
   });
 }
 
+async function ensureAlertChannel(): Promise<void> {
+  await notifee.createChannel({
+    id: config.checkInAlertChannelId,
+    name: config.checkInAlertChannelName,
+    importance: AndroidImportance.HIGH,
+    sound: 'default',
+    vibration: true,
+    vibrationPattern: [0, 400, 200, 400],
+    visibility: AndroidVisibility.PUBLIC,
+  });
+}
+
 async function start(): Promise<void> {
-  await ensureChannel();
+  await ensureAlertChannel();
   const settings = await SettingsService.load();
   const slots = buildSchedule(settings, Date.now());
 
@@ -81,11 +93,14 @@ async function start(): Promise<void> {
     await notifee.createTriggerNotification(
       {
         id: `checkin-${periodStart}-${fireAt}`,
-        title: 'Time for a check-in!',
+        title: 'Time for a check-in! ⏰',
         body: `What did you work on from ${formatTime(periodStart)} to ${formatTime(fireAt)}?`,
         android: {
-          channelId: config.notificationChannelId,
+          channelId: config.checkInAlertChannelId,
           pressAction: { id: 'default' },
+          sound: 'default',
+          vibrationPattern: [0, 400, 200, 400],
+          importance: AndroidImportance.HIGH,
         },
       },
       { type: TriggerType.TIMESTAMP, timestamp: fireAt },
