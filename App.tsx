@@ -10,15 +10,15 @@ import DrawerMenu, { DrawerScreen } from './src/components/DrawerMenu';
 import { ThemeProvider } from './src/contexts/ThemeContext';
 import CheckInScreen from './src/screens/CheckInScreen';
 import DayPlanScreen from './src/screens/DayPlanScreen';
+import IntegrationsScreen from './src/screens/IntegrationsScreen';
 import ReportScreen from './src/screens/ReportScreen';
-
 import ReportsScreen from './src/screens/ReportsScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 import { Theme } from './src/types/Settings';
 
 export const version = `v${v.major}.${v.minor}.${v.ticket_id}.${v.sequence}`;
 
-type Screen = 'entries' | 'checkin' | 'settings' | 'reports' | 'dayplan';
+type Screen = 'entries' | 'checkin' | 'settings' | 'reports' | 'dayplan' | 'integrations';
 type Period = { periodStart: number; periodEnd: number };
 
 // ID format: checkin-{periodStart}-{fireAt}
@@ -133,14 +133,17 @@ function AppContent(): React.JSX.Element {
   }
 
   const drawerScreen: DrawerScreen =
-    screen === 'settings' ? 'settings' :
-    screen === 'reports'  ? 'reports'  :
-    screen === 'dayplan'  ? 'dayplan'  : 'entries';
+    screen === 'settings'     ? 'settings'     :
+    screen === 'reports'      ? 'reports'      :
+    screen === 'dayplan'      ? 'dayplan'      :
+    screen === 'integrations' ? 'integrations' : 'entries';
 
   return (
     <ThemeProvider isDark={isDark}>
       {screen === 'settings' ? (
         <SettingsScreen onClose={handleSettingsClose} />
+      ) : screen === 'integrations' ? (
+        <IntegrationsScreen onClose={() => setScreen('entries')} />
       ) : screen === 'dayplan' ? (
         <DayPlanScreen initialDate={planDate} onClose={() => setScreen('entries')} />
       ) : screen === 'checkin' ? (
