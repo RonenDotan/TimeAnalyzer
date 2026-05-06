@@ -353,41 +353,58 @@ export default function SettingsScreen({ onClose }: Props) {
               <TouchableOpacity
                 style={styles.row}
                 onPress={async () => {
-                  const count = await SchedulerService.getPendingCount();
-                  setPendingCount(count);
-                }}>
-                <Text style={styles.rowLabel}>Scheduled notifications</Text>
-                <Text style={styles.checkmark}>
-                  {pendingCount === null ? '?' : String(pendingCount)}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.row, styles.rowBorder]}
-                onPress={async () => {
-                  const ok = await SchedulerService.checkAlarmPermission();
-                  if (!ok) {
+                  try {
+                    const ns = await SchedulerService.getNotificationDiagnostics();
                     Alert.alert(
-                      'Alarm permission blocked',
-                      'Tap Open Settings to enable "Alarms & reminders" for TimeAnalyzer.',
+                      'Notification Status',
+                      ns,
                       [
-                        { text: 'Cancel', style: 'cancel' },
-                        { text: 'Open Settings', onPress: () => SchedulerService.openAlarmSettings() },
+                        { text: 'OK' },
+                        { text: 'Open Alarm Settings', onPress: () => SchedulerService.openAlarmSettings() },
+                        { text: 'Open App Settings', onPress: () => SchedulerService.openAppSettings() },
                       ],
                     );
-                  } else {
-                    Alert.alert('Permission OK', 'Alarm & reminders permission is granted ✅');
+                  } catch (e: any) {
+                    Alert.alert('Error', String(e?.message ?? e));
                   }
                 }}>
-                <Text style={styles.rowLabel}>Check alarm permission</Text>
+                <Text style={styles.rowLabel}>Run full diagnostic</Text>
                 <Text style={styles.chevron}>›</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.row, styles.rowBorder]}
                 onPress={async () => {
-                  await SchedulerService.sendTestNotification();
-                  Alert.alert('Sent', 'A test notification was fired. You should see it in your notification shade.');
+                  try {
+                    await SchedulerService.sendTestNotification();
+                    Alert.alert('Fired', 'Check your notification shade (pull down from top).');
+                  } catch (e: any) {
+                    Alert.alert('Failed', String(e?.message ?? e));
+                  }
                 }}>
                 <Text style={styles.rowLabel}>Send test notification</Text>
+                <Text style={styles.chevron}>›</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.row, styles.rowBorder]}
+                onPress={async () => {
+                  const count = await SchedulerService.getPendingCount();
+                  setPendingCount(count);
+                }}>
+                <Text style={styles.rowLabel}>Scheduled notifications</Text>
+                <Text style={[styles.rowLabel, { color: colors.accent }]}>
+                  {pendingCount === null ? 'tap to check' : `${pendingCount} pending`}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.row, styles.rowBorder]}
+                onPress={() => SchedulerService.openAlarmSettings()}>
+                <Text style={styles.rowLabel}>Open alarm settings</Text>
+                <Text style={styles.chevron}>›</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.row, styles.rowBorder]}
+                onPress={() => SchedulerService.openAppSettings()}>
+                <Text style={styles.rowLabel}>Open app notification settings</Text>
                 <Text style={styles.chevron}>›</Text>
               </TouchableOpacity>
             </View>

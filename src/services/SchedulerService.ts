@@ -165,6 +165,31 @@ async function openAlarmSettings(): Promise<void> {
   await notifee.openAlarmPermissionSettings();
 }
 
+async function openAppSettings(): Promise<void> {
+  await notifee.openNotificationSettings();
+}
+
+async function getNotificationDiagnostics(): Promise<string> {
+  const ns = await notifee.getNotificationSettings();
+  const pending = await notifee.getTriggerNotifications();
+  const channels = await notifee.getChannels();
+
+  const authStatus = ns.authorizationStatus;
+  const alarmStatus = ns.android?.alarm;
+  const alertChannel = channels.find(c => c.id === config.checkInAlertChannelId);
+
+  const lines: string[] = [
+    `Auth status: ${authStatus} (need ≥1)`,
+    `Alarm permission: ${alarmStatus} (need 1=ENABLED)`,
+    `Pending scheduled: ${pending.length}`,
+    `Alert channel exists: ${alertChannel ? 'YES' : 'NO'}`,
+    alertChannel ? `  Channel importance: ${alertChannel.importance}` : '',
+    alertChannel ? `  Channel blocked: ${alertChannel.blocked ? 'YES ⚠️' : 'no'}` : '',
+  ];
+
+  return lines.filter(Boolean).join('\n');
+}
+
 async function sendTestNotification(): Promise<void> {
   await ensureAlertChannel();
   await notifee.displayNotification({
@@ -221,6 +246,8 @@ const SchedulerService = {
   requestPermission,
   checkAlarmPermission,
   openAlarmSettings,
+  openAppSettings,
+  getNotificationDiagnostics,
   sendTestNotification,
   getPendingCount,
   hasMoreCheckInsToday,
