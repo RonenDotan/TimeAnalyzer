@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   ScrollView,
   StyleSheet,
   Switch,
@@ -11,6 +12,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import SettingsService from '../services/SettingsService';
+import SchedulerService from '../services/SchedulerService';
 import { version } from '../../App';
 import {
   ANALYSIS_PROVIDERS,
@@ -27,7 +29,7 @@ interface Props {
   onClose: (saved: boolean) => void;
 }
 
-type SectionKey = 'schedule' | 'providers' | 'keywords' | 'theme';
+type SectionKey = 'schedule' | 'providers' | 'keywords' | 'theme' | 'notifications';
 
 export default function SettingsScreen({ onClose }: Props) {
   const insets = useSafeAreaInsets();
@@ -37,6 +39,7 @@ export default function SettingsScreen({ onClose }: Props) {
   const [claudeKey, setClaudeKey] = useState('');
   const [openaiKey, setOpenaiKey] = useState('');
   const [expanded, setExpanded] = useState<Set<SectionKey>>(new Set(['schedule']));
+  const [pendingCount, setPendingCount] = useState<number | null>(null);
 
   useEffect(() => {
     Promise.all([
@@ -337,6 +340,56 @@ export default function SettingsScreen({ onClose }: Props) {
                   {settings.theme === opt.value && <Text style={styles.checkmark}>✓</Text>}
                 </TouchableOpacity>
               ))}
+            </View>
+          </>
+        )}
+
+        {/* ── NOTIFICATIONS ────────────────────────────────────── */}
+        <SectionHeader sectionKey="notifications" title="NOTIFICATIONS" />
+        {expanded.has('notifications') && (
+          <>
+            <Text style={styles.sectionLabel}>DIAGNOSTICS</Text>
+            <View style={styles.card}>
+              <TouchableOpacity
+                style={styles.row}
+                onPress={async () => {
+                  const count = await SchedulerService.getPendingCount();
+                  setPendingCount(count);
+                }}>
+                <Text style={styles.rowLabel}>Scheduled notifications</Text>
+                <Text style={styles.checkmark}>
+                  {pendingCount === null ? '?' : String(pendingCount)}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.row, styles.rowBorder]}
+                onPress={async () => {
+                  const ok = await SchedulerService.checkAlarmPermission();
+                  if (!ok) {
+                    Alert.alert(
+                      'Alarm permission blocked',
+                      'Tap Open Settings to enable "Alarms & reminders" for TimeAnalyzer.',
+                      [
+                        { text: 'Cancel', style: 'cancel' },
+                        { text: 'Open Settings', onPress: () => SchedulerService.openAlarmSettings() },
+                      ],
+                    );
+                  } else {
+                    Alert.alert('Permission OK', 'Alarm & reminders permission is granted ✅');
+                  }
+                }}>
+                <Text style={styles.rowLabel}>Check alarm permission</Text>
+                <Text style={styles.chevron}>›</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.row, styles.rowBorder]}
+                onPress={async () => {
+                  await SchedulerService.sendTestNotification();
+                  Alert.alert('Sent', 'A test notification was fired. You should see it in your notification shade.');
+                }}>
+                <Text style={styles.rowLabel}>Send test notification</Text>
+                <Text style={styles.chevron}>›</Text>
+              </TouchableOpacity>
             </View>
           </>
         )}

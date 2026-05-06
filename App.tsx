@@ -1,6 +1,6 @@
 import notifee, { EventType } from '@notifee/react-native';
 import React, { useEffect, useState } from 'react';
-import { StatusBar, useColorScheme, View } from 'react-native';
+import { Alert, StatusBar, useColorScheme, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import v from './version.json';
 import SchedulerService from './src/services/SchedulerService';
@@ -43,8 +43,21 @@ function AppContent(): React.JSX.Element {
 
   useEffect(() => {
     SettingsService.load().then(s => setThemeSetting(s.theme));
-    SchedulerService.requestPermission().then(granted => {
-      if (granted) SchedulerService.reschedule();
+    SchedulerService.requestPermission().then(async granted => {
+      if (!granted) return;
+      const alarmOk = await SchedulerService.checkAlarmPermission();
+      if (!alarmOk) {
+        Alert.alert(
+          'Allow Exact Alarms',
+          'TimeAnalyzer needs "Alarms & reminders" permission to fire check-in notifications at the right time.\n\nTap Open Settings, enable it for TimeAnalyzer, then come back.',
+          [
+            { text: 'Later', style: 'cancel' },
+            { text: 'Open Settings', onPress: () => SchedulerService.openAlarmSettings() },
+          ],
+        );
+        return;
+      }
+      SchedulerService.reschedule();
     });
 
     const unsub = notifee.onForegroundEvent(({ type, detail }) => {

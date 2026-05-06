@@ -1,4 +1,4 @@
-import notifee, { AndroidImportance, AndroidVisibility, TriggerType } from '@notifee/react-native';
+import notifee, { AndroidImportance, AndroidNotificationSetting, AndroidVisibility, TriggerType } from '@notifee/react-native';
 import config from '../config';
 import SettingsService from './SettingsService';
 import { Settings } from '../types/Settings';
@@ -118,7 +118,7 @@ function toDateString(d: Date): string {
 
 async function scheduleDailyPlan(settings: Settings, now: number): Promise<void> {
   if (!settings.dailyPlanEnabled) return;
-  await ensureChannel();
+  await ensureAlertChannel();
   for (let dayOffset = 0; dayOffset < 5; dayOffset++) {
     const d = new Date(now + dayOffset * 86_400_000);
     const midnight = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
@@ -131,7 +131,13 @@ async function scheduleDailyPlan(settings: Settings, now: number): Promise<void>
         id: `daily-plan-${dateStr}`,
         title: 'Time to plan your day 🗓',
         body: "What's on for today? Tap to set your daily plan.",
-        android: { channelId: config.notificationChannelId, pressAction: { id: 'default' } },
+        android: {
+          channelId: config.checkInAlertChannelId,
+          pressAction: { id: 'default' },
+          sound: 'default',
+          vibrationPattern: [0, 400, 200, 400],
+          importance: AndroidImportance.HIGH,
+        },
       },
       { type: TriggerType.TIMESTAMP, timestamp: fireAt },
     );
@@ -148,6 +154,35 @@ async function reschedule(): Promise<void> {
 async function requestPermission(): Promise<boolean> {
   const result = await notifee.requestPermission();
   return result.authorizationStatus >= 1;
+}
+
+async function checkAlarmPermission(): Promise<boolean> {
+  const settings = await notifee.getNotificationSettings();
+  return settings.android?.alarm !== AndroidNotificationSetting.DISABLED;
+}
+
+async function openAlarmSettings(): Promise<void> {
+  await notifee.openAlarmPermissionSettings();
+}
+
+async function sendTestNotification(): Promise<void> {
+  await ensureAlertChannel();
+  await notifee.displayNotification({
+    title: 'Test notification ✅',
+    body: 'Notifications are working! You will see check-ins like this.',
+    android: {
+      channelId: config.checkInAlertChannelId,
+      pressAction: { id: 'default' },
+      sound: 'default',
+      vibrationPattern: [0, 400, 200, 400],
+      importance: AndroidImportance.HIGH,
+    },
+  });
+}
+
+async function getPendingCount(): Promise<number> {
+  const pending = await notifee.getTriggerNotifications();
+  return pending.length;
 }
 
 async function hasMoreCheckInsToday(): Promise<boolean> {
@@ -184,6 +219,10 @@ const SchedulerService = {
   reschedule,
   scheduleDailyPlan,
   requestPermission,
+  checkAlarmPermission,
+  openAlarmSettings,
+  sendTestNotification,
+  getPendingCount,
   hasMoreCheckInsToday,
   fireEndOfDayReport,
 };
