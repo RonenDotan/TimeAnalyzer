@@ -2,7 +2,17 @@
   "permissions": {
     "allow": [
       "mcp__mcp-registry__search_mcp_registry",
-      "Bash(adb shell *)"
-    ]
+      "Bash(adb shell *)",
+      "Bash(npm install *)",
+      "Bash(npm test *)",
+      "Bash(npm test)",
+      "Bash(npx react-native *)",
+      "Bash(npx tsc *)",
+      "PowerShell(cd C:\\Users\\ronen\\TimeAnalyzer*)",
+      "PowerShell(.\\scripts\\build-and-install.ps1 *)",
+      "Skill(update-config)",
+      "Skill(update-config:*)"
+    ],
+    "defaultMode": "acceptEdits"
   }
 }

@@ -57,7 +57,11 @@ function AppContent(): React.JSX.Element {
         );
         return;
       }
-      SchedulerService.reschedule();
+      try {
+        await SchedulerService.reschedule();
+      } catch (e: any) {
+        Alert.alert('Scheduler error', String(e?.message ?? e));
+      }
     });
 
     const unsub = notifee.onForegroundEvent(({ type, detail }) => {

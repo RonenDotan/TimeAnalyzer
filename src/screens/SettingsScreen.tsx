@@ -375,6 +375,19 @@ export default function SettingsScreen({ onClose }: Props) {
                 style={[styles.row, styles.rowBorder]}
                 onPress={async () => {
                   try {
+                    const report = await SchedulerService.rescheduleWithReport();
+                    Alert.alert('Reschedule result', report);
+                  } catch (e: any) {
+                    Alert.alert('Failed', String(e?.message ?? e));
+                  }
+                }}>
+                <Text style={styles.rowLabel}>Reschedule now</Text>
+                <Text style={styles.chevron}>›</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.row, styles.rowBorder]}
+                onPress={async () => {
+                  try {
                     await SchedulerService.sendTestNotification();
                     Alert.alert('Fired', 'Check your notification shade (pull down from top).');
                   } catch (e: any) {

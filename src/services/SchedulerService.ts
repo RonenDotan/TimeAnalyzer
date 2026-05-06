@@ -151,6 +151,46 @@ async function reschedule(): Promise<void> {
   await scheduleDailyPlan(settings, Date.now());
 }
 
+async function rescheduleWithReport(): Promise<string> {
+  const lines: string[] = [];
+  try {
+    await stop();
+    lines.push('✓ Cancelled old notifications');
+  } catch (e: any) { lines.push(`✗ Cancel failed: ${e?.message}`); }
+  try {
+    await ensureAlertChannel();
+    lines.push('✓ Alert channel created');
+  } catch (e: any) { lines.push(`✗ Channel failed: ${e?.message}`); }
+  try {
+    const settings = await SettingsService.load();
+    const slots = buildSchedule(settings, Date.now());
+    lines.push(`✓ Built ${slots.length} slots`);
+    for (const { fireAt, periodStart } of slots) {
+      await notifee.createTriggerNotification(
+        {
+          id: `checkin-${periodStart}-${fireAt}`,
+          title: 'Time for a check-in! ⏰',
+          body: `What did you work on from ${formatTime(periodStart)} to ${formatTime(fireAt)}?`,
+          android: {
+            channelId: config.checkInAlertChannelId,
+            pressAction: { id: 'default' },
+            sound: 'default',
+            vibrationPattern: [0, 400, 200, 400],
+            importance: AndroidImportance.HIGH,
+          },
+        },
+        { type: TriggerType.TIMESTAMP, timestamp: fireAt },
+      );
+    }
+    lines.push(`✓ Scheduled ${slots.length} check-ins`);
+    await scheduleDailyPlan(settings, Date.now());
+    lines.push('✓ Daily plan scheduled');
+  } catch (e: any) { lines.push(`✗ Scheduling failed: ${e?.message ?? e}`); }
+  const pending = await notifee.getTriggerNotifications();
+  lines.push(`Total pending now: ${pending.length}`);
+  return lines.join('\n');
+}
+
 async function requestPermission(): Promise<boolean> {
   const result = await notifee.requestPermission();
   return result.authorizationStatus >= 1;
@@ -242,6 +282,7 @@ const SchedulerService = {
   start,
   stop,
   reschedule,
+  rescheduleWithReport,
   scheduleDailyPlan,
   requestPermission,
   checkAlarmPermission,
