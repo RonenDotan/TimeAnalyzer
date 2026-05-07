@@ -7,7 +7,7 @@ import { GoogleIntegrationState } from '../types/Integrations';
 
 // Replace with your OAuth 2.0 Web Client ID from Google Cloud Console
 // https://console.cloud.google.com → APIs & Services → Credentials
-const WEB_CLIENT_ID = 'YOUR_WEB_CLIENT_ID.apps.googleusercontent.com';
+const WEB_CLIENT_ID = '115013439807-j9l61ota8h0u4nfp163sm51ios9cacd8.apps.googleusercontent.com';
 
 const STORAGE_KEY = '@google_integration';
 
