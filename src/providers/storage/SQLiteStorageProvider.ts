@@ -1,21 +1,27 @@
 import { open } from '@op-engineering/op-sqlite';
-import { LogEntry } from '../../types/LogEntry';
+import { LogEntry, EntrySource } from '../../types/LogEntry';
 import { Note } from '../../types/Note';
-import { DayPlan, ParsedBlock, PlanBlock } from '../../types/DayPlan';
+import { DayPlan, ParsedBlock, PlanBlock, BlockSource } from '../../types/DayPlan';
 import { StorageProvider } from './StorageProvider';
 
 type DB = ReturnType<typeof open>;
 let db: DB | null = null;
 
+const SCHEMA_VERSION = 2;
+
 function getDb(): DB {
   if (!db) {
     db = open({ name: 'time-analyzer.sqlite' });
+
+    // Base tables
     db.executeSync(`
       CREATE TABLE IF NOT EXISTS log_entries (
         id              INTEGER PRIMARY KEY AUTOINCREMENT,
         timestamp_start INTEGER NOT NULL,
         timestamp_end   INTEGER NOT NULL,
-        transcript      TEXT NOT NULL
+        transcript      TEXT NOT NULL,
+        calendar_event_id TEXT,
+        source          TEXT NOT NULL DEFAULT 'app'
       )
     `);
     db.executeSync(`
@@ -35,15 +41,52 @@ function getDb(): DB {
     `);
     db.executeSync(`
       CREATE TABLE IF NOT EXISTS plan_blocks (
-        id        INTEGER PRIMARY KEY AUTOINCREMENT,
-        plan_id   INTEGER NOT NULL,
-        start_min INTEGER NOT NULL,
-        end_min   INTEGER NOT NULL,
-        activity  TEXT NOT NULL
+        id                INTEGER PRIMARY KEY AUTOINCREMENT,
+        plan_id           INTEGER NOT NULL,
+        start_min         INTEGER NOT NULL,
+        end_min           INTEGER NOT NULL,
+        activity          TEXT NOT NULL,
+        calendar_event_id TEXT,
+        source            TEXT NOT NULL DEFAULT 'app'
       )
     `);
+
+    // Schema version table
+    db.executeSync(`
+      CREATE TABLE IF NOT EXISTS schema_version (
+        version INTEGER NOT NULL
+      )
+    `);
+
+    // Run migrations
+    runMigrations(db);
   }
   return db;
+}
+
+function getCurrentVersion(d: DB): number {
+  const result = d.executeSync('SELECT version FROM schema_version LIMIT 1');
+  if (!result.rows || result.rows.length === 0) return 0;
+  return result.rows[0].version as number;
+}
+
+function setVersion(d: DB, version: number): void {
+  d.executeSync('DELETE FROM schema_version');
+  d.executeSync('INSERT INTO schema_version (version) VALUES (?)', [version]);
+}
+
+function runMigrations(d: DB): void {
+  const current = getCurrentVersion(d);
+  if (current >= SCHEMA_VERSION) return;
+
+  // Migration 1→2: add calendar_event_id and source to existing tables
+  if (current < 2) {
+    try { d.executeSync('ALTER TABLE log_entries ADD COLUMN calendar_event_id TEXT'); } catch {}
+    try { d.executeSync("ALTER TABLE log_entries ADD COLUMN source TEXT NOT NULL DEFAULT 'app'"); } catch {}
+    try { d.executeSync('ALTER TABLE plan_blocks ADD COLUMN calendar_event_id TEXT'); } catch {}
+    try { d.executeSync("ALTER TABLE plan_blocks ADD COLUMN source TEXT NOT NULL DEFAULT 'app'"); } catch {}
+    setVersion(d, 2);
+  }
 }
 
 function rowToEntry(row: Record<string, unknown>): LogEntry {
@@ -52,6 +95,8 @@ function rowToEntry(row: Record<string, unknown>): LogEntry {
     timestampStart: row.timestamp_start as number,
     timestampEnd: row.timestamp_end as number,
     transcript: row.transcript as string,
+    calendarEventId: (row.calendar_event_id as string | null) ?? null,
+    source: (row.source as EntrySource) ?? 'app',
   };
 }
 
@@ -79,22 +124,24 @@ function rowToPlanBlock(row: Record<string, unknown>): PlanBlock {
     startMin: row.start_min as number,
     endMin: row.end_min as number,
     activity: row.activity as string,
+    calendarEventId: (row.calendar_event_id as string | null) ?? null,
+    source: (row.source as BlockSource) ?? 'app',
   };
 }
 
 const SQLiteStorageProvider: StorageProvider = {
   async save(entry: Omit<LogEntry, 'id'>): Promise<LogEntry> {
     const result = getDb().executeSync(
-      'INSERT INTO log_entries (timestamp_start, timestamp_end, transcript) VALUES (?, ?, ?)',
-      [entry.timestampStart, entry.timestampEnd, entry.transcript],
+      'INSERT INTO log_entries (timestamp_start, timestamp_end, transcript, calendar_event_id, source) VALUES (?, ?, ?, ?, ?)',
+      [entry.timestampStart, entry.timestampEnd, entry.transcript, entry.calendarEventId ?? null, entry.source ?? 'app'],
     );
-    return { ...entry, id: result.insertId as number };
+    return { ...entry, id: result.insertId as number, calendarEventId: entry.calendarEventId ?? null, source: entry.source ?? 'app' };
   },
 
   async update(entry: LogEntry): Promise<void> {
     getDb().executeSync(
-      'UPDATE log_entries SET timestamp_start = ?, timestamp_end = ?, transcript = ? WHERE id = ?',
-      [entry.timestampStart, entry.timestampEnd, entry.transcript, entry.id],
+      'UPDATE log_entries SET timestamp_start = ?, timestamp_end = ?, transcript = ?, calendar_event_id = ?, source = ? WHERE id = ?',
+      [entry.timestampStart, entry.timestampEnd, entry.transcript, entry.calendarEventId ?? null, entry.source ?? 'app', entry.id],
     );
   },
 
@@ -162,15 +209,25 @@ const SQLiteStorageProvider: StorageProvider = {
   },
 
   async replacePlanBlocks(planId: number, blocks: ParsedBlock[]): Promise<PlanBlock[]> {
+    // Return old blocks (with calendarEventIds) before deleting, for caller to clean up Calendar
+    const oldResult = getDb().executeSync(
+      'SELECT * FROM plan_blocks WHERE plan_id = ?', [planId],
+    );
+    const oldBlocks = (oldResult.rows ?? []).map(rowToPlanBlock);
+
     getDb().executeSync('DELETE FROM plan_blocks WHERE plan_id = ?', [planId]);
+
     const saved: PlanBlock[] = [];
     for (const block of blocks) {
       const result = getDb().executeSync(
-        'INSERT INTO plan_blocks (plan_id, start_min, end_min, activity) VALUES (?, ?, ?, ?)',
-        [planId, block.startMin, block.endMin, block.activity],
+        'INSERT INTO plan_blocks (plan_id, start_min, end_min, activity, calendar_event_id, source) VALUES (?, ?, ?, ?, ?, ?)',
+        [planId, block.startMin, block.endMin, block.activity, null, 'app'],
       );
-      saved.push({ ...block, id: result.insertId as number, planId });
+      saved.push({ ...block, id: result.insertId as number, planId, calendarEventId: null, source: 'app' });
     }
+
+    // Attach old blocks to result so CalendarSyncService can delete their events
+    (saved as any).__oldBlocks = oldBlocks;
     return saved;
   },
 
@@ -180,6 +237,20 @@ const SQLiteStorageProvider: StorageProvider = {
       [planId],
     );
     return (result.rows ?? []).map(rowToPlanBlock);
+  },
+
+  async updateEntryCalendarEventId(id: number, calendarEventId: string): Promise<void> {
+    getDb().executeSync(
+      'UPDATE log_entries SET calendar_event_id = ? WHERE id = ?',
+      [calendarEventId, id],
+    );
+  },
+
+  async updatePlanBlockCalendarEventId(id: number, calendarEventId: string): Promise<void> {
+    getDb().executeSync(
+      'UPDATE plan_blocks SET calendar_event_id = ? WHERE id = ?',
+      [calendarEventId, id],
+    );
   },
 };
 

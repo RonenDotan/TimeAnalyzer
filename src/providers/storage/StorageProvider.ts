@@ -25,4 +25,8 @@ export interface StorageProvider {
   getDayPlan(date: string): Promise<DayPlan | null>;
   replacePlanBlocks(planId: number, blocks: ParsedBlock[]): Promise<PlanBlock[]>;
   getPlanBlocks(planId: number): Promise<PlanBlock[]>;
+
+  // calendar sync
+  updateEntryCalendarEventId(id: number, calendarEventId: string): Promise<void>;
+  updatePlanBlockCalendarEventId(id: number, calendarEventId: string): Promise<void>;
 }

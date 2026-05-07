@@ -30,7 +30,7 @@ beforeEach(() => {
   jest.clearAllMocks();
   jest.spyOn(TranscriptionService, 'start').mockResolvedValue(undefined);
   jest.spyOn(TranscriptionService, 'stop').mockResolvedValue(FAKE_TRANSCRIPT);
-  jest.spyOn(StorageService, 'save').mockResolvedValue({ id: 1, timestampStart: PERIOD_START, timestampEnd: PERIOD_END, transcript: FAKE_TRANSCRIPT });
+  jest.spyOn(StorageService, 'save').mockResolvedValue({ id: 1, timestampStart: PERIOD_START, timestampEnd: PERIOD_END, transcript: FAKE_TRANSCRIPT, calendarEventId: null, source: 'app' as const });
   jest.spyOn(SchedulerService, 'hasMoreCheckInsToday').mockResolvedValue(true);
   jest.spyOn(SchedulerService, 'fireEndOfDayReport').mockResolvedValue(undefined);
   jest.spyOn(PermissionsAndroid, 'request').mockResolvedValue(

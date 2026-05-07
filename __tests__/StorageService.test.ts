@@ -7,6 +7,8 @@ const entry: LogEntry = {
   timestampStart: 1000000,
   timestampEnd: 1007200000,
   transcript: 'I was debugging the auth module.',
+  calendarEventId: null,
+  source: 'app',
 };
 
 const noteStubs = {
@@ -21,6 +23,8 @@ const planStubs = {
   getDayPlan: jest.fn(),
   replacePlanBlocks: jest.fn(),
   getPlanBlocks: jest.fn(),
+  updateEntryCalendarEventId: jest.fn(),
+  updatePlanBlockCalendarEventId: jest.fn(),
 };
 
 const mockProvider: StorageProvider = {

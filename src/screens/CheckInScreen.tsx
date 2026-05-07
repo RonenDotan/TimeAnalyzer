@@ -13,6 +13,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import CalendarSyncService from '../services/CalendarSyncService';
 import SchedulerService from '../services/SchedulerService';
 import SettingsService from '../services/SettingsService';
 import StorageService from '../services/StorageService';
@@ -141,6 +142,8 @@ export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel
       timestampStart: periodStart,
       timestampEnd: periodEnd,
       transcript,
+      calendarEventId: null,
+      source: 'app',
     });
     const now = Date.now();
     await Promise.all(
@@ -152,6 +155,10 @@ export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel
     if (!moreToday) {
       await SchedulerService.fireEndOfDayReport();
     }
+    // Fire-and-forget calendar sync — never blocks the user
+    CalendarSyncService.isConnected().then(connected => {
+      if (connected) CalendarSyncService.pushEntry(entry).catch(() => {});
+    });
     onDone(transcript);
   }
 

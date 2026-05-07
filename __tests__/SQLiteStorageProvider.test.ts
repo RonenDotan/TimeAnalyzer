@@ -18,6 +18,8 @@ const entryInput: Omit<LogEntry, 'id'> = {
   timestampStart: 1000000000,
   timestampEnd: 1000007200000,
   transcript: 'Worked on auth module debugging',
+  calendarEventId: null,
+  source: 'app',
 };
 
 const entry: LogEntry = { id: 1, ...entryInput };

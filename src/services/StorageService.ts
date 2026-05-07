@@ -62,10 +62,19 @@ async function getPlanBlocks(planId: number): Promise<PlanBlock[]> {
   return activeProvider.getPlanBlocks(planId);
 }
 
+async function updateEntryCalendarEventId(id: number, calendarEventId: string): Promise<void> {
+  return activeProvider.updateEntryCalendarEventId(id, calendarEventId);
+}
+
+async function updatePlanBlockCalendarEventId(id: number, calendarEventId: string): Promise<void> {
+  return activeProvider.updatePlanBlockCalendarEventId(id, calendarEventId);
+}
+
 const StorageService = {
   save, update, getAll, getByDateRange, deleteEntry,
   saveNote, updateNote, getNotesByEntryId, deleteNote,
   upsertDayPlan, getDayPlan, replacePlanBlocks, getPlanBlocks,
+  updateEntryCalendarEventId, updatePlanBlockCalendarEventId,
   setProvider,
 };
 export default StorageService;
