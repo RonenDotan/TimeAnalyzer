@@ -9,6 +9,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import CalendarSyncService from '../services/CalendarSyncService';
 import GoogleAuthService, { getSignInErrorMessage } from '../services/GoogleAuthService';
 import { GoogleIntegrationState } from '../types/Integrations';
 import { ColorPalette, useTheme } from '../contexts/ThemeContext';
@@ -57,6 +58,7 @@ export default function IntegrationsScreen({ onClose }: Props) {
   const { colors } = useTheme();
   const [googleState, setGoogleState] = useState<GoogleIntegrationState | null>(null);
   const [signingIn, setSigningIn] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   const styles = makeStyles(colors);
 
   useEffect(() => {
@@ -68,11 +70,47 @@ export default function IntegrationsScreen({ onClose }: Props) {
     try {
       const state = await GoogleAuthService.signIn();
       setGoogleState(state);
+      // Hard sync on first sign-in to push all existing data to calendar
+      CalendarSyncService.hardSync().catch(() => {});
     } catch (e: any) {
       Alert.alert('Sign-in failed', getSignInErrorMessage(e));
     } finally {
       setSigningIn(false);
     }
+  }
+
+  async function handleSyncNow() {
+    setSyncing(true);
+    try {
+      await CalendarSyncService.syncChanged();
+    } catch (e: any) {
+      Alert.alert('Sync failed', e?.message ?? String(e));
+    } finally {
+      setSyncing(false);
+    }
+  }
+
+  async function handleHardSync() {
+    Alert.alert(
+      'Hard Sync',
+      'This will re-push all check-ins and plans to Google Calendar. Continue?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Sync All',
+          onPress: async () => {
+            setSyncing(true);
+            try {
+              await CalendarSyncService.hardSync();
+            } catch (e: any) {
+              Alert.alert('Sync failed', e?.message ?? String(e));
+            } finally {
+              setSyncing(false);
+            }
+          },
+        },
+      ],
+    );
   }
 
   async function handleGoogleSignOut() {
@@ -144,9 +182,27 @@ export default function IntegrationsScreen({ onClose }: Props) {
                   {isGoogle && !googleState ? (
                     <ActivityIndicator size="small" color={colors.accent} />
                   ) : isGoogle && connected ? (
-                    <TouchableOpacity style={styles.disconnectBtn} onPress={handleGoogleSignOut}>
-                      <Text style={styles.disconnectBtnText}>Disconnect</Text>
-                    </TouchableOpacity>
+                    <View style={styles.syncRow}>
+                      <TouchableOpacity
+                        style={[styles.syncBtn, syncing && styles.syncBtnDim]}
+                        onPress={handleSyncNow}
+                        disabled={syncing}>
+                        {syncing ? (
+                          <ActivityIndicator size="small" color={colors.accent} />
+                        ) : (
+                          <Text style={styles.syncBtnText}>Sync now</Text>
+                        )}
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.syncBtn, syncing && styles.syncBtnDim]}
+                        onPress={handleHardSync}
+                        disabled={syncing}>
+                        <Text style={styles.syncBtnText}>Hard sync</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity style={styles.disconnectBtn} onPress={handleGoogleSignOut}>
+                        <Text style={styles.disconnectBtnText}>Disconnect</Text>
+                      </TouchableOpacity>
+                    </View>
                   ) : isGoogle ? (
                     <TouchableOpacity
                       style={[styles.connectBtn, signingIn && styles.connectBtnDim]}
@@ -223,6 +279,16 @@ function makeStyles(colors: ColorPalette) {
     },
     soonBadgeText: { fontSize: 11, color: colors.textSecondary, fontWeight: '500' },
     actionRow: { alignItems: 'flex-start' },
+    syncRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, alignItems: 'center' },
+    syncBtn: {
+      borderWidth: 1,
+      borderColor: colors.accent,
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      borderRadius: 8,
+    },
+    syncBtnDim: { opacity: 0.5 },
+    syncBtnText: { fontSize: 14, color: colors.accent, fontWeight: '500' },
     connectBtn: {
       backgroundColor: colors.accent,
       paddingHorizontal: 20,

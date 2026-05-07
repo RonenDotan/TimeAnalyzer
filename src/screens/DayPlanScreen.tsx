@@ -12,8 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import DictateBar from '../components/DictateBar';
 import TranscriptionService from '../services/TranscriptionService';
 import StorageService from '../services/StorageService';
-import CalendarSyncService from '../services/CalendarSyncService';
-import { ParsedBlock } from '../types/DayPlan';
+import { ParsedBlock, PlanBlock } from '../types/DayPlan';
 import { applyTranscription } from '../utils/parseTranscript';
 import { formatMin, parseDayPlan } from '../utils/parseDayPlan';
 import { ColorPalette, useTheme } from '../contexts/ThemeContext';
@@ -24,6 +23,7 @@ interface Props {
 }
 
 interface EditBlock {
+  id?: number;     // undefined for newly added blocks
   startText: string;
   endText: string;
   activity: string;
@@ -37,6 +37,10 @@ function toDateString(d: Date): string {
 
 function parsedToEdit(b: ParsedBlock): EditBlock {
   return { startText: formatMin(b.startMin), endText: formatMin(b.endMin), activity: b.activity };
+}
+
+function planBlockToEdit(b: PlanBlock): EditBlock {
+  return { id: b.id, startText: formatMin(b.startMin), endText: formatMin(b.endMin), activity: b.activity };
 }
 
 function parseTimeText(text: string): number | null {
@@ -73,6 +77,7 @@ export default function DayPlanScreen({ initialDate, onClose }: Props) {
   const [currentDate, setCurrentDate] = useState<Date>(initialDate ?? new Date());
   const [rawInput, setRawInput] = useState('');
   const [blocks, setBlocks] = useState<EditBlock[]>([]);
+  const [deletedBlockIds, setDeletedBlockIds] = useState<number[]>([]);
   const [saving, setSaving] = useState(false);
   const [recording, setRecording] = useState<RecordingState>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -82,12 +87,13 @@ export default function DayPlanScreen({ initialDate, onClose }: Props) {
   useEffect(() => {
     async function load() {
       setBlocks([]);
+      setDeletedBlockIds([]);
       setRawInput('');
       try {
         const plan = await StorageService.getDayPlan(dateStr);
         if (!plan) return;
         const existing = await StorageService.getPlanBlocks(plan.id);
-        setBlocks(existing.map(b => parsedToEdit(b)));
+        setBlocks(existing.map(b => planBlockToEdit(b)));
       } catch (e: any) {
         Alert.alert('Load failed', String(e?.message ?? e));
       }
@@ -118,7 +124,13 @@ export default function DayPlanScreen({ initialDate, onClose }: Props) {
   }
 
   function removeBlock(index: number) {
-    setBlocks(prev => prev.filter((_, i) => i !== index));
+    setBlocks(prev => {
+      const block = prev[index];
+      if (block.id !== undefined) {
+        setDeletedBlockIds(ids => [...ids, block.id!]);
+      }
+      return prev.filter((_, i) => i !== index);
+    });
   }
 
   function addBlock() {
@@ -170,7 +182,7 @@ export default function DayPlanScreen({ initialDate, onClose }: Props) {
       }
     }
 
-    const parsed: ParsedBlock[] = [];
+    const parsed: Array<ParsedBlock & { id?: number }> = [];
     for (const b of currentBlocks) {
       const startMin = parseTimeText(b.startText);
       const endMin = parseTimeText(b.endText);
@@ -190,10 +202,10 @@ export default function DayPlanScreen({ initialDate, onClose }: Props) {
         Alert.alert('Missing activity', 'Every block needs an activity description.');
         return;
       }
-      parsed.push({ startMin, endMin, activity: b.activity.trim() });
+      parsed.push({ startMin, endMin, activity: b.activity.trim(), id: b.id });
     }
 
-    if (parsed.length === 0) {
+    if (parsed.length === 0 && deletedBlockIds.length === 0) {
       onClose();
       return;
     }
@@ -201,14 +213,8 @@ export default function DayPlanScreen({ initialDate, onClose }: Props) {
     setSaving(true);
     try {
       const plan = await StorageService.upsertDayPlan(dateStr);
-      const newBlocks = await StorageService.replacePlanBlocks(plan.id, parsed);
-      // Fire-and-forget calendar sync
-      CalendarSyncService.isConnected().then(async connected => {
-        if (!connected) return;
-        const oldBlocks = (newBlocks as any).__oldBlocks ?? [];
-        await CalendarSyncService.deleteOldPlanEvents(oldBlocks).catch(() => {});
-        await CalendarSyncService.pushPlanForDate(dateStr).catch(() => {});
-      });
+      await StorageService.upsertPlanBlocks(plan.id, parsed, deletedBlockIds);
+      setDeletedBlockIds([]);
       onClose();
     } catch (e: any) {
       Alert.alert('Save failed', String(e?.message ?? e));

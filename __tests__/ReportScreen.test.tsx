@@ -11,6 +11,9 @@ const entry: LogEntry = {
   transcript: 'Worked on the report screen.',
   calendarEventId: null,
   source: 'app',
+  status: 1,
+  updatedAt: new Date('2026-05-02T10:00:00').getTime(),
+  syncedAt: null,
 };
 
 beforeEach(() => {

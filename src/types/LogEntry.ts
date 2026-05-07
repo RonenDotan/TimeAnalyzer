@@ -7,4 +7,7 @@ export interface LogEntry {
   transcript: string;
   calendarEventId: string | null;
   source: EntrySource;
+  status: 0 | 1;          // 1=active, 0=pending delete
+  updatedAt: number;      // Unix epoch ms
+  syncedAt: number | null; // Unix epoch ms, null = never synced
 }

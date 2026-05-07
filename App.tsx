@@ -1,8 +1,9 @@
 import notifee, { EventType } from '@notifee/react-native';
 import React, { useEffect, useState } from 'react';
-import { Alert, StatusBar, useColorScheme, View } from 'react-native';
+import { Alert, AppState, StatusBar, useColorScheme, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import v from './version.json';
+import CalendarSyncService from './src/services/CalendarSyncService';
 import SchedulerService from './src/services/SchedulerService';
 import SettingsService from './src/services/SettingsService';
 import StorageService from './src/services/StorageService';
@@ -64,6 +65,16 @@ function AppContent(): React.JSX.Element {
       }
     });
 
+    // Interval-based calendar sync: run on startup, every 15 min, and on foreground resume
+    CalendarSyncService.syncChanged().catch(() => {});
+    const syncInterval = setInterval(
+      () => CalendarSyncService.syncChanged().catch(() => {}),
+      15 * 60 * 1000,
+    );
+    const appStateSub = AppState.addEventListener('change', state => {
+      if (state === 'active') CalendarSyncService.syncChanged().catch(() => {});
+    });
+
     const unsub = notifee.onForegroundEvent(({ type, detail }) => {
       if (type !== EventType.PRESS) return;
       const id = detail.notification?.id ?? '';
@@ -92,7 +103,11 @@ function AppContent(): React.JSX.Element {
       }
     });
 
-    return () => unsub();
+    return () => {
+      unsub();
+      clearInterval(syncInterval);
+      appStateSub.remove();
+    };
   }, []);
 
   function handleSettingsClose(saved: boolean) {

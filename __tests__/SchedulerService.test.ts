@@ -52,7 +52,7 @@ test('everyHour=true spans midnight (hour 24 → next day 00)', () => {
 test('start() creates channel and schedules 50 notifications', async () => {
   await SchedulerService.start();
   expect(notifee.createChannel).toHaveBeenCalledWith(
-    expect.objectContaining({ id: 'checkin-reminders' }),
+    expect.objectContaining({ id: 'checkin-alerts-v2' }),
   );
   expect(notifee.createTriggerNotification).toHaveBeenCalledTimes(50);
 });

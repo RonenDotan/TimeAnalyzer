@@ -1,6 +1,6 @@
 import { LogEntry } from '../types/LogEntry';
 import { Note } from '../types/Note';
-import { DayPlan, ParsedBlock, PlanBlock } from '../types/DayPlan';
+import { DayPlan, ParsedBlock, PlanBlock, PlanBlockWithDate } from '../types/DayPlan';
 import { StorageProvider } from '../providers/storage/StorageProvider';
 import SQLiteStorageProvider from '../providers/storage/SQLiteStorageProvider';
 
@@ -10,7 +10,7 @@ function setProvider(provider: StorageProvider): void {
   activeProvider = provider;
 }
 
-async function save(entry: Omit<LogEntry, 'id'>): Promise<LogEntry> {
+async function save(entry: Omit<LogEntry, 'id' | 'status' | 'updatedAt' | 'syncedAt'>): Promise<LogEntry> {
   return activeProvider.save(entry);
 }
 
@@ -28,6 +28,10 @@ async function getByDateRange(start: Date, end: Date): Promise<LogEntry[]> {
 
 async function deleteEntry(id: number): Promise<void> {
   return activeProvider.delete(id);
+}
+
+async function hardDeleteEntry(id: number): Promise<void> {
+  return activeProvider.hardDeleteEntry(id);
 }
 
 async function saveNote(note: Omit<Note, 'id'>): Promise<Note> {
@@ -54,12 +58,36 @@ async function getDayPlan(date: string): Promise<DayPlan | null> {
   return activeProvider.getDayPlan(date);
 }
 
-async function replacePlanBlocks(planId: number, blocks: ParsedBlock[]): Promise<PlanBlock[]> {
-  return activeProvider.replacePlanBlocks(planId, blocks);
+async function upsertPlanBlocks(
+  planId: number,
+  blocks: Array<ParsedBlock & { id?: number }>,
+  deletedIds: number[],
+): Promise<PlanBlock[]> {
+  return activeProvider.upsertPlanBlocks(planId, blocks, deletedIds);
 }
 
 async function getPlanBlocks(planId: number): Promise<PlanBlock[]> {
   return activeProvider.getPlanBlocks(planId);
+}
+
+async function hardDeletePlanBlock(id: number): Promise<void> {
+  return activeProvider.hardDeletePlanBlock(id);
+}
+
+async function getUnsyncedEntries(): Promise<LogEntry[]> {
+  return activeProvider.getUnsyncedEntries();
+}
+
+async function getPendingDeleteEntries(): Promise<LogEntry[]> {
+  return activeProvider.getPendingDeleteEntries();
+}
+
+async function getUnsyncedPlanBlocksWithDate(): Promise<PlanBlockWithDate[]> {
+  return activeProvider.getUnsyncedPlanBlocksWithDate();
+}
+
+async function getPendingDeletePlanBlocksWithDate(): Promise<PlanBlockWithDate[]> {
+  return activeProvider.getPendingDeletePlanBlocksWithDate();
 }
 
 async function updateEntryCalendarEventId(id: number, calendarEventId: string): Promise<void> {
@@ -70,11 +98,26 @@ async function updatePlanBlockCalendarEventId(id: number, calendarEventId: strin
   return activeProvider.updatePlanBlockCalendarEventId(id, calendarEventId);
 }
 
+async function updateEntrySyncedAt(id: number, ts: number): Promise<void> {
+  return activeProvider.updateEntrySyncedAt(id, ts);
+}
+
+async function updatePlanBlockSyncedAt(id: number, ts: number): Promise<void> {
+  return activeProvider.updatePlanBlockSyncedAt(id, ts);
+}
+
+async function hardResetSyncedAt(): Promise<void> {
+  return activeProvider.hardResetSyncedAt();
+}
+
 const StorageService = {
-  save, update, getAll, getByDateRange, deleteEntry,
+  save, update, getAll, getByDateRange, deleteEntry, hardDeleteEntry,
   saveNote, updateNote, getNotesByEntryId, deleteNote,
-  upsertDayPlan, getDayPlan, replacePlanBlocks, getPlanBlocks,
+  upsertDayPlan, getDayPlan, upsertPlanBlocks, getPlanBlocks, hardDeletePlanBlock,
+  getUnsyncedEntries, getPendingDeleteEntries,
+  getUnsyncedPlanBlocksWithDate, getPendingDeletePlanBlocksWithDate,
   updateEntryCalendarEventId, updatePlanBlockCalendarEventId,
+  updateEntrySyncedAt, updatePlanBlockSyncedAt, hardResetSyncedAt,
   setProvider,
 };
 export default StorageService;
