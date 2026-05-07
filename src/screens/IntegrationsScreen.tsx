@@ -57,22 +57,13 @@ export default function IntegrationsScreen({ onClose }: Props) {
   const { colors } = useTheme();
   const [googleState, setGoogleState] = useState<GoogleIntegrationState | null>(null);
   const [signingIn, setSigningIn] = useState(false);
-  const [notConfigured, setNotConfigured] = useState(false);
   const styles = makeStyles(colors);
 
   useEffect(() => {
     GoogleAuthService.getState().then(setGoogleState);
-    GoogleAuthService.isConfigured().then(ok => setNotConfigured(!ok));
   }, []);
 
   async function handleGoogleSignIn() {
-    if (notConfigured) {
-      Alert.alert(
-        'Setup required',
-        'A Google Cloud OAuth client ID must be configured before sign-in is available.\n\nThis is a one-time developer setup step.',
-      );
-      return;
-    }
     setSigningIn(true);
     try {
       const state = await GoogleAuthService.signIn();
@@ -164,9 +155,7 @@ export default function IntegrationsScreen({ onClose }: Props) {
                       {signingIn ? (
                         <ActivityIndicator size="small" color="#fff" />
                       ) : (
-                        <Text style={styles.connectBtnText}>
-                          {notConfigured ? 'Setup required' : 'Sign in with Google'}
-                        </Text>
+                        <Text style={styles.connectBtnText}>Sign in with Google</Text>
                       )}
                     </TouchableOpacity>
                   ) : null}
@@ -176,15 +165,6 @@ export default function IntegrationsScreen({ onClose }: Props) {
           );
         })}
 
-        {notConfigured && (
-          <View style={styles.setupNote}>
-            <Text style={styles.setupNoteTitle}>Developer setup needed</Text>
-            <Text style={styles.setupNoteText}>
-              To enable Google sign-in, create a project in Google Cloud Console, enable the Calendar API, create an OAuth 2.0 Web Client ID, and add it to{' '}
-              <Text style={styles.setupNoteCode}>src/services/GoogleAuthService.ts</Text>.
-            </Text>
-          </View>
-        )}
       </ScrollView>
     </View>
   );

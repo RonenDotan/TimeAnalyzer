@@ -5,19 +5,13 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { GoogleIntegrationState } from '../types/Integrations';
 
-// Replace with your OAuth 2.0 Web Client ID from Google Cloud Console
-// https://console.cloud.google.com → APIs & Services → Credentials
-const WEB_CLIENT_ID = '115013439807-j9l61ota8h0u4nfp163sm51ios9cacd8.apps.googleusercontent.com';
-
 const STORAGE_KEY = '@google_integration';
 
 const CALENDAR_SCOPE = 'https://www.googleapis.com/auth/calendar';
 
 function configure() {
   GoogleSignin.configure({
-    webClientId: WEB_CLIENT_ID,
     scopes: [CALENDAR_SCOPE],
-    offlineAccess: true, // get refresh token for server-side API calls
   });
 }
 
@@ -67,9 +61,6 @@ async function getAccessToken(): Promise<string | null> {
   }
 }
 
-async function isConfigured(): Promise<boolean> {
-  return WEB_CLIENT_ID !== 'YOUR_WEB_CLIENT_ID.apps.googleusercontent.com';
-}
 
 export function getSignInErrorMessage(error: any): string {
   if (error?.code === statusCodes.SIGN_IN_CANCELLED) return 'Sign-in cancelled.';
@@ -84,7 +75,6 @@ const GoogleAuthService = {
   signOut,
   getState,
   getAccessToken,
-  isConfigured,
 };
 
 export default GoogleAuthService;
