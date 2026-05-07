@@ -1,5 +1,5 @@
 import notifee, { EventType } from '@notifee/react-native';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Alert, AppState, StatusBar, useColorScheme, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import v from './version.json';
@@ -11,15 +11,14 @@ import DrawerMenu, { DrawerScreen } from './src/components/DrawerMenu';
 import { ThemeProvider } from './src/contexts/ThemeContext';
 import CheckInScreen from './src/screens/CheckInScreen';
 import DayPlanScreen from './src/screens/DayPlanScreen';
-import IntegrationsScreen from './src/screens/IntegrationsScreen';
 import ReportScreen from './src/screens/ReportScreen';
 import ReportsScreen from './src/screens/ReportsScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
-import { Theme } from './src/types/Settings';
+import { SyncIntervalMinutes, Theme } from './src/types/Settings';
 
 export const version = `v${v.major}.${v.minor}.${v.ticket_id}.${v.sequence}`;
 
-type Screen = 'entries' | 'checkin' | 'settings' | 'reports' | 'dayplan' | 'integrations';
+type Screen = 'entries' | 'checkin' | 'settings' | 'reports' | 'dayplan';
 type Period = { periodStart: number; periodEnd: number };
 
 // ID format: checkin-{periodStart}-{fireAt}
@@ -35,15 +34,32 @@ function AppContent(): React.JSX.Element {
   const [planDate, setPlanDate] = useState<Date | undefined>(undefined);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [themeSetting, setThemeSetting] = useState<Theme>('system');
+  const [debugMode, setDebugMode] = useState(false);
   const systemScheme = useColorScheme();
+  const syncIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const isDark =
     themeSetting === 'dark' ? true :
     themeSetting === 'light' ? false :
     systemScheme === 'dark';
 
+  function startSyncInterval(intervalMinutes: SyncIntervalMinutes) {
+    if (syncIntervalRef.current) clearInterval(syncIntervalRef.current);
+    syncIntervalRef.current = null;
+    if (intervalMinutes > 0) {
+      syncIntervalRef.current = setInterval(
+        () => CalendarSyncService.syncChanged().catch(() => {}),
+        intervalMinutes * 60 * 1000,
+      );
+    }
+  }
+
   useEffect(() => {
-    SettingsService.load().then(s => setThemeSetting(s.theme));
+    SettingsService.load().then(s => {
+      setThemeSetting(s.theme);
+      setDebugMode(s.debugMode);
+      startSyncInterval(s.calendarSyncIntervalMinutes);
+    });
     SchedulerService.requestPermission().then(async granted => {
       if (!granted) return;
       const alarmOk = await SchedulerService.checkAlarmPermission();
@@ -65,12 +81,8 @@ function AppContent(): React.JSX.Element {
       }
     });
 
-    // Interval-based calendar sync: run on startup, every 15 min, and on foreground resume
+    // Run once on startup; interval is set up after settings load above
     CalendarSyncService.syncChanged().catch(() => {});
-    const syncInterval = setInterval(
-      () => CalendarSyncService.syncChanged().catch(() => {}),
-      15 * 60 * 1000,
-    );
     const appStateSub = AppState.addEventListener('change', state => {
       if (state === 'active') CalendarSyncService.syncChanged().catch(() => {});
     });
@@ -105,7 +117,7 @@ function AppContent(): React.JSX.Element {
 
     return () => {
       unsub();
-      clearInterval(syncInterval);
+      if (syncIntervalRef.current) clearInterval(syncIntervalRef.current);
       appStateSub.remove();
     };
   }, []);
@@ -114,7 +126,11 @@ function AppContent(): React.JSX.Element {
     setScreen('entries');
     if (saved) {
       SchedulerService.reschedule();
-      SettingsService.load().then(s => setThemeSetting(s.theme));
+      SettingsService.load().then(s => {
+        setThemeSetting(s.theme);
+        setDebugMode(s.debugMode);
+        startSyncInterval(s.calendarSyncIntervalMinutes);
+      });
     }
   }
 
@@ -148,19 +164,16 @@ function AppContent(): React.JSX.Element {
   }
 
   const drawerScreen: DrawerScreen =
-    screen === 'settings'     ? 'settings'     :
-    screen === 'reports'      ? 'reports'      :
-    screen === 'dayplan'      ? 'dayplan'      :
-    screen === 'integrations' ? 'integrations' : 'entries';
+    screen === 'settings' ? 'settings' :
+    screen === 'reports'  ? 'reports'  :
+    screen === 'dayplan'  ? 'dayplan'  : 'entries';
 
   return (
     <ThemeProvider isDark={isDark}>
       {screen === 'settings' ? (
         <SettingsScreen onClose={handleSettingsClose} />
-      ) : screen === 'integrations' ? (
-        <IntegrationsScreen onClose={() => setScreen('entries')} />
       ) : screen === 'dayplan' ? (
-        <DayPlanScreen initialDate={planDate} onClose={() => setScreen('entries')} />
+        <DayPlanScreen initialDate={planDate} onClose={() => setScreen('entries')} debugMode={debugMode} />
       ) : screen === 'checkin' ? (
         <CheckInScreen
           periodStart={checkInPeriod?.periodStart ?? Date.now() - 2 * 60 * 60 * 1000}
@@ -177,6 +190,7 @@ function AppContent(): React.JSX.Element {
               onStartCheckIn={handleStartCheckIn}
               onOpenMenu={() => setDrawerOpen(true)}
               onEditPlan={handleEditPlan}
+              debugMode={debugMode}
             />
           )}
           <DrawerMenu

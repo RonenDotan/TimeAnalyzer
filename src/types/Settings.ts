@@ -1,4 +1,5 @@
 export type FrequencyMinutes = 1 | 2 | 30 | 60 | 120 | 240 | 480 | 1440;
+export type SyncIntervalMinutes = 0 | 1 | 5 | 15 | 30 | 60;
 export type TranscriptionProvider = 'groq';
 export type AnalysisProvider = 'claude' | 'openai';
 export type Theme = 'system' | 'light' | 'dark';
@@ -16,6 +17,8 @@ export interface Settings {
   theme: Theme;
   dailyPlanEnabled: boolean;
   dailyPlanHour: number; // 0–23
+  calendarSyncIntervalMinutes: SyncIntervalMinutes; // 0 = manual only
+  debugMode: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -31,6 +34,8 @@ export const DEFAULT_SETTINGS: Settings = {
   theme: 'system',
   dailyPlanEnabled: true,
   dailyPlanHour: 8,
+  calendarSyncIntervalMinutes: 15,
+  debugMode: false,
 };
 
 export const THEME_OPTIONS: { label: string; sublabel: string; value: Theme }[] = [
@@ -48,6 +53,15 @@ export const FREQUENCY_OPTIONS: { label: string; value: FrequencyMinutes }[] = [
   { label: '4 hours', value: 240 },
   { label: '8 hours', value: 480 },
   { label: '1 day', value: 1440 },
+];
+
+export const SYNC_INTERVAL_OPTIONS: { label: string; sublabel: string; value: SyncIntervalMinutes }[] = [
+  { label: 'Every 1 min',  sublabel: 'Debug only',        value: 1  },
+  { label: 'Every 5 min',  sublabel: 'High frequency',   value: 5  },
+  { label: 'Every 15 min', sublabel: 'Recommended',       value: 15 },
+  { label: 'Every 30 min', sublabel: 'Balanced',          value: 30 },
+  { label: 'Every hour',   sublabel: 'Low frequency',     value: 60 },
+  { label: 'Manual only',  sublabel: 'Sync now / Hard sync only', value: 0 },
 ];
 
 export const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];

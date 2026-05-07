@@ -21,6 +21,7 @@ interface Props {
   onOpenMenu: () => void;
   onEditPlan?: (date: Date) => void;
   initialDate?: Date;
+  debugMode?: boolean;
 }
 
 function startOfDay(date: Date): Date {
@@ -53,7 +54,7 @@ function isToday(date: Date): boolean {
   );
 }
 
-export default function ReportScreen({ onStartCheckIn, onOpenMenu, onEditPlan, initialDate }: Props) {
+export default function ReportScreen({ onStartCheckIn, onOpenMenu, onEditPlan, initialDate, debugMode = false }: Props) {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const [currentDate, setCurrentDate] = useState<Date>(initialDate ?? new Date());
@@ -192,6 +193,24 @@ export default function ReportScreen({ onStartCheckIn, onOpenMenu, onEditPlan, i
                   {matched.length > 0 && (
                     <Text style={styles.planTag}>→ {matched.map(b => b.activity).join(', ')}</Text>
                   )}
+                  {debugMode && (
+                    <View style={styles.debugRow}>
+                      <Text style={styles.debugText}>
+                        synced: {entry.syncedAt !== null && entry.syncedAt >= entry.updatedAt ? 'yes' : 'no'}
+                      </Text>
+                      <Text style={styles.debugText}>
+                        upd: {new Date(entry.updatedAt).toLocaleTimeString()}
+                      </Text>
+                      {entry.syncedAt !== null && (
+                        <Text style={styles.debugText}>
+                          sync_at: {new Date(entry.syncedAt).toLocaleTimeString()}
+                        </Text>
+                      )}
+                      <Text style={styles.debugText}>
+                        status: {entry.status === 1 ? 'active' : 'del'}
+                      </Text>
+                    </View>
+                  )}
                 </TouchableOpacity>
               );
             })
@@ -251,9 +270,11 @@ function makeStyles(colors: ColorPalette) {
     },
     entryId: { fontSize: 11, color: colors.border, fontWeight: '500' },
     entryCard: {
-      backgroundColor: colors.surface,
+      backgroundColor: '#33B679' + '18',
       borderRadius: 12,
       padding: 16,
+      borderLeftWidth: 4,
+      borderLeftColor: '#33B679',
       shadowColor: '#000',
       shadowOpacity: 0.05,
       shadowRadius: 4,
@@ -277,21 +298,23 @@ function makeStyles(colors: ColorPalette) {
     },
     fabIcon: { fontSize: 32, color: '#fff', lineHeight: 36 },
     planSection: {
-      backgroundColor: colors.surface,
+      backgroundColor: '#039BE5' + '18',
       borderRadius: 12,
       padding: 14,
       gap: 8,
+      borderLeftWidth: 4,
+      borderLeftColor: '#039BE5',
     },
     planHeaderRow: {
       flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2,
     },
     planHeader: {
-      fontSize: 11, fontWeight: '700', color: colors.accent, letterSpacing: 0.5,
+      fontSize: 11, fontWeight: '700', color: '#039BE5', letterSpacing: 0.5,
     },
-    planEditHint: { fontSize: 12, color: colors.accent },
+    planEditHint: { fontSize: 12, color: '#039BE5' },
     planBlock: { flexDirection: 'row', alignItems: 'center', gap: 10 },
     planDot: { width: 10, height: 10, borderRadius: 5 },
-    planDotCovered: { backgroundColor: colors.accent },
+    planDotCovered: { backgroundColor: '#039BE5' },
     planDotMissed: { backgroundColor: colors.border },
     planTime: { fontSize: 13, fontWeight: '600', color: colors.textSecondary, width: 100 },
     planActivity: { fontSize: 14, color: colors.text, flex: 1 },
@@ -301,6 +324,15 @@ function makeStyles(colors: ColorPalette) {
       borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border,
       paddingTop: 8,
     },
-    planTag: { fontSize: 12, color: colors.accent, marginTop: 6, fontWeight: '500' },
+    planTag: { fontSize: 12, color: '#039BE5', marginTop: 6, fontWeight: '500' },
+    debugRow: {
+      flexDirection: 'row',
+      gap: 12,
+      marginTop: 6,
+      paddingTop: 6,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: colors.border,
+    },
+    debugText: { fontSize: 11, color: colors.textSecondary, fontFamily: 'monospace' },
   });
 }
