@@ -100029,7 +100029,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
   var _version = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[6], "./version.json"));
   var _CalendarSyncService = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[7], "./src/services/CalendarSyncService"));
   var _SchedulerService = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[8], "./src/services/SchedulerService"));
-  var _SettingsService = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[9], "./src/services/SettingsService"));
+  var _SettingsService = _interopRequireWildcard(_$$_REQUIRE(_dependencyMap[9], "./src/services/SettingsService"));
   var _StorageService = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[10], "./src/services/StorageService"));
   var _DrawerMenu = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[11], "./src/components/DrawerMenu"));
   var _CheckInScreen = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[12], "./src/screens/CheckInScreen"));
@@ -100075,6 +100075,10 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       _useState10 = (0, _slicedToArray2.default)(_useState1, 2),
       debugMode = _useState10[0],
       setDebugMode = _useState10[1];
+    var _useState11 = (0, _react.useState)(_SettingsService.DEFAULT_CALENDAR_COLOR),
+      _useState12 = (0, _slicedToArray2.default)(_useState11, 2),
+      calendarColor = _useState12[0],
+      setCalendarColor = _useState12[1];
     var systemScheme = (0, _reactNative2.useColorScheme)();
     var syncIntervalRef = (0, _react.useRef)(null);
     var isDark = themeSetting === 'dark' ? true : themeSetting === 'light' ? false : systemScheme === 'dark';
@@ -100091,6 +100095,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         setDebugMode(s.debugMode);
         startSyncInterval(s.calendarSyncIntervalMinutes);
       });
+      _SettingsService.default.getCalendarColor().then(setCalendarColor);
       _SchedulerService.default.requestPermission().then(/*#__PURE__*/function () {
         var _ref = (0, _asyncToGenerator2.default)(function* (granted) {
           if (!granted) return;
@@ -100166,6 +100171,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
           startSyncInterval(s.calendarSyncIntervalMinutes);
         });
       }
+      _SettingsService.default.getCalendarColor().then(setCalendarColor);
     }
     function handleCheckInDone() {
       setScreen('entries');
@@ -100209,7 +100215,8 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       }) : screen === 'dayplan' ? /*#__PURE__*/(0, _jsxRuntime.jsx)(_DayPlanScreen.default, {
         initialDate: planDate,
         onClose: () => setScreen('entries'),
-        debugMode: debugMode
+        debugMode: debugMode,
+        calendarColor: calendarColor
       }) : screen === 'checkin' ? /*#__PURE__*/(0, _jsxRuntime.jsx)(_CheckInScreen.default, {
         periodStart: checkInPeriod?.periodStart ?? Date.now() - 2 * 60 * 60 * 1000,
         periodEnd: checkInPeriod?.periodEnd ?? Date.now(),
@@ -100225,7 +100232,8 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
           onStartCheckIn: handleStartCheckIn,
           onOpenMenu: () => setDrawerOpen(true),
           onEditPlan: handleEditPlan,
-          debugMode: debugMode
+          debugMode: debugMode,
+          calendarColor: calendarColor
         }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_DrawerMenu.default, {
           visible: drawerOpen,
           currentScreen: drawerScreen,
@@ -100243,7 +100251,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
     });
   }
   var _default = exports.default = App;
-},605,[1,178,14,606,71,2,638,639,656,658,640,667,678,685,687,690,693,182,677,668],"App.tsx");
+},605,[1,178,14,606,71,2,638,639,665,645,640,667,678,685,687,690,693,182,677,668],"App.tsx");
 __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
   "use strict";
 
@@ -104064,8 +104072,8 @@ __d(function(global, require, _importDefaultUnused, _importAllUnused, module, ex
   module.exports = {
   "major": 0,
   "minor": 0,
-  "ticket_id": 18,
-  "sequence": 38
+  "ticket_id": 23,
+  "sequence": 6
 };
 },638,[],"version.json");
 __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
@@ -104077,10 +104085,15 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
   var _asyncToGenerator2 = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[1], "@babel/runtime/helpers/asyncToGenerator"));
   var _slicedToArray2 = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[2], "@babel/runtime/helpers/slicedToArray"));
   var _StorageService = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[3], "./StorageService"));
+  var _SettingsService = _interopRequireWildcard(_$$_REQUIRE(_dependencyMap[4], "./SettingsService"));
+  function _interopRequireWildcard(e, t) { if ("function" == typeof WeakMap) var r = new WeakMap(), n = new WeakMap(); return (_interopRequireWildcard = function (e, t) { if (!t && e && e.__esModule) return e; var o, i, f = { __proto__: null, default: e }; if (null === e || "object" != typeof e && "function" != typeof e) return f; if (o = t ? n : r) { if (o.has(e)) return o.get(e); o.set(e, f); } for (var _t in e) "default" !== _t && {}.hasOwnProperty.call(e, _t) && ((i = (o = Object.defineProperty) && Object.getOwnPropertyDescriptor(e, _t)) && (i.get || i.set) ? o(f, _t, i) : f[_t] = e[_t]); return f; })(e, t); }
   var CALENDAR_API = 'https://www.googleapis.com/calendar/v3';
   var PLAN_COLOR = '7'; // Peacock (blue)
   var ACTUAL_COLOR = '2'; // Sage (green)
 
+  // Rolling pull window: yesterday through +7 days
+  var PULL_DAYS_BACK = 1;
+  var PULL_DAYS_FORWARD = 7;
   var isSyncing = false;
 
   // Minutes-from-midnight + a date string → ISO 8601 datetime with local offset
@@ -104108,7 +104121,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
   function _getToken() {
     _getToken = (0, _asyncToGenerator2.default)(function* () {
       try {
-        var tokens = yield _$$_REQUIRE(_dependencyMap[4], "@react-native-google-signin/google-signin").GoogleSignin.getTokens();
+        var tokens = yield _$$_REQUIRE(_dependencyMap[5], "@react-native-google-signin/google-signin").GoogleSignin.getTokens();
         return tokens.accessToken;
       } catch {
         return null;
@@ -104187,12 +104200,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
   }
   function pushPlanBlock(_x6) {
     return _pushPlanBlock.apply(this, arguments);
-  }
-  /**
-   * Push all rows that have changed since last sync.
-   * Called every 15 min and on foreground resume.
-   * Silently no-ops when not connected.
-   */
+  } // Convert ISO 8601 datetime to minutes-from-midnight in local time
   function _pushPlanBlock() {
     _pushPlanBlock = (0, _asyncToGenerator2.default)(function* (block) {
       var event = {
@@ -104221,6 +104229,89 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
     });
     return _pushPlanBlock.apply(this, arguments);
   }
+  function isoToMinutes(iso) {
+    var d = new Date(iso);
+    return d.getHours() * 60 + d.getMinutes();
+  }
+
+  // Format Date as YYYY-MM-DD
+  function toDateStr(d) {
+    var pad = n => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  }
+
+  /**
+   * Pull Google Calendar events for a rolling window and upsert into plan_blocks
+   * with source='calendar'. Events already pushed by TimeAnalyzer are excluded.
+   * Events deleted from Google Calendar are soft-deleted locally.
+   */
+  function pullCalendarEvents() {
+    return _pullCalendarEvents.apply(this, arguments);
+  }
+  /**
+   * Push all rows that have changed since last sync.
+   * Called every 15 min and on foreground resume.
+   * Silently no-ops when not connected.
+   */
+  function _pullCalendarEvents() {
+    _pullCalendarEvents = (0, _asyncToGenerator2.default)(function* () {
+      var now = new Date();
+      var windowStart = new Date(now);
+      windowStart.setDate(windowStart.getDate() - PULL_DAYS_BACK);
+      windowStart.setHours(0, 0, 0, 0);
+      var windowEnd = new Date(now);
+      windowEnd.setDate(windowEnd.getDate() + PULL_DAYS_FORWARD);
+      windowEnd.setHours(23, 59, 59, 999);
+
+      // Fetch all events in the window
+      var params = new URLSearchParams({
+        timeMin: windowStart.toISOString(),
+        timeMax: windowEnd.toISOString(),
+        singleEvents: 'true',
+        orderBy: 'startTime',
+        maxResults: '250'
+      });
+      var data = yield apiRequest('GET', `/calendars/primary/events?${params.toString()}`);
+      var items = data?.items ?? [];
+
+      // Group fetched external event IDs by date
+      var fetchedIdsByDate = {};
+      for (var item of items) {
+        // Skip our own events
+        if (item.extendedProperties?.private?.source === 'timeanalyzer') continue;
+        // Skip all-day events (no dateTime)
+        if (!item.start?.dateTime || !item.end?.dateTime) continue;
+        // Skip cancelled events
+        if (item.status === 'cancelled') continue;
+        var startDate = new Date(item.start.dateTime);
+        var endDate = new Date(item.end.dateTime);
+        var dateStr = toDateStr(startDate);
+        var startMin = isoToMinutes(item.start.dateTime);
+        var endMin = isoToMinutes(item.end.dateTime);
+        var activity = item.summary ?? '(No title)';
+        var eventId = item.id;
+
+        // Handle events that span midnight: cap at 23:59
+        var effectiveEndMin = endDate.toDateString() !== startDate.toDateString() ? 23 * 60 + 59 : endMin;
+        yield _StorageService.default.upsertCalendarPlanBlock(dateStr, eventId, startMin, effectiveEndMin, activity);
+        if (!fetchedIdsByDate[dateStr]) fetchedIdsByDate[dateStr] = [];
+        fetchedIdsByDate[dateStr].push(eventId);
+      }
+
+      // Soft-delete local calendar blocks not present in the fetched results, per day
+      var dates = [];
+      for (var i = -PULL_DAYS_BACK; i <= PULL_DAYS_FORWARD; i++) {
+        var d = new Date(now);
+        d.setDate(d.getDate() + i);
+        dates.push(toDateStr(d));
+      }
+      for (var _dateStr of dates) {
+        var fetchedIds = fetchedIdsByDate[_dateStr] ?? [];
+        yield _StorageService.default.softDeleteCalendarBlocksNotIn(_dateStr, fetchedIds);
+      }
+    });
+    return _pullCalendarEvents.apply(this, arguments);
+  }
   function syncChanged() {
     return _syncChanged.apply(this, arguments);
   }
@@ -104235,6 +104326,12 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       if (!token) return;
       isSyncing = true;
       try {
+        // 0. Fetch calendar color once (only if still at default — i.e. never fetched before)
+        var currentColor = yield _SettingsService.default.getCalendarColor();
+        if (currentColor === _SettingsService.DEFAULT_CALENDAR_COLOR) {
+          yield fetchAndStoreCalendarColor();
+        }
+
         // 1. Push / update unsynced check-in entries
         var unsyncedEntries = yield _StorageService.default.getUnsyncedEntries();
         for (var entry of unsyncedEntries) {
@@ -104282,6 +104379,13 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
             // Will retry next interval
           }
         }
+
+        // 5. Pull external calendar events into plan_blocks (source='calendar')
+        try {
+          yield pullCalendarEvents();
+        } catch {
+          // Pull failure is non-fatal — will retry next sync
+        }
       } finally {
         isSyncing = false;
       }
@@ -104294,10 +104398,28 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
   function _hardSync() {
     _hardSync = (0, _asyncToGenerator2.default)(function* () {
       yield _StorageService.default.hardResetSyncedAt();
+      yield fetchAndStoreCalendarColor(); // Always refresh color on hard sync
       isSyncing = false; // Clear any stuck lock before re-running
       yield syncChanged();
     });
     return _hardSync.apply(this, arguments);
+  }
+  function fetchAndStoreCalendarColor() {
+    return _fetchAndStoreCalendarColor.apply(this, arguments);
+  }
+  function _fetchAndStoreCalendarColor() {
+    _fetchAndStoreCalendarColor = (0, _asyncToGenerator2.default)(function* () {
+      try {
+        var data = yield apiRequest('GET', '/users/me/calendarList/primary');
+        var color = data?.backgroundColor;
+        if (color && /^#[0-9A-Fa-f]{6}$/.test(color)) {
+          yield _SettingsService.default.setCalendarColor(color);
+        }
+      } catch {
+        // Non-fatal — keep existing color
+      }
+    });
+    return _fetchAndStoreCalendarColor.apply(this, arguments);
   }
   function isConnected() {
     return _isConnected.apply(this, arguments);
@@ -104314,7 +104436,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
     isConnected
   };
   var _default = exports.default = CalendarSyncService;
-},639,[1,178,14,640,645],"src/services/CalendarSyncService.ts");
+},639,[1,178,14,640,645,654],"src/services/CalendarSyncService.ts");
 __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
   var _interopRequireDefault = _$$_REQUIRE(_dependencyMap[0], "@babel/runtime/helpers/interopRequireDefault");
   Object.defineProperty(exports, "__esModule", {
@@ -104543,6 +104665,33 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
     });
     return _hardResetSyncedAt.apply(this, arguments);
   }
+  function getCalendarPlanBlocksByDate(_x24) {
+    return _getCalendarPlanBlocksByDate.apply(this, arguments);
+  }
+  function _getCalendarPlanBlocksByDate() {
+    _getCalendarPlanBlocksByDate = (0, _asyncToGenerator2.default)(function* (dateStr) {
+      return activeProvider.getCalendarPlanBlocksByDate(dateStr);
+    });
+    return _getCalendarPlanBlocksByDate.apply(this, arguments);
+  }
+  function upsertCalendarPlanBlock(_x25, _x26, _x27, _x28, _x29) {
+    return _upsertCalendarPlanBlock.apply(this, arguments);
+  }
+  function _upsertCalendarPlanBlock() {
+    _upsertCalendarPlanBlock = (0, _asyncToGenerator2.default)(function* (dateStr, calendarEventId, startMin, endMin, activity) {
+      return activeProvider.upsertCalendarPlanBlock(dateStr, calendarEventId, startMin, endMin, activity);
+    });
+    return _upsertCalendarPlanBlock.apply(this, arguments);
+  }
+  function softDeleteCalendarBlocksNotIn(_x30, _x31) {
+    return _softDeleteCalendarBlocksNotIn.apply(this, arguments);
+  }
+  function _softDeleteCalendarBlocksNotIn() {
+    _softDeleteCalendarBlocksNotIn = (0, _asyncToGenerator2.default)(function* (dateStr, calendarEventIds) {
+      return activeProvider.softDeleteCalendarBlocksNotIn(dateStr, calendarEventIds);
+    });
+    return _softDeleteCalendarBlocksNotIn.apply(this, arguments);
+  }
   var StorageService = {
     save,
     update,
@@ -104568,6 +104717,9 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
     updateEntrySyncedAt,
     updatePlanBlockSyncedAt,
     hardResetSyncedAt,
+    getCalendarPlanBlocksByDate,
+    upsertCalendarPlanBlock,
+    softDeleteCalendarBlocksNotIn,
     setProvider
   };
   var _default = exports.default = StorageService;
@@ -104889,7 +105041,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
     },
     getPlanBlocks(planId) {
       return (0, _asyncToGenerator2.default)(function* () {
-        var result = getDb().executeSync('SELECT * FROM plan_blocks WHERE plan_id = ? AND status = 1 ORDER BY start_min ASC', [planId]);
+        var result = getDb().executeSync("SELECT * FROM plan_blocks WHERE plan_id = ? AND source = 'app' AND status = 1 ORDER BY start_min ASC", [planId]);
         return (result.rows ?? []).map(rowToPlanBlock);
       })();
     },
@@ -104916,7 +105068,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       SELECT pb.*, dp.date
       FROM plan_blocks pb
       JOIN day_plans dp ON pb.plan_id = dp.id
-      WHERE pb.status = 1 AND (pb.synced_at IS NULL OR pb.updated_at > pb.synced_at)
+      WHERE pb.source = 'app' AND pb.status = 1 AND (pb.synced_at IS NULL OR pb.updated_at > pb.synced_at)
     `);
         return (result.rows ?? []).map(rowToPlanBlockWithDate);
       })();
@@ -104927,7 +105079,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       SELECT pb.*, dp.date
       FROM plan_blocks pb
       JOIN day_plans dp ON pb.plan_id = dp.id
-      WHERE pb.status = 0
+      WHERE pb.source = 'app' AND pb.status = 0
     `);
         return (result.rows ?? []).map(rowToPlanBlockWithDate);
       })();
@@ -104954,8 +105106,51 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
     },
     hardResetSyncedAt() {
       return (0, _asyncToGenerator2.default)(function* () {
-        getDb().executeSync('UPDATE log_entries SET synced_at = NULL WHERE status = 1');
-        getDb().executeSync('UPDATE plan_blocks SET synced_at = NULL WHERE status = 1');
+        getDb().executeSync("UPDATE log_entries SET synced_at = NULL WHERE status = 1 AND source = 'app'");
+        getDb().executeSync("UPDATE plan_blocks SET synced_at = NULL WHERE status = 1 AND source = 'app'");
+      })();
+    },
+    getCalendarPlanBlocksByDate(dateStr) {
+      return (0, _asyncToGenerator2.default)(function* () {
+        var result = getDb().executeSync(`
+      SELECT pb.* FROM plan_blocks pb
+      JOIN day_plans dp ON pb.plan_id = dp.id
+      WHERE dp.date = ? AND pb.source = 'calendar' AND pb.status = 1
+      ORDER BY pb.start_min ASC
+    `, [dateStr]);
+        return (result.rows ?? []).map(rowToPlanBlock);
+      })();
+    },
+    upsertCalendarPlanBlock(dateStr, calendarEventId, startMin, endMin, activity) {
+      return (0, _asyncToGenerator2.default)(function* () {
+        var db = getDb();
+        var now = Date.now();
+        // Ensure day_plan row exists (include created_at — required NOT NULL column)
+        db.executeSync('INSERT OR IGNORE INTO day_plans (date, created_at) VALUES (?, ?)', [dateStr, now]);
+        var planRow = db.executeSync('SELECT id FROM day_plans WHERE date = ?', [dateStr]);
+        var planId = planRow.rows?.[0]?.id;
+        var existing = db.executeSync('SELECT id FROM plan_blocks WHERE calendar_event_id = ?', [calendarEventId]);
+        if ((existing.rows ?? []).length > 0) {
+          // Update existing
+          db.executeSync('UPDATE plan_blocks SET start_min = ?, end_min = ?, activity = ?, status = 1, synced_at = ? WHERE calendar_event_id = ?', [startMin, endMin, activity, now, calendarEventId]);
+        } else {
+          // Insert new
+          db.executeSync("INSERT INTO plan_blocks (plan_id, start_min, end_min, activity, calendar_event_id, source, status, updated_at, synced_at) VALUES (?, ?, ?, ?, ?, 'calendar', 1, ?, ?)", [planId, startMin, endMin, activity, calendarEventId, now, now]);
+        }
+      })();
+    },
+    softDeleteCalendarBlocksNotIn(dateStr, calendarEventIds) {
+      return (0, _asyncToGenerator2.default)(function* () {
+        var planRow = getDb().executeSync('SELECT id FROM day_plans WHERE date = ?', [dateStr]);
+        var planId = planRow.rows?.[0]?.id;
+        if (!planId) return;
+        if (calendarEventIds.length === 0) {
+          // Delete all calendar blocks for this day
+          getDb().executeSync("UPDATE plan_blocks SET status = 0 WHERE plan_id = ? AND source = 'calendar' AND status = 1", [planId]);
+        } else {
+          var placeholders = calendarEventIds.map(() => '?').join(', ');
+          getDb().executeSync(`UPDATE plan_blocks SET status = 0 WHERE plan_id = ? AND source = 'calendar' AND status = 1 AND calendar_event_id NOT IN (${placeholders})`, [planId, ...calendarEventIds]);
+        }
       })();
     }
   };
@@ -105537,6 +105732,730 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
   var isIOSEmbeeded = exports.isIOSEmbeeded = isIOSEmbedded;
 },644,[1,178,2],"node_modules/@op-engineering/op-sqlite/lib/module/functions.js");
 __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
+  var _interopRequireDefault = _$$_REQUIRE(_dependencyMap[0], "@babel/runtime/helpers/interopRequireDefault");
+  Object.defineProperty(exports, "__esModule", {
+    value: true
+  });
+  exports.default = exports.DEFAULT_CALENDAR_COLOR = void 0;
+  var _asyncToGenerator2 = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[1], "@babel/runtime/helpers/asyncToGenerator"));
+  var _asyncStorage = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[2], "@react-native-async-storage/async-storage"));
+  var SETTINGS_KEY = 'checkin_settings';
+  var GROQ_KEY = 'groq_api_key';
+  var CLAUDE_KEY = 'claude_api_key';
+  var OPENAI_KEY = 'openai_api_key';
+  var CALENDAR_COLOR_KEY = 'calendar_color';
+  var DEFAULT_CALENDAR_COLOR = exports.DEFAULT_CALENDAR_COLOR = '#7986CB';
+  function load() {
+    return _load.apply(this, arguments);
+  }
+  function _load() {
+    _load = (0, _asyncToGenerator2.default)(function* () {
+      var raw = yield _asyncStorage.default.getItem(SETTINGS_KEY);
+      if (!raw) return {
+        ..._$$_REQUIRE(_dependencyMap[3], "../types/Settings").DEFAULT_SETTINGS
+      };
+      try {
+        return {
+          ..._$$_REQUIRE(_dependencyMap[3], "../types/Settings").DEFAULT_SETTINGS,
+          ...JSON.parse(raw)
+        };
+      } catch {
+        return {
+          ..._$$_REQUIRE(_dependencyMap[3], "../types/Settings").DEFAULT_SETTINGS
+        };
+      }
+    });
+    return _load.apply(this, arguments);
+  }
+  function save(_x) {
+    return _save.apply(this, arguments);
+  }
+  function _save() {
+    _save = (0, _asyncToGenerator2.default)(function* (settings) {
+      yield _asyncStorage.default.setItem(SETTINGS_KEY, JSON.stringify(settings));
+    });
+    return _save.apply(this, arguments);
+  }
+  function getGroqApiKey() {
+    return _getGroqApiKey.apply(this, arguments);
+  }
+  function _getGroqApiKey() {
+    _getGroqApiKey = (0, _asyncToGenerator2.default)(function* () {
+      var stored = yield _asyncStorage.default.getItem(GROQ_KEY);
+      if (stored) return stored;
+      try {
+        var _require = _$$_REQUIRE(_dependencyMap[4], "../secrets.local"),
+          GROQ_API_KEY = _require.GROQ_API_KEY;
+        return GROQ_API_KEY ?? '';
+      } catch {
+        return '';
+      }
+    });
+    return _getGroqApiKey.apply(this, arguments);
+  }
+  function setGroqApiKey(_x2) {
+    return _setGroqApiKey.apply(this, arguments);
+  }
+  function _setGroqApiKey() {
+    _setGroqApiKey = (0, _asyncToGenerator2.default)(function* (key) {
+      yield _asyncStorage.default.setItem(GROQ_KEY, key);
+    });
+    return _setGroqApiKey.apply(this, arguments);
+  }
+  function getClaudeApiKey() {
+    return _getClaudeApiKey.apply(this, arguments);
+  }
+  function _getClaudeApiKey() {
+    _getClaudeApiKey = (0, _asyncToGenerator2.default)(function* () {
+      var stored = yield _asyncStorage.default.getItem(CLAUDE_KEY);
+      if (stored) return stored;
+      try {
+        var _require2 = _$$_REQUIRE(_dependencyMap[4], "../secrets.local"),
+          CLAUDE_API_KEY = _require2.CLAUDE_API_KEY;
+        return CLAUDE_API_KEY ?? '';
+      } catch {
+        return '';
+      }
+    });
+    return _getClaudeApiKey.apply(this, arguments);
+  }
+  function setClaudeApiKey(_x3) {
+    return _setClaudeApiKey.apply(this, arguments);
+  }
+  function _setClaudeApiKey() {
+    _setClaudeApiKey = (0, _asyncToGenerator2.default)(function* (key) {
+      yield _asyncStorage.default.setItem(CLAUDE_KEY, key);
+    });
+    return _setClaudeApiKey.apply(this, arguments);
+  }
+  function getOpenAIApiKey() {
+    return _getOpenAIApiKey.apply(this, arguments);
+  }
+  function _getOpenAIApiKey() {
+    _getOpenAIApiKey = (0, _asyncToGenerator2.default)(function* () {
+      var stored = yield _asyncStorage.default.getItem(OPENAI_KEY);
+      if (stored) return stored;
+      try {
+        var _require3 = _$$_REQUIRE(_dependencyMap[4], "../secrets.local"),
+          OPENAI_API_KEY = _require3.OPENAI_API_KEY;
+        return OPENAI_API_KEY ?? '';
+      } catch {
+        return '';
+      }
+    });
+    return _getOpenAIApiKey.apply(this, arguments);
+  }
+  function setOpenAIApiKey(_x4) {
+    return _setOpenAIApiKey.apply(this, arguments);
+  }
+  function _setOpenAIApiKey() {
+    _setOpenAIApiKey = (0, _asyncToGenerator2.default)(function* (key) {
+      yield _asyncStorage.default.setItem(OPENAI_KEY, key);
+    });
+    return _setOpenAIApiKey.apply(this, arguments);
+  }
+  function getCalendarColor() {
+    return _getCalendarColor.apply(this, arguments);
+  }
+  function _getCalendarColor() {
+    _getCalendarColor = (0, _asyncToGenerator2.default)(function* () {
+      var stored = yield _asyncStorage.default.getItem(CALENDAR_COLOR_KEY);
+      return stored ?? DEFAULT_CALENDAR_COLOR;
+    });
+    return _getCalendarColor.apply(this, arguments);
+  }
+  function setCalendarColor(_x5) {
+    return _setCalendarColor.apply(this, arguments);
+  }
+  function _setCalendarColor() {
+    _setCalendarColor = (0, _asyncToGenerator2.default)(function* (color) {
+      yield _asyncStorage.default.setItem(CALENDAR_COLOR_KEY, color);
+    });
+    return _setCalendarColor.apply(this, arguments);
+  }
+  var SettingsService = {
+    load,
+    save,
+    getGroqApiKey,
+    setGroqApiKey,
+    getClaudeApiKey,
+    setClaudeApiKey,
+    getOpenAIApiKey,
+    setOpenAIApiKey,
+    getCalendarColor,
+    setCalendarColor
+  };
+  var _default = exports.default = SettingsService;
+},645,[1,178,646,652,653],"src/services/SettingsService.ts");
+__d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
+  var _interopRequireDefault = _$$_REQUIRE(_dependencyMap[0], "@babel/runtime/helpers/interopRequireDefault");
+  Object.defineProperty(exports, "__esModule", {
+    value: true
+  });
+  exports.default = void 0;
+  Object.defineProperty(exports, "useAsyncStorage", {
+    enumerable: true,
+    get: function () {
+      return _$$_REQUIRE(_dependencyMap[1], "./hooks").useAsyncStorage;
+    }
+  });
+  var _AsyncStorage = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[2], "./AsyncStorage"));
+  var _default = exports.default = _AsyncStorage.default;
+},646,[1,647,648],"node_modules/@react-native-async-storage/async-storage/src/index.ts");
+__d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
+  var _interopRequireDefault = _$$_REQUIRE(_dependencyMap[0], "@babel/runtime/helpers/interopRequireDefault");
+  Object.defineProperty(exports, "__esModule", {
+    value: true
+  });
+  exports.useAsyncStorage = useAsyncStorage;
+  var _AsyncStorage = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[1], "./AsyncStorage"));
+  function useAsyncStorage(key) {
+    return {
+      getItem: (...args) => _AsyncStorage.default.getItem(key, ...args),
+      setItem: (...args) => _AsyncStorage.default.setItem(key, ...args),
+      mergeItem: (...args) => _AsyncStorage.default.mergeItem(key, ...args),
+      removeItem: (...args) => _AsyncStorage.default.removeItem(key, ...args)
+    };
+  }
+},647,[1,648],"node_modules/@react-native-async-storage/async-storage/src/hooks.ts");
+__d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
+  var _interopRequireDefault = _$$_REQUIRE(_dependencyMap[0], "@babel/runtime/helpers/interopRequireDefault");
+  Object.defineProperty(exports, "__esModule", {
+    value: true
+  });
+  exports.default = void 0;
+  var _RCTAsyncStorage = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[1], "./RCTAsyncStorage"));
+  /**
+   * Copyright (c) Facebook, Inc. and its affiliates.
+   *
+   * This source code is licensed under the MIT license found in the
+   * LICENSE file in the root directory of this source tree.
+   */
+
+  if (!_RCTAsyncStorage.default) {
+    throw new Error(`[@RNC/AsyncStorage]: NativeModule: AsyncStorage is null.
+
+To fix this issue try these steps:
+
+  • Uninstall, rebuild and restart the app.
+
+  • Run the packager with \`--reset-cache\` flag.
+
+  • If you are using CocoaPods on iOS, run \`pod install\` in the \`ios\` directory, then rebuild and re-run the app.
+
+  • Make sure your project's \`package.json\` depends on \`@react-native-async-storage/async-storage\`, even if you only depend on it indirectly through other dependencies. CLI only autolinks native modules found in your \`package.json\`.
+
+  • If this happens while testing with Jest, check out how to integrate AsyncStorage here: https://react-native-async-storage.github.io/async-storage/docs/advanced/jest
+
+If none of these fix the issue, please open an issue on the GitHub repository: https://github.com/react-native-async-storage/async-storage/issues
+`);
+  }
+
+  /**
+   * `AsyncStorage` is a simple, unencrypted, asynchronous, persistent, key-value
+   * storage system that is global to the app. It should be used instead of
+   * LocalStorage.
+   *
+   * See https://react-native-async-storage.github.io/async-storage/docs/api
+   */
+  var AsyncStorage = (() => {
+    var _getRequests = [];
+    var _getKeys = [];
+    var _immediate = null;
+    return {
+      /**
+       * Fetches an item for a `key` and invokes a callback upon completion.
+       *
+       * See https://react-native-async-storage.github.io/async-storage/docs/api#getitem
+       */
+      getItem: (key, callback) => {
+        return new Promise((resolve, reject) => {
+          (0, _$$_REQUIRE(_dependencyMap[2], "./helpers").checkValidInput)(key);
+          _RCTAsyncStorage.default.multiGet([key], (errors, result) => {
+            // Unpack result to get value from [[key,value]]
+            var value = result?.[0]?.[1] ? result[0][1] : null;
+            var errs = (0, _$$_REQUIRE(_dependencyMap[2], "./helpers").convertErrors)(errors);
+            callback?.(errs?.[0], value);
+            if (errs) {
+              reject(errs[0]);
+            } else {
+              resolve(value);
+            }
+          });
+        });
+      },
+      /**
+       * Sets the value for a `key` and invokes a callback upon completion.
+       *
+       * See https://react-native-async-storage.github.io/async-storage/docs/api#setitem
+       */
+      setItem: (key, value, callback) => {
+        return new Promise((resolve, reject) => {
+          (0, _$$_REQUIRE(_dependencyMap[2], "./helpers").checkValidInput)(key, value);
+          _RCTAsyncStorage.default.multiSet([[key, value]], errors => {
+            var errs = (0, _$$_REQUIRE(_dependencyMap[2], "./helpers").convertErrors)(errors);
+            callback?.(errs?.[0]);
+            if (errs) {
+              reject(errs[0]);
+            } else {
+              resolve();
+            }
+          });
+        });
+      },
+      /**
+       * Removes an item for a `key` and invokes a callback upon completion.
+       *
+       * See https://react-native-async-storage.github.io/async-storage/docs/api#removeitem
+       */
+      removeItem: (key, callback) => {
+        return new Promise((resolve, reject) => {
+          (0, _$$_REQUIRE(_dependencyMap[2], "./helpers").checkValidInput)(key);
+          _RCTAsyncStorage.default.multiRemove([key], errors => {
+            var errs = (0, _$$_REQUIRE(_dependencyMap[2], "./helpers").convertErrors)(errors);
+            callback?.(errs?.[0]);
+            if (errs) {
+              reject(errs[0]);
+            } else {
+              resolve();
+            }
+          });
+        });
+      },
+      /**
+       * Merges an existing `key` value with an input value, assuming both values
+       * are stringified JSON.
+       *
+       * See https://react-native-async-storage.github.io/async-storage/docs/api#mergeitem
+       */
+      mergeItem: (key, value, callback) => {
+        return new Promise((resolve, reject) => {
+          (0, _$$_REQUIRE(_dependencyMap[2], "./helpers").checkValidInput)(key, value);
+          _RCTAsyncStorage.default.multiMerge([[key, value]], errors => {
+            var errs = (0, _$$_REQUIRE(_dependencyMap[2], "./helpers").convertErrors)(errors);
+            callback?.(errs?.[0]);
+            if (errs) {
+              reject(errs[0]);
+            } else {
+              resolve();
+            }
+          });
+        });
+      },
+      /**
+       * Erases *all* `AsyncStorage` for all clients, libraries, etc. You probably
+       * don't want to call this; use `removeItem` or `multiRemove` to clear only
+       * your app's keys.
+       *
+       * See https://react-native-async-storage.github.io/async-storage/docs/api#clear
+       */
+      clear: callback => {
+        return new Promise((resolve, reject) => {
+          _RCTAsyncStorage.default.clear(error => {
+            var err = (0, _$$_REQUIRE(_dependencyMap[2], "./helpers").convertError)(error);
+            callback?.(err);
+            if (err) {
+              reject(err);
+            } else {
+              resolve();
+            }
+          });
+        });
+      },
+      /**
+       * Gets *all* keys known to your app; for all callers, libraries, etc.
+       *
+       * See https://react-native-async-storage.github.io/async-storage/docs/api#getallkeys
+       */
+      getAllKeys: callback => {
+        return new Promise((resolve, reject) => {
+          _RCTAsyncStorage.default.getAllKeys((error, keys) => {
+            var err = (0, _$$_REQUIRE(_dependencyMap[2], "./helpers").convertError)(error);
+            callback?.(err, keys);
+            if (keys) {
+              resolve(keys);
+            } else {
+              reject(err);
+            }
+          });
+        });
+      },
+      /**
+       * The following batched functions are useful for executing a lot of
+       * operations at once, allowing for native optimizations and provide the
+       * convenience of a single callback after all operations are complete.
+       *
+       * These functions return arrays of errors, potentially one for every key.
+       * For key-specific errors, the Error object will have a key property to
+       * indicate which key caused the error.
+       */
+
+      /**
+       * Flushes any pending requests using a single batch call to get the data.
+       *
+       * See https://react-native-async-storage.github.io/async-storage/docs/api#flushgetrequests
+       * */
+      flushGetRequests: () => {
+        var getRequests = _getRequests;
+        var getKeys = _getKeys;
+        _getRequests = [];
+        _getKeys = [];
+        _RCTAsyncStorage.default.multiGet(getKeys, (errors, result) => {
+          // Even though the runtime complexity of this is theoretically worse vs if we used a map,
+          // it's much, much faster in practice for the data sets we deal with (we avoid
+          // allocating result pair arrays). This was heavily benchmarked.
+          //
+          // Is there a way to avoid using the map but fix the bug in this breaking test?
+          // https://github.com/facebook/react-native/commit/8dd8ad76579d7feef34c014d387bf02065692264
+          var map = {};
+          result?.forEach(([key, value]) => {
+            map[key] = value;
+            return value;
+          });
+          var reqLength = getRequests.length;
+
+          /**
+           * As mentioned few lines above, this method could be called with the array of potential error,
+           * in case of anything goes wrong. The problem is, if any of the batched calls fails
+           * the rest of them would fail too, but the error would be consumed by just one. The rest
+           * would simply return `undefined` as their result, rendering false negatives.
+           *
+           * In order to avoid this situation, in case of any call failing,
+           * the rest of them will be rejected as well (with the same error).
+           */
+          var errorList = (0, _$$_REQUIRE(_dependencyMap[2], "./helpers").convertErrors)(errors);
+          var error = errorList?.length ? errorList[0] : null;
+          for (var i = 0; i < reqLength; i++) {
+            var request = getRequests[i];
+            if (error) {
+              request.callback?.(errorList);
+              request.reject?.(error);
+              continue;
+            }
+            var requestResult = request.keys.map(key => [key, map[key]]);
+            request.callback?.(null, requestResult);
+            request.resolve?.(requestResult);
+          }
+        });
+      },
+      /**
+       * This allows you to batch the fetching of items given an array of `key`
+       * inputs. Your callback will be invoked with an array of corresponding
+       * key-value pairs found.
+       *
+       * See https://react-native-async-storage.github.io/async-storage/docs/api#multiget
+       */
+      multiGet: (keys, callback) => {
+        if (!_immediate) {
+          _immediate = setImmediate(() => {
+            _immediate = null;
+            AsyncStorage.flushGetRequests();
+          });
+        }
+        var getRequest = {
+          keys: keys,
+          callback: callback,
+          // do we need this?
+          keyIndex: _getKeys.length
+        };
+        var promiseResult = new Promise((resolve, reject) => {
+          getRequest.resolve = resolve;
+          getRequest.reject = reject;
+        });
+        _getRequests.push(getRequest);
+        // avoid fetching duplicates
+        keys.forEach(key => {
+          if (_getKeys.indexOf(key) === -1) {
+            _getKeys.push(key);
+          }
+        });
+        return promiseResult;
+      },
+      /**
+       * Use this as a batch operation for storing multiple key-value pairs. When
+       * the operation completes you'll get a single callback with any errors.
+       *
+       * See https://react-native-async-storage.github.io/async-storage/docs/api#multiset
+       */
+      multiSet: (keyValuePairs, callback) => {
+        (0, _$$_REQUIRE(_dependencyMap[2], "./helpers").checkValidArgs)(keyValuePairs, callback);
+        return new Promise((resolve, reject) => {
+          keyValuePairs.forEach(([key, value]) => {
+            (0, _$$_REQUIRE(_dependencyMap[2], "./helpers").checkValidInput)(key, value);
+          });
+          _RCTAsyncStorage.default.multiSet(keyValuePairs, errors => {
+            var error = (0, _$$_REQUIRE(_dependencyMap[2], "./helpers").convertErrors)(errors);
+            callback?.(error);
+            if (error) {
+              reject(error);
+            } else {
+              resolve();
+            }
+          });
+        });
+      },
+      /**
+       * Call this to batch the deletion of all keys in the `keys` array.
+       *
+       * See https://react-native-async-storage.github.io/async-storage/docs/api#multiremove
+       */
+      multiRemove: (keys, callback) => {
+        return new Promise((resolve, reject) => {
+          keys.forEach(key => (0, _$$_REQUIRE(_dependencyMap[2], "./helpers").checkValidInput)(key));
+          _RCTAsyncStorage.default.multiRemove(keys, errors => {
+            var error = (0, _$$_REQUIRE(_dependencyMap[2], "./helpers").convertErrors)(errors);
+            callback?.(error);
+            if (error) {
+              reject(error);
+            } else {
+              resolve();
+            }
+          });
+        });
+      },
+      /**
+       * Batch operation to merge in existing and new values for a given set of
+       * keys. This assumes that the values are stringified JSON.
+       *
+       * See https://react-native-async-storage.github.io/async-storage/docs/api#multimerge
+       */
+      multiMerge: (keyValuePairs, callback) => {
+        return new Promise((resolve, reject) => {
+          _RCTAsyncStorage.default.multiMerge(keyValuePairs, errors => {
+            var error = (0, _$$_REQUIRE(_dependencyMap[2], "./helpers").convertErrors)(errors);
+            callback?.(error);
+            if (error) {
+              reject(error);
+            } else {
+              resolve();
+            }
+          });
+        });
+      }
+    };
+  })();
+  var _default = exports.default = AsyncStorage;
+},648,[1,649,651],"node_modules/@react-native-async-storage/async-storage/src/AsyncStorage.native.ts");
+__d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
+  Object.defineProperty(exports, "__esModule", {
+    value: true
+  });
+  exports.default = void 0;
+  var _reactNative = _$$_REQUIRE(_dependencyMap[0], "react-native");
+  // TurboModuleRegistry falls back to NativeModules so we don't have to try go
+  // assign NativeModules' counterparts if TurboModuleRegistry would resolve
+  // with undefined.
+  var RCTAsyncStorage = _reactNative.TurboModuleRegistry ? _reactNative.TurboModuleRegistry.get("PlatformLocalStorage") ||
+  // Support for external modules, like react-native-windows
+  _reactNative.TurboModuleRegistry.get("RNC_AsyncSQLiteDBStorage") || _reactNative.TurboModuleRegistry.get("RNCAsyncStorage") : _reactNative.NativeModules["PlatformLocalStorage"] ||
+  // Support for external modules, like react-native-windows
+  _reactNative.NativeModules["RNC_AsyncSQLiteDBStorage"] || _reactNative.NativeModules["RNCAsyncStorage"];
+  if (!RCTAsyncStorage && (0, _$$_REQUIRE(_dependencyMap[1], "./shouldFallbackToLegacyNativeModule").shouldFallbackToLegacyNativeModule)()) {
+    if (_reactNative.TurboModuleRegistry) {
+      RCTAsyncStorage = _reactNative.TurboModuleRegistry.get("AsyncSQLiteDBStorage") || _reactNative.TurboModuleRegistry.get("AsyncLocalStorage");
+    } else {
+      RCTAsyncStorage = _reactNative.NativeModules["AsyncSQLiteDBStorage"] || _reactNative.NativeModules["AsyncLocalStorage"];
+    }
+  }
+  var _default = exports.default = RCTAsyncStorage;
+},649,[2,650],"node_modules/@react-native-async-storage/async-storage/src/RCTAsyncStorage.ts");
+__d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
+  Object.defineProperty(exports, "__esModule", {
+    value: true
+  });
+  exports.shouldFallbackToLegacyNativeModule = shouldFallbackToLegacyNativeModule;
+  var _reactNative = _$$_REQUIRE(_dependencyMap[0], "react-native");
+  function shouldFallbackToLegacyNativeModule() {
+    var expoConstants = _reactNative.NativeModules["NativeUnimoduleProxy"]?.modulesConstants?.ExponentConstants;
+    if (expoConstants) {
+      /**
+       * In SDK <= 39, appOwnership is defined in managed apps but executionEnvironment is not.
+       * In bare React Native apps using expo-constants, appOwnership is never defined, so
+       * isLegacySdkVersion will be false in that context.
+       */
+      var isLegacySdkVersion = expoConstants.appOwnership && !expoConstants.executionEnvironment;
+
+      /**
+       * Expo managed apps don't include the @react-native-async-storage/async-storage
+       * native modules yet, but the API interface is the same, so we can use the version
+       * exported from React Native still.
+       *
+       * If in future releases (eg: @react-native-async-storage/async-storage >= 2.0.0) this
+       * will likely not be valid anymore, and the package will need to be included in the Expo SDK
+       * to continue to work.
+       */
+      if (isLegacySdkVersion || ["storeClient", "standalone"].includes(expoConstants.executionEnvironment)) {
+        return true;
+      }
+    }
+    return false;
+  }
+},650,[2],"node_modules/@react-native-async-storage/async-storage/src/shouldFallbackToLegacyNativeModule.ts");
+__d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
+  Object.defineProperty(exports, "__esModule", {
+    value: true
+  });
+  exports.checkValidArgs = checkValidArgs;
+  exports.checkValidInput = checkValidInput;
+  exports.convertError = convertError;
+  exports.convertErrors = convertErrors;
+  function checkValidArgs(keyValuePairs, callback) {
+    if (!Array.isArray(keyValuePairs) || keyValuePairs.length === 0 || !Array.isArray(keyValuePairs[0])) {
+      throw new Error("[AsyncStorage] Expected array of key-value pairs as first argument to multiSet");
+    }
+    if (callback && typeof callback !== "function") {
+      if (Array.isArray(callback)) {
+        throw new Error("[AsyncStorage] Expected function as second argument to multiSet. Did you forget to wrap key-value pairs in an array for the first argument?");
+      }
+      throw new Error("[AsyncStorage] Expected function as second argument to multiSet");
+    }
+  }
+  function checkValidInput(...input) {
+    var key = input[0],
+      value = input[1];
+    if (typeof key !== "string") {
+      // eslint-disable-next-line no-console
+      console.warn(`[AsyncStorage] Using ${typeof key} type for key is not supported. This can lead to unexpected behavior/errors. Use string instead.\nKey passed: ${key}\n`);
+    }
+    if (input.length > 1 && typeof value !== "string") {
+      if (value == null) {
+        throw new Error(`[AsyncStorage] Passing null/undefined as value is not supported. If you want to remove value, Use .removeItem method instead.\nPassed value: ${value}\nPassed key: ${key}\n`);
+      } else {
+        // eslint-disable-next-line no-console
+        console.warn(`[AsyncStorage] The value for key "${key}" is not a string. This can lead to unexpected behavior/errors. Consider stringifying it.\nPassed value: ${value}\nPassed key: ${key}\n`);
+      }
+    }
+  }
+  function convertError(error) {
+    if (!error) {
+      return null;
+    }
+    var out = new Error(error.message);
+    out["key"] = error.key;
+    return out;
+  }
+  function convertErrors(errs) {
+    var errors = ensureArray(errs);
+    return errors ? errors.map(e => convertError(e)) : null;
+  }
+  function ensureArray(e) {
+    if (Array.isArray(e)) {
+      return e.length === 0 ? null : e;
+    } else if (e) {
+      return [e];
+    } else {
+      return null;
+    }
+  }
+},651,[],"node_modules/@react-native-async-storage/async-storage/src/helpers.ts");
+__d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
+  Object.defineProperty(exports, "__esModule", {
+    value: true
+  });
+  exports.TRANSCRIPTION_PROVIDERS = exports.THEME_OPTIONS = exports.SYNC_INTERVAL_OPTIONS = exports.FREQUENCY_OPTIONS = exports.DEFAULT_SETTINGS = exports.DAY_LABELS = exports.ANALYSIS_PROVIDERS = void 0;
+  var DEFAULT_SETTINGS = exports.DEFAULT_SETTINGS = {
+    checkInDays: [true, true, true, true, true, true, true],
+    everyHour: true,
+    startHour: 10,
+    endHour: 19,
+    frequencyMinutes: 120,
+    transcriptionProvider: 'groq',
+    analysisProvider: 'claude',
+    noteKeyword: 'note',
+    appendKeyword: 'append',
+    theme: 'system',
+    dailyPlanEnabled: true,
+    dailyPlanHour: 8,
+    calendarSyncIntervalMinutes: 15,
+    debugMode: false
+  };
+  var THEME_OPTIONS = exports.THEME_OPTIONS = [{
+    label: 'System',
+    sublabel: 'Follow device setting',
+    value: 'system'
+  }, {
+    label: 'Light',
+    sublabel: 'Always light',
+    value: 'light'
+  }, {
+    label: 'Dark',
+    sublabel: 'Always dark',
+    value: 'dark'
+  }];
+  var FREQUENCY_OPTIONS = exports.FREQUENCY_OPTIONS = [{
+    label: '1 min',
+    value: 1
+  }, {
+    label: '2 min',
+    value: 2
+  }, {
+    label: '30 min',
+    value: 30
+  }, {
+    label: '1 hour',
+    value: 60
+  }, {
+    label: '2 hours',
+    value: 120
+  }, {
+    label: '4 hours',
+    value: 240
+  }, {
+    label: '8 hours',
+    value: 480
+  }, {
+    label: '1 day',
+    value: 1440
+  }];
+  var SYNC_INTERVAL_OPTIONS = exports.SYNC_INTERVAL_OPTIONS = [{
+    label: 'Every 1 min',
+    sublabel: 'Debug only',
+    value: 1
+  }, {
+    label: 'Every 5 min',
+    sublabel: 'High frequency',
+    value: 5
+  }, {
+    label: 'Every 15 min',
+    sublabel: 'Recommended',
+    value: 15
+  }, {
+    label: 'Every 30 min',
+    sublabel: 'Balanced',
+    value: 30
+  }, {
+    label: 'Every hour',
+    sublabel: 'Low frequency',
+    value: 60
+  }, {
+    label: 'Manual only',
+    sublabel: 'Sync now / Hard sync only',
+    value: 0
+  }];
+  var DAY_LABELS = exports.DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  var TRANSCRIPTION_PROVIDERS = exports.TRANSCRIPTION_PROVIDERS = [{
+    label: 'Groq',
+    sublabel: 'Whisper via Groq API',
+    value: 'groq'
+  }];
+  var ANALYSIS_PROVIDERS = exports.ANALYSIS_PROVIDERS = [{
+    label: 'Claude',
+    sublabel: 'Anthropic',
+    value: 'claude'
+  }, {
+    label: 'OpenAI',
+    sublabel: 'ChatGPT / GPT-4o',
+    value: 'openai'
+  }];
+},652,[],"src/types/Settings.ts");
+__d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
+  Object.defineProperty(exports, "__esModule", {
+    value: true
+  });
+  exports.GROQ_API_KEY = void 0;
+  var GROQ_API_KEY = exports.GROQ_API_KEY = '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';
+},653,[],"src/secrets.local.ts");
+__d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
   "use strict";
 
   Object.defineProperty(exports, "__esModule", {
@@ -105587,7 +106506,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       }
     });
   });
-},645,[646,652,650,655,649],"node_modules/@react-native-google-signin/google-signin/lib/module/index.js");
+},654,[655,661,659,664,658],"node_modules/@react-native-google-signin/google-signin/lib/module/index.js");
 __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
   "use strict";
 
@@ -105785,7 +106704,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
     clearCachedAccessToken,
     getTokens
   };
-},646,[1,178,2,647,648,649,650,651],"node_modules/@react-native-google-signin/google-signin/lib/module/signIn/GoogleSignin.js");
+},655,[1,178,2,656,657,658,659,660],"node_modules/@react-native-google-signin/google-signin/lib/module/signIn/GoogleSignin.js");
 __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
   "use strict";
 
@@ -105795,7 +106714,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
   exports.NativeModule = void 0;
   var _reactNative = _$$_REQUIRE(_dependencyMap[0], "react-native");
   var NativeModule = exports.NativeModule = _reactNative.TurboModuleRegistry.getEnforcing('RNGoogleSignin');
-},647,[2],"node_modules/@react-native-google-signin/google-signin/lib/module/spec/NativeGoogleSignin.js");
+},656,[2],"node_modules/@react-native-google-signin/google-signin/lib/module/spec/NativeGoogleSignin.js");
 __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
   "use strict";
 
@@ -105815,7 +106734,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       throw e;
     }
   }
-},648,[649,650,651],"node_modules/@react-native-google-signin/google-signin/lib/module/translateNativeRejection.js");
+},657,[658,659,660],"node_modules/@react-native-google-signin/google-signin/lib/module/translateNativeRejection.js");
 __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
   "use strict";
 
@@ -105897,7 +106816,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
   function isSuccessResponse(response) {
     return response.type === 'success';
   }
-},649,[],"node_modules/@react-native-google-signin/google-signin/lib/module/functions.js");
+},658,[],"node_modules/@react-native-google-signin/google-signin/lib/module/functions.js");
 __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
   "use strict";
 
@@ -105925,7 +106844,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
     SIGN_IN_REQUIRED,
     NULL_PRESENTER: 'NULL_PRESENTER'
   });
-},650,[647],"node_modules/@react-native-google-signin/google-signin/lib/module/errors/errorCodes.js");
+},659,[656],"node_modules/@react-native-google-signin/google-signin/lib/module/errors/errorCodes.js");
 __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
   "use strict";
 
@@ -105941,7 +106860,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
     type: 'noSavedCredentialFound',
     data: null
   });
-},651,[],"node_modules/@react-native-google-signin/google-signin/lib/module/constants.js");
+},660,[],"node_modules/@react-native-google-signin/google-signin/lib/module/constants.js");
 __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
   "use strict";
 
@@ -106024,7 +106943,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       height: 48
     }
   });
-},652,[1,71,2,653,182,647,654],"node_modules/@react-native-google-signin/google-signin/lib/module/buttons/GoogleSigninButton.js");
+},661,[1,71,2,662,182,656,663],"node_modules/@react-native-google-signin/google-signin/lib/module/buttons/GoogleSigninButton.js");
 __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
   var _interopRequireDefault = _$$_REQUIRE(_dependencyMap[0], "@babel/runtime/helpers/interopRequireDefault");
   Object.defineProperty(exports, "__esModule", {
@@ -106053,7 +106972,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
     }
   };
   var _default = exports.default = _$$_REQUIRE(_dependencyMap[3], "react-native/Libraries/NativeComponent/NativeComponentRegistry").get(nativeComponentName, () => __INTERNAL_VIEW_CONFIG);
-},653,[1,314,102,75],"node_modules/@react-native-google-signin/google-signin/lib/module/spec/SignInButtonNativeComponent.ts");
+},662,[1,314,102,75],"node_modules/@react-native-google-signin/google-signin/lib/module/spec/SignInButtonNativeComponent.ts");
 __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
   "use strict";
 
@@ -106065,10 +106984,10 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
     Dark: 'dark',
     Light: 'light'
   };
-},654,[],"node_modules/@react-native-google-signin/google-signin/lib/module/buttons/statics.js");
+},663,[],"node_modules/@react-native-google-signin/google-signin/lib/module/buttons/statics.js");
 __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
   "use strict";
-},655,[],"node_modules/@react-native-google-signin/google-signin/lib/module/types.js");
+},664,[],"node_modules/@react-native-google-signin/google-signin/lib/module/types.js");
 __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
   var _interopRequireDefault = _$$_REQUIRE(_dependencyMap[0], "@babel/runtime/helpers/interopRequireDefault");
   Object.defineProperty(exports, "__esModule", {
@@ -106441,7 +107360,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
     fireEndOfDayReport
   };
   var _default = exports.default = SchedulerService;
-},656,[1,178,606,657,658],"src/services/SchedulerService.ts");
+},665,[1,178,606,666,645],"src/services/SchedulerService.ts");
 __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
   Object.defineProperty(exports, "__esModule", {
     value: true
@@ -106455,708 +107374,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
     endOfDayNotificationId: 'end-of-day-report'
   };
   var _default = exports.default = config;
-},657,[],"src/config.ts");
-__d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
-  var _interopRequireDefault = _$$_REQUIRE(_dependencyMap[0], "@babel/runtime/helpers/interopRequireDefault");
-  Object.defineProperty(exports, "__esModule", {
-    value: true
-  });
-  exports.default = void 0;
-  var _asyncToGenerator2 = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[1], "@babel/runtime/helpers/asyncToGenerator"));
-  var _asyncStorage = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[2], "@react-native-async-storage/async-storage"));
-  var SETTINGS_KEY = 'checkin_settings';
-  var GROQ_KEY = 'groq_api_key';
-  var CLAUDE_KEY = 'claude_api_key';
-  var OPENAI_KEY = 'openai_api_key';
-  function load() {
-    return _load.apply(this, arguments);
-  }
-  function _load() {
-    _load = (0, _asyncToGenerator2.default)(function* () {
-      var raw = yield _asyncStorage.default.getItem(SETTINGS_KEY);
-      if (!raw) return {
-        ..._$$_REQUIRE(_dependencyMap[3], "../types/Settings").DEFAULT_SETTINGS
-      };
-      try {
-        return {
-          ..._$$_REQUIRE(_dependencyMap[3], "../types/Settings").DEFAULT_SETTINGS,
-          ...JSON.parse(raw)
-        };
-      } catch {
-        return {
-          ..._$$_REQUIRE(_dependencyMap[3], "../types/Settings").DEFAULT_SETTINGS
-        };
-      }
-    });
-    return _load.apply(this, arguments);
-  }
-  function save(_x) {
-    return _save.apply(this, arguments);
-  }
-  function _save() {
-    _save = (0, _asyncToGenerator2.default)(function* (settings) {
-      yield _asyncStorage.default.setItem(SETTINGS_KEY, JSON.stringify(settings));
-    });
-    return _save.apply(this, arguments);
-  }
-  function getGroqApiKey() {
-    return _getGroqApiKey.apply(this, arguments);
-  }
-  function _getGroqApiKey() {
-    _getGroqApiKey = (0, _asyncToGenerator2.default)(function* () {
-      var stored = yield _asyncStorage.default.getItem(GROQ_KEY);
-      if (stored) return stored;
-      try {
-        var _require = _$$_REQUIRE(_dependencyMap[4], "../secrets.local"),
-          GROQ_API_KEY = _require.GROQ_API_KEY;
-        return GROQ_API_KEY ?? '';
-      } catch {
-        return '';
-      }
-    });
-    return _getGroqApiKey.apply(this, arguments);
-  }
-  function setGroqApiKey(_x2) {
-    return _setGroqApiKey.apply(this, arguments);
-  }
-  function _setGroqApiKey() {
-    _setGroqApiKey = (0, _asyncToGenerator2.default)(function* (key) {
-      yield _asyncStorage.default.setItem(GROQ_KEY, key);
-    });
-    return _setGroqApiKey.apply(this, arguments);
-  }
-  function getClaudeApiKey() {
-    return _getClaudeApiKey.apply(this, arguments);
-  }
-  function _getClaudeApiKey() {
-    _getClaudeApiKey = (0, _asyncToGenerator2.default)(function* () {
-      var stored = yield _asyncStorage.default.getItem(CLAUDE_KEY);
-      if (stored) return stored;
-      try {
-        var _require2 = _$$_REQUIRE(_dependencyMap[4], "../secrets.local"),
-          CLAUDE_API_KEY = _require2.CLAUDE_API_KEY;
-        return CLAUDE_API_KEY ?? '';
-      } catch {
-        return '';
-      }
-    });
-    return _getClaudeApiKey.apply(this, arguments);
-  }
-  function setClaudeApiKey(_x3) {
-    return _setClaudeApiKey.apply(this, arguments);
-  }
-  function _setClaudeApiKey() {
-    _setClaudeApiKey = (0, _asyncToGenerator2.default)(function* (key) {
-      yield _asyncStorage.default.setItem(CLAUDE_KEY, key);
-    });
-    return _setClaudeApiKey.apply(this, arguments);
-  }
-  function getOpenAIApiKey() {
-    return _getOpenAIApiKey.apply(this, arguments);
-  }
-  function _getOpenAIApiKey() {
-    _getOpenAIApiKey = (0, _asyncToGenerator2.default)(function* () {
-      var stored = yield _asyncStorage.default.getItem(OPENAI_KEY);
-      if (stored) return stored;
-      try {
-        var _require3 = _$$_REQUIRE(_dependencyMap[4], "../secrets.local"),
-          OPENAI_API_KEY = _require3.OPENAI_API_KEY;
-        return OPENAI_API_KEY ?? '';
-      } catch {
-        return '';
-      }
-    });
-    return _getOpenAIApiKey.apply(this, arguments);
-  }
-  function setOpenAIApiKey(_x4) {
-    return _setOpenAIApiKey.apply(this, arguments);
-  }
-  function _setOpenAIApiKey() {
-    _setOpenAIApiKey = (0, _asyncToGenerator2.default)(function* (key) {
-      yield _asyncStorage.default.setItem(OPENAI_KEY, key);
-    });
-    return _setOpenAIApiKey.apply(this, arguments);
-  }
-  var SettingsService = {
-    load,
-    save,
-    getGroqApiKey,
-    setGroqApiKey,
-    getClaudeApiKey,
-    setClaudeApiKey,
-    getOpenAIApiKey,
-    setOpenAIApiKey
-  };
-  var _default = exports.default = SettingsService;
-},658,[1,178,659,665,666],"src/services/SettingsService.ts");
-__d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
-  var _interopRequireDefault = _$$_REQUIRE(_dependencyMap[0], "@babel/runtime/helpers/interopRequireDefault");
-  Object.defineProperty(exports, "__esModule", {
-    value: true
-  });
-  exports.default = void 0;
-  Object.defineProperty(exports, "useAsyncStorage", {
-    enumerable: true,
-    get: function () {
-      return _$$_REQUIRE(_dependencyMap[1], "./hooks").useAsyncStorage;
-    }
-  });
-  var _AsyncStorage = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[2], "./AsyncStorage"));
-  var _default = exports.default = _AsyncStorage.default;
-},659,[1,660,661],"node_modules/@react-native-async-storage/async-storage/src/index.ts");
-__d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
-  var _interopRequireDefault = _$$_REQUIRE(_dependencyMap[0], "@babel/runtime/helpers/interopRequireDefault");
-  Object.defineProperty(exports, "__esModule", {
-    value: true
-  });
-  exports.useAsyncStorage = useAsyncStorage;
-  var _AsyncStorage = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[1], "./AsyncStorage"));
-  function useAsyncStorage(key) {
-    return {
-      getItem: (...args) => _AsyncStorage.default.getItem(key, ...args),
-      setItem: (...args) => _AsyncStorage.default.setItem(key, ...args),
-      mergeItem: (...args) => _AsyncStorage.default.mergeItem(key, ...args),
-      removeItem: (...args) => _AsyncStorage.default.removeItem(key, ...args)
-    };
-  }
-},660,[1,661],"node_modules/@react-native-async-storage/async-storage/src/hooks.ts");
-__d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
-  var _interopRequireDefault = _$$_REQUIRE(_dependencyMap[0], "@babel/runtime/helpers/interopRequireDefault");
-  Object.defineProperty(exports, "__esModule", {
-    value: true
-  });
-  exports.default = void 0;
-  var _RCTAsyncStorage = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[1], "./RCTAsyncStorage"));
-  /**
-   * Copyright (c) Facebook, Inc. and its affiliates.
-   *
-   * This source code is licensed under the MIT license found in the
-   * LICENSE file in the root directory of this source tree.
-   */
-
-  if (!_RCTAsyncStorage.default) {
-    throw new Error(`[@RNC/AsyncStorage]: NativeModule: AsyncStorage is null.
-
-To fix this issue try these steps:
-
-  • Uninstall, rebuild and restart the app.
-
-  • Run the packager with \`--reset-cache\` flag.
-
-  • If you are using CocoaPods on iOS, run \`pod install\` in the \`ios\` directory, then rebuild and re-run the app.
-
-  • Make sure your project's \`package.json\` depends on \`@react-native-async-storage/async-storage\`, even if you only depend on it indirectly through other dependencies. CLI only autolinks native modules found in your \`package.json\`.
-
-  • If this happens while testing with Jest, check out how to integrate AsyncStorage here: https://react-native-async-storage.github.io/async-storage/docs/advanced/jest
-
-If none of these fix the issue, please open an issue on the GitHub repository: https://github.com/react-native-async-storage/async-storage/issues
-`);
-  }
-
-  /**
-   * `AsyncStorage` is a simple, unencrypted, asynchronous, persistent, key-value
-   * storage system that is global to the app. It should be used instead of
-   * LocalStorage.
-   *
-   * See https://react-native-async-storage.github.io/async-storage/docs/api
-   */
-  var AsyncStorage = (() => {
-    var _getRequests = [];
-    var _getKeys = [];
-    var _immediate = null;
-    return {
-      /**
-       * Fetches an item for a `key` and invokes a callback upon completion.
-       *
-       * See https://react-native-async-storage.github.io/async-storage/docs/api#getitem
-       */
-      getItem: (key, callback) => {
-        return new Promise((resolve, reject) => {
-          (0, _$$_REQUIRE(_dependencyMap[2], "./helpers").checkValidInput)(key);
-          _RCTAsyncStorage.default.multiGet([key], (errors, result) => {
-            // Unpack result to get value from [[key,value]]
-            var value = result?.[0]?.[1] ? result[0][1] : null;
-            var errs = (0, _$$_REQUIRE(_dependencyMap[2], "./helpers").convertErrors)(errors);
-            callback?.(errs?.[0], value);
-            if (errs) {
-              reject(errs[0]);
-            } else {
-              resolve(value);
-            }
-          });
-        });
-      },
-      /**
-       * Sets the value for a `key` and invokes a callback upon completion.
-       *
-       * See https://react-native-async-storage.github.io/async-storage/docs/api#setitem
-       */
-      setItem: (key, value, callback) => {
-        return new Promise((resolve, reject) => {
-          (0, _$$_REQUIRE(_dependencyMap[2], "./helpers").checkValidInput)(key, value);
-          _RCTAsyncStorage.default.multiSet([[key, value]], errors => {
-            var errs = (0, _$$_REQUIRE(_dependencyMap[2], "./helpers").convertErrors)(errors);
-            callback?.(errs?.[0]);
-            if (errs) {
-              reject(errs[0]);
-            } else {
-              resolve();
-            }
-          });
-        });
-      },
-      /**
-       * Removes an item for a `key` and invokes a callback upon completion.
-       *
-       * See https://react-native-async-storage.github.io/async-storage/docs/api#removeitem
-       */
-      removeItem: (key, callback) => {
-        return new Promise((resolve, reject) => {
-          (0, _$$_REQUIRE(_dependencyMap[2], "./helpers").checkValidInput)(key);
-          _RCTAsyncStorage.default.multiRemove([key], errors => {
-            var errs = (0, _$$_REQUIRE(_dependencyMap[2], "./helpers").convertErrors)(errors);
-            callback?.(errs?.[0]);
-            if (errs) {
-              reject(errs[0]);
-            } else {
-              resolve();
-            }
-          });
-        });
-      },
-      /**
-       * Merges an existing `key` value with an input value, assuming both values
-       * are stringified JSON.
-       *
-       * See https://react-native-async-storage.github.io/async-storage/docs/api#mergeitem
-       */
-      mergeItem: (key, value, callback) => {
-        return new Promise((resolve, reject) => {
-          (0, _$$_REQUIRE(_dependencyMap[2], "./helpers").checkValidInput)(key, value);
-          _RCTAsyncStorage.default.multiMerge([[key, value]], errors => {
-            var errs = (0, _$$_REQUIRE(_dependencyMap[2], "./helpers").convertErrors)(errors);
-            callback?.(errs?.[0]);
-            if (errs) {
-              reject(errs[0]);
-            } else {
-              resolve();
-            }
-          });
-        });
-      },
-      /**
-       * Erases *all* `AsyncStorage` for all clients, libraries, etc. You probably
-       * don't want to call this; use `removeItem` or `multiRemove` to clear only
-       * your app's keys.
-       *
-       * See https://react-native-async-storage.github.io/async-storage/docs/api#clear
-       */
-      clear: callback => {
-        return new Promise((resolve, reject) => {
-          _RCTAsyncStorage.default.clear(error => {
-            var err = (0, _$$_REQUIRE(_dependencyMap[2], "./helpers").convertError)(error);
-            callback?.(err);
-            if (err) {
-              reject(err);
-            } else {
-              resolve();
-            }
-          });
-        });
-      },
-      /**
-       * Gets *all* keys known to your app; for all callers, libraries, etc.
-       *
-       * See https://react-native-async-storage.github.io/async-storage/docs/api#getallkeys
-       */
-      getAllKeys: callback => {
-        return new Promise((resolve, reject) => {
-          _RCTAsyncStorage.default.getAllKeys((error, keys) => {
-            var err = (0, _$$_REQUIRE(_dependencyMap[2], "./helpers").convertError)(error);
-            callback?.(err, keys);
-            if (keys) {
-              resolve(keys);
-            } else {
-              reject(err);
-            }
-          });
-        });
-      },
-      /**
-       * The following batched functions are useful for executing a lot of
-       * operations at once, allowing for native optimizations and provide the
-       * convenience of a single callback after all operations are complete.
-       *
-       * These functions return arrays of errors, potentially one for every key.
-       * For key-specific errors, the Error object will have a key property to
-       * indicate which key caused the error.
-       */
-
-      /**
-       * Flushes any pending requests using a single batch call to get the data.
-       *
-       * See https://react-native-async-storage.github.io/async-storage/docs/api#flushgetrequests
-       * */
-      flushGetRequests: () => {
-        var getRequests = _getRequests;
-        var getKeys = _getKeys;
-        _getRequests = [];
-        _getKeys = [];
-        _RCTAsyncStorage.default.multiGet(getKeys, (errors, result) => {
-          // Even though the runtime complexity of this is theoretically worse vs if we used a map,
-          // it's much, much faster in practice for the data sets we deal with (we avoid
-          // allocating result pair arrays). This was heavily benchmarked.
-          //
-          // Is there a way to avoid using the map but fix the bug in this breaking test?
-          // https://github.com/facebook/react-native/commit/8dd8ad76579d7feef34c014d387bf02065692264
-          var map = {};
-          result?.forEach(([key, value]) => {
-            map[key] = value;
-            return value;
-          });
-          var reqLength = getRequests.length;
-
-          /**
-           * As mentioned few lines above, this method could be called with the array of potential error,
-           * in case of anything goes wrong. The problem is, if any of the batched calls fails
-           * the rest of them would fail too, but the error would be consumed by just one. The rest
-           * would simply return `undefined` as their result, rendering false negatives.
-           *
-           * In order to avoid this situation, in case of any call failing,
-           * the rest of them will be rejected as well (with the same error).
-           */
-          var errorList = (0, _$$_REQUIRE(_dependencyMap[2], "./helpers").convertErrors)(errors);
-          var error = errorList?.length ? errorList[0] : null;
-          for (var i = 0; i < reqLength; i++) {
-            var request = getRequests[i];
-            if (error) {
-              request.callback?.(errorList);
-              request.reject?.(error);
-              continue;
-            }
-            var requestResult = request.keys.map(key => [key, map[key]]);
-            request.callback?.(null, requestResult);
-            request.resolve?.(requestResult);
-          }
-        });
-      },
-      /**
-       * This allows you to batch the fetching of items given an array of `key`
-       * inputs. Your callback will be invoked with an array of corresponding
-       * key-value pairs found.
-       *
-       * See https://react-native-async-storage.github.io/async-storage/docs/api#multiget
-       */
-      multiGet: (keys, callback) => {
-        if (!_immediate) {
-          _immediate = setImmediate(() => {
-            _immediate = null;
-            AsyncStorage.flushGetRequests();
-          });
-        }
-        var getRequest = {
-          keys: keys,
-          callback: callback,
-          // do we need this?
-          keyIndex: _getKeys.length
-        };
-        var promiseResult = new Promise((resolve, reject) => {
-          getRequest.resolve = resolve;
-          getRequest.reject = reject;
-        });
-        _getRequests.push(getRequest);
-        // avoid fetching duplicates
-        keys.forEach(key => {
-          if (_getKeys.indexOf(key) === -1) {
-            _getKeys.push(key);
-          }
-        });
-        return promiseResult;
-      },
-      /**
-       * Use this as a batch operation for storing multiple key-value pairs. When
-       * the operation completes you'll get a single callback with any errors.
-       *
-       * See https://react-native-async-storage.github.io/async-storage/docs/api#multiset
-       */
-      multiSet: (keyValuePairs, callback) => {
-        (0, _$$_REQUIRE(_dependencyMap[2], "./helpers").checkValidArgs)(keyValuePairs, callback);
-        return new Promise((resolve, reject) => {
-          keyValuePairs.forEach(([key, value]) => {
-            (0, _$$_REQUIRE(_dependencyMap[2], "./helpers").checkValidInput)(key, value);
-          });
-          _RCTAsyncStorage.default.multiSet(keyValuePairs, errors => {
-            var error = (0, _$$_REQUIRE(_dependencyMap[2], "./helpers").convertErrors)(errors);
-            callback?.(error);
-            if (error) {
-              reject(error);
-            } else {
-              resolve();
-            }
-          });
-        });
-      },
-      /**
-       * Call this to batch the deletion of all keys in the `keys` array.
-       *
-       * See https://react-native-async-storage.github.io/async-storage/docs/api#multiremove
-       */
-      multiRemove: (keys, callback) => {
-        return new Promise((resolve, reject) => {
-          keys.forEach(key => (0, _$$_REQUIRE(_dependencyMap[2], "./helpers").checkValidInput)(key));
-          _RCTAsyncStorage.default.multiRemove(keys, errors => {
-            var error = (0, _$$_REQUIRE(_dependencyMap[2], "./helpers").convertErrors)(errors);
-            callback?.(error);
-            if (error) {
-              reject(error);
-            } else {
-              resolve();
-            }
-          });
-        });
-      },
-      /**
-       * Batch operation to merge in existing and new values for a given set of
-       * keys. This assumes that the values are stringified JSON.
-       *
-       * See https://react-native-async-storage.github.io/async-storage/docs/api#multimerge
-       */
-      multiMerge: (keyValuePairs, callback) => {
-        return new Promise((resolve, reject) => {
-          _RCTAsyncStorage.default.multiMerge(keyValuePairs, errors => {
-            var error = (0, _$$_REQUIRE(_dependencyMap[2], "./helpers").convertErrors)(errors);
-            callback?.(error);
-            if (error) {
-              reject(error);
-            } else {
-              resolve();
-            }
-          });
-        });
-      }
-    };
-  })();
-  var _default = exports.default = AsyncStorage;
-},661,[1,662,664],"node_modules/@react-native-async-storage/async-storage/src/AsyncStorage.native.ts");
-__d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
-  Object.defineProperty(exports, "__esModule", {
-    value: true
-  });
-  exports.default = void 0;
-  var _reactNative = _$$_REQUIRE(_dependencyMap[0], "react-native");
-  // TurboModuleRegistry falls back to NativeModules so we don't have to try go
-  // assign NativeModules' counterparts if TurboModuleRegistry would resolve
-  // with undefined.
-  var RCTAsyncStorage = _reactNative.TurboModuleRegistry ? _reactNative.TurboModuleRegistry.get("PlatformLocalStorage") ||
-  // Support for external modules, like react-native-windows
-  _reactNative.TurboModuleRegistry.get("RNC_AsyncSQLiteDBStorage") || _reactNative.TurboModuleRegistry.get("RNCAsyncStorage") : _reactNative.NativeModules["PlatformLocalStorage"] ||
-  // Support for external modules, like react-native-windows
-  _reactNative.NativeModules["RNC_AsyncSQLiteDBStorage"] || _reactNative.NativeModules["RNCAsyncStorage"];
-  if (!RCTAsyncStorage && (0, _$$_REQUIRE(_dependencyMap[1], "./shouldFallbackToLegacyNativeModule").shouldFallbackToLegacyNativeModule)()) {
-    if (_reactNative.TurboModuleRegistry) {
-      RCTAsyncStorage = _reactNative.TurboModuleRegistry.get("AsyncSQLiteDBStorage") || _reactNative.TurboModuleRegistry.get("AsyncLocalStorage");
-    } else {
-      RCTAsyncStorage = _reactNative.NativeModules["AsyncSQLiteDBStorage"] || _reactNative.NativeModules["AsyncLocalStorage"];
-    }
-  }
-  var _default = exports.default = RCTAsyncStorage;
-},662,[2,663],"node_modules/@react-native-async-storage/async-storage/src/RCTAsyncStorage.ts");
-__d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
-  Object.defineProperty(exports, "__esModule", {
-    value: true
-  });
-  exports.shouldFallbackToLegacyNativeModule = shouldFallbackToLegacyNativeModule;
-  var _reactNative = _$$_REQUIRE(_dependencyMap[0], "react-native");
-  function shouldFallbackToLegacyNativeModule() {
-    var expoConstants = _reactNative.NativeModules["NativeUnimoduleProxy"]?.modulesConstants?.ExponentConstants;
-    if (expoConstants) {
-      /**
-       * In SDK <= 39, appOwnership is defined in managed apps but executionEnvironment is not.
-       * In bare React Native apps using expo-constants, appOwnership is never defined, so
-       * isLegacySdkVersion will be false in that context.
-       */
-      var isLegacySdkVersion = expoConstants.appOwnership && !expoConstants.executionEnvironment;
-
-      /**
-       * Expo managed apps don't include the @react-native-async-storage/async-storage
-       * native modules yet, but the API interface is the same, so we can use the version
-       * exported from React Native still.
-       *
-       * If in future releases (eg: @react-native-async-storage/async-storage >= 2.0.0) this
-       * will likely not be valid anymore, and the package will need to be included in the Expo SDK
-       * to continue to work.
-       */
-      if (isLegacySdkVersion || ["storeClient", "standalone"].includes(expoConstants.executionEnvironment)) {
-        return true;
-      }
-    }
-    return false;
-  }
-},663,[2],"node_modules/@react-native-async-storage/async-storage/src/shouldFallbackToLegacyNativeModule.ts");
-__d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
-  Object.defineProperty(exports, "__esModule", {
-    value: true
-  });
-  exports.checkValidArgs = checkValidArgs;
-  exports.checkValidInput = checkValidInput;
-  exports.convertError = convertError;
-  exports.convertErrors = convertErrors;
-  function checkValidArgs(keyValuePairs, callback) {
-    if (!Array.isArray(keyValuePairs) || keyValuePairs.length === 0 || !Array.isArray(keyValuePairs[0])) {
-      throw new Error("[AsyncStorage] Expected array of key-value pairs as first argument to multiSet");
-    }
-    if (callback && typeof callback !== "function") {
-      if (Array.isArray(callback)) {
-        throw new Error("[AsyncStorage] Expected function as second argument to multiSet. Did you forget to wrap key-value pairs in an array for the first argument?");
-      }
-      throw new Error("[AsyncStorage] Expected function as second argument to multiSet");
-    }
-  }
-  function checkValidInput(...input) {
-    var key = input[0],
-      value = input[1];
-    if (typeof key !== "string") {
-      // eslint-disable-next-line no-console
-      console.warn(`[AsyncStorage] Using ${typeof key} type for key is not supported. This can lead to unexpected behavior/errors. Use string instead.\nKey passed: ${key}\n`);
-    }
-    if (input.length > 1 && typeof value !== "string") {
-      if (value == null) {
-        throw new Error(`[AsyncStorage] Passing null/undefined as value is not supported. If you want to remove value, Use .removeItem method instead.\nPassed value: ${value}\nPassed key: ${key}\n`);
-      } else {
-        // eslint-disable-next-line no-console
-        console.warn(`[AsyncStorage] The value for key "${key}" is not a string. This can lead to unexpected behavior/errors. Consider stringifying it.\nPassed value: ${value}\nPassed key: ${key}\n`);
-      }
-    }
-  }
-  function convertError(error) {
-    if (!error) {
-      return null;
-    }
-    var out = new Error(error.message);
-    out["key"] = error.key;
-    return out;
-  }
-  function convertErrors(errs) {
-    var errors = ensureArray(errs);
-    return errors ? errors.map(e => convertError(e)) : null;
-  }
-  function ensureArray(e) {
-    if (Array.isArray(e)) {
-      return e.length === 0 ? null : e;
-    } else if (e) {
-      return [e];
-    } else {
-      return null;
-    }
-  }
-},664,[],"node_modules/@react-native-async-storage/async-storage/src/helpers.ts");
-__d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
-  Object.defineProperty(exports, "__esModule", {
-    value: true
-  });
-  exports.TRANSCRIPTION_PROVIDERS = exports.THEME_OPTIONS = exports.SYNC_INTERVAL_OPTIONS = exports.FREQUENCY_OPTIONS = exports.DEFAULT_SETTINGS = exports.DAY_LABELS = exports.ANALYSIS_PROVIDERS = void 0;
-  var DEFAULT_SETTINGS = exports.DEFAULT_SETTINGS = {
-    checkInDays: [true, true, true, true, true, true, true],
-    everyHour: true,
-    startHour: 10,
-    endHour: 19,
-    frequencyMinutes: 120,
-    transcriptionProvider: 'groq',
-    analysisProvider: 'claude',
-    noteKeyword: 'note',
-    appendKeyword: 'append',
-    theme: 'system',
-    dailyPlanEnabled: true,
-    dailyPlanHour: 8,
-    calendarSyncIntervalMinutes: 15,
-    debugMode: false
-  };
-  var THEME_OPTIONS = exports.THEME_OPTIONS = [{
-    label: 'System',
-    sublabel: 'Follow device setting',
-    value: 'system'
-  }, {
-    label: 'Light',
-    sublabel: 'Always light',
-    value: 'light'
-  }, {
-    label: 'Dark',
-    sublabel: 'Always dark',
-    value: 'dark'
-  }];
-  var FREQUENCY_OPTIONS = exports.FREQUENCY_OPTIONS = [{
-    label: '1 min',
-    value: 1
-  }, {
-    label: '2 min',
-    value: 2
-  }, {
-    label: '30 min',
-    value: 30
-  }, {
-    label: '1 hour',
-    value: 60
-  }, {
-    label: '2 hours',
-    value: 120
-  }, {
-    label: '4 hours',
-    value: 240
-  }, {
-    label: '8 hours',
-    value: 480
-  }, {
-    label: '1 day',
-    value: 1440
-  }];
-  var SYNC_INTERVAL_OPTIONS = exports.SYNC_INTERVAL_OPTIONS = [{
-    label: 'Every 1 min',
-    sublabel: 'Debug only',
-    value: 1
-  }, {
-    label: 'Every 5 min',
-    sublabel: 'High frequency',
-    value: 5
-  }, {
-    label: 'Every 15 min',
-    sublabel: 'Recommended',
-    value: 15
-  }, {
-    label: 'Every 30 min',
-    sublabel: 'Balanced',
-    value: 30
-  }, {
-    label: 'Every hour',
-    sublabel: 'Low frequency',
-    value: 60
-  }, {
-    label: 'Manual only',
-    sublabel: 'Sync now / Hard sync only',
-    value: 0
-  }];
-  var DAY_LABELS = exports.DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  var TRANSCRIPTION_PROVIDERS = exports.TRANSCRIPTION_PROVIDERS = [{
-    label: 'Groq',
-    sublabel: 'Whisper via Groq API',
-    value: 'groq'
-  }];
-  var ANALYSIS_PROVIDERS = exports.ANALYSIS_PROVIDERS = [{
-    label: 'Claude',
-    sublabel: 'Anthropic',
-    value: 'claude'
-  }, {
-    label: 'OpenAI',
-    sublabel: 'ChatGPT / GPT-4o',
-    value: 'openai'
-  }];
-},665,[],"src/types/Settings.ts");
-__d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
-  Object.defineProperty(exports, "__esModule", {
-    value: true
-  });
-  exports.GROQ_API_KEY = void 0;
-  var GROQ_API_KEY = exports.GROQ_API_KEY = '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';
-},666,[],"src/secrets.local.ts");
+},666,[],"src/config.ts");
 __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
   Object.defineProperty(exports, "__esModule", {
     value: true
@@ -108342,7 +108560,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       }
     });
   }
-},678,[1,178,14,71,2,656,658,640,639,679,681,182,668,677,684],"src/screens/CheckInScreen.tsx");
+},678,[1,178,14,71,2,665,645,640,639,679,681,182,668,677,684],"src/screens/CheckInScreen.tsx");
 __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
   var _interopRequireDefault = _$$_REQUIRE(_dependencyMap[0], "@babel/runtime/helpers/interopRequireDefault");
   Object.defineProperty(exports, "__esModule", {
@@ -108427,7 +108645,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
     }
   };
   var _default = exports.default = WhisperTranscriptionProvider;
-},680,[1,178,2,658],"src/providers/transcription/WhisperTranscriptionProvider.ts");
+},680,[1,178,2,645],"src/providers/transcription/WhisperTranscriptionProvider.ts");
 __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
   var _interopRequireDefault = _$$_REQUIRE(_dependencyMap[0], "@babel/runtime/helpers/interopRequireDefault");
   Object.defineProperty(exports, "__esModule", {
@@ -108765,7 +108983,8 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
   function DayPlanScreen({
     initialDate,
     onClose,
-    debugMode = false
+    debugMode = false,
+    calendarColor = '#7986CB'
   }) {
     var insets = (0, _$$_REQUIRE(_dependencyMap[11], "react-native-safe-area-context").useSafeAreaInsets)();
     var _useTheme = (0, _$$_REQUIRE(_dependencyMap[12], "../contexts/ThemeContext").useTheme)(),
@@ -108784,16 +109003,20 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       setBlocks = _useState6[1];
     var _useState7 = (0, _react.useState)([]),
       _useState8 = (0, _slicedToArray2.default)(_useState7, 2),
-      deletedBlockIds = _useState8[0],
-      setDeletedBlockIds = _useState8[1];
-    var _useState9 = (0, _react.useState)(false),
+      calendarBlocks = _useState8[0],
+      setCalendarBlocks = _useState8[1];
+    var _useState9 = (0, _react.useState)([]),
       _useState0 = (0, _slicedToArray2.default)(_useState9, 2),
-      saving = _useState0[0],
-      setSaving = _useState0[1];
-    var _useState1 = (0, _react.useState)(null),
+      deletedBlockIds = _useState0[0],
+      setDeletedBlockIds = _useState0[1];
+    var _useState1 = (0, _react.useState)(false),
       _useState10 = (0, _slicedToArray2.default)(_useState1, 2),
-      recording = _useState10[0],
-      setRecording = _useState10[1];
+      saving = _useState10[0],
+      setSaving = _useState10[1];
+    var _useState11 = (0, _react.useState)(null),
+      _useState12 = (0, _slicedToArray2.default)(_useState11, 2),
+      recording = _useState12[0],
+      setRecording = _useState12[1];
     var timerRef = (0, _react.useRef)(null);
     var dateStr = toDateString(currentDate);
     (0, _react.useEffect)(() => {
@@ -108803,10 +109026,15 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       function _load() {
         _load = (0, _asyncToGenerator2.default)(function* () {
           setBlocks([]);
+          setCalendarBlocks([]);
           setDeletedBlockIds([]);
           setRawInput('');
           try {
-            var plan = yield _StorageService.default.getDayPlan(dateStr);
+            var _yield$Promise$all = yield Promise.all([_StorageService.default.getDayPlan(dateStr), _StorageService.default.getCalendarPlanBlocksByDate(dateStr)]),
+              _yield$Promise$all2 = (0, _slicedToArray2.default)(_yield$Promise$all, 2),
+              plan = _yield$Promise$all2[0],
+              calBlocks = _yield$Promise$all2[1];
+            setCalendarBlocks(calBlocks);
             if (!plan) return;
             var existing = yield _StorageService.default.getPlanBlocks(plan.id);
             setBlocks(existing.map(b => planBlockToEdit(b)));
@@ -108966,7 +109194,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       });
       return _handleSave.apply(this, arguments);
     }
-    var styles = makeStyles(colors);
+    var styles = makeStyles(colors, calendarColor);
     return /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
       style: [styles.container, {
         paddingTop: insets.top,
@@ -109034,7 +109262,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
               children: "Parse into blocks"
             })
           })]
-        }), blocks.length > 0 && /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+        }), (blocks.length > 0 || calendarBlocks.length > 0) && /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
           style: styles.sectionLabel,
           children: "PLAN BLOCKS"
         }), blocks.map((block, i) => {
@@ -109121,7 +109349,31 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
               })]
             })]
           }, i);
-        }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
+        }), [...calendarBlocks].sort((a, b) => a.startMin - b.startMin).map(block => /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+          style: styles.calendarBlockCard,
+          children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+            style: styles.blockTimes,
+            children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
+              style: styles.calendarBlockTime,
+              children: [(0, _$$_REQUIRE(_dependencyMap[10], "../utils/parseDayPlan").formatMin)(block.startMin), " \u2013 ", (0, _$$_REQUIRE(_dependencyMap[10], "../utils/parseDayPlan").formatMin)(block.endMin)]
+            }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+              style: styles.calendarBadge,
+              children: "\uD83D\uDDD3 G"
+            })]
+          }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+            style: styles.calendarBlockActivity,
+            children: block.activity
+          }), debugMode && /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+            style: styles.debugRow,
+            children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
+              style: styles.debugText,
+              children: ["synced: ", block.syncedAt !== null && block.syncedAt >= block.updatedAt ? 'yes' : 'no']
+            }), block.updatedAt !== undefined && /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
+              style: styles.debugText,
+              children: ["upd: ", new Date(block.updatedAt).toLocaleTimeString()]
+            })]
+          })]
+        }, `cal-${block.id}`)), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
           style: styles.addBtn,
           onPress: addBlock,
           children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
@@ -109132,7 +109384,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       })]
     });
   }
-  function makeStyles(colors) {
+  function makeStyles(colors, calendarColor) {
     return _reactNative.StyleSheet.create({
       container: {
         flex: 1,
@@ -109299,6 +109551,31 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         fontSize: 15,
         color: colors.accent,
         fontWeight: '500'
+      },
+      calendarBlockCard: {
+        backgroundColor: calendarColor + '18',
+        borderRadius: 12,
+        padding: 14,
+        gap: 6,
+        borderLeftWidth: 4,
+        borderLeftColor: calendarColor,
+        borderStyle: 'dashed'
+      },
+      calendarBlockTime: {
+        fontSize: 15,
+        fontWeight: '600',
+        color: calendarColor,
+        flex: 1
+      },
+      calendarBlockActivity: {
+        fontSize: 15,
+        color: colors.text,
+        lineHeight: 22
+      },
+      calendarBadge: {
+        fontSize: 12,
+        color: calendarColor,
+        fontWeight: '600'
       },
       debugRow: {
         flexDirection: 'row',
@@ -109537,7 +109814,8 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
     onOpenMenu,
     onEditPlan,
     initialDate,
-    debugMode = false
+    debugMode = false,
+    calendarColor = '#7986CB'
   }) {
     var insets = (0, _$$_REQUIRE(_dependencyMap[8], "react-native-safe-area-context").useSafeAreaInsets)();
     var _useTheme = (0, _$$_REQUIRE(_dependencyMap[9], "../contexts/ThemeContext").useTheme)(),
@@ -109570,17 +109848,18 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       var _ref = (0, _asyncToGenerator2.default)(function* (date) {
         setLoading(true);
         var dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-        var _yield$Promise$all = yield Promise.all([_StorageService.default.getByDateRange(startOfDay(date), endOfDay(date)), _StorageService.default.getDayPlan(dateStr)]),
-          _yield$Promise$all2 = (0, _slicedToArray2.default)(_yield$Promise$all, 2),
+        var _yield$Promise$all = yield Promise.all([_StorageService.default.getByDateRange(startOfDay(date), endOfDay(date)), _StorageService.default.getDayPlan(dateStr), _StorageService.default.getCalendarPlanBlocksByDate(dateStr)]),
+          _yield$Promise$all2 = (0, _slicedToArray2.default)(_yield$Promise$all, 3),
           results = _yield$Promise$all2[0],
-          plan = _yield$Promise$all2[1];
+          plan = _yield$Promise$all2[1],
+          calBlocks = _yield$Promise$all2[2];
         setEntries(results.sort((a, b) => a.timestampStart - b.timestampStart));
         setDayPlan(plan);
         if (plan) {
-          var blocks = yield _StorageService.default.getPlanBlocks(plan.id);
-          setPlanBlocks(blocks);
+          var appBlocks = yield _StorageService.default.getPlanBlocks(plan.id);
+          setPlanBlocks([...appBlocks, ...calBlocks].sort((a, b) => a.startMin - b.startMin));
         } else {
-          setPlanBlocks([]);
+          setPlanBlocks(calBlocks.sort((a, b) => a.startMin - b.startMin));
         }
         setLoading(false);
       });
@@ -109598,7 +109877,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       setCurrentDate(d => new Date(d.getTime() + 86_400_000));
     }
     var canGoForward = !isToday(currentDate);
-    var styles = makeStyles(colors);
+    var styles = makeStyles(colors, calendarColor);
     function handleEntrySaved(updated) {
       setEntries(prev => prev.map(e => e.id === updated.id ? updated : e));
       setSelectedEntry(null);
@@ -109674,16 +109953,17 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
               })]
             }), planBlocks.map(block => {
               var covered = (0, _$$_REQUIRE(_dependencyMap[10], "../utils/planMatching").isCovered)(block, entries);
+              var isCalendar = block.source === 'calendar';
               return /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
                 style: styles.planBlock,
                 children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
-                  style: [styles.planDot, covered ? styles.planDotCovered : styles.planDotMissed]
+                  style: [styles.planDot, isCalendar ? styles.planDotCalendar : covered ? styles.planDotCovered : styles.planDotMissed]
                 }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
                   style: styles.planTime,
                   children: [(0, _$$_REQUIRE(_dependencyMap[11], "../utils/parseDayPlan").formatMin)(block.startMin), "\u2013", (0, _$$_REQUIRE(_dependencyMap[11], "../utils/parseDayPlan").formatMin)(block.endMin)]
-                }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
                   style: [styles.planActivity, !covered && styles.planActivityMissed],
-                  children: block.activity
+                  children: [block.activity, isCalendar ? ' 🗓' : '']
                 })]
               }, block.id);
             }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
@@ -109747,7 +110027,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       })]
     });
   }
-  function makeStyles(colors) {
+  function makeStyles(colors, calendarColor) {
     return _reactNative.StyleSheet.create({
       container: {
         flex: 1,
@@ -109914,6 +110194,9 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       },
       planDotMissed: {
         backgroundColor: colors.border
+      },
+      planDotCalendar: {
+        backgroundColor: calendarColor
       },
       planTime: {
         fontSize: 13,
@@ -110465,7 +110748,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       }
     });
   }
-},688,[1,178,14,71,2,640,639,686,658,689,182,668,677,684],"src/screens/EntryDetailScreen.tsx");
+},688,[1,178,14,71,2,640,639,686,645,689,182,668,677,684],"src/screens/EntryDetailScreen.tsx");
 __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
   var _interopRequireDefault = _$$_REQUIRE(_dependencyMap[0], "@babel/runtime/helpers/interopRequireDefault");
   Object.defineProperty(exports, "__esModule", {
@@ -110634,7 +110917,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       }
     });
   }
-},689,[1,178,14,71,2,686,658,640,182,668,677,684],"src/screens/NoteDetailScreen.tsx");
+},689,[1,178,14,71,2,686,645,640,182,668,677,684],"src/screens/NoteDetailScreen.tsx");
 __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
   var _interopRequireDefault = _$$_REQUIRE(_dependencyMap[0], "@babel/runtime/helpers/interopRequireDefault");
   Object.defineProperty(exports, "__esModule", {
@@ -112367,7 +112650,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       }
     });
   }
-},693,[1,178,14,71,2,639,694,658,656,182,668,677,665,605],"src/screens/SettingsScreen.tsx");
+},693,[1,178,14,71,2,639,694,645,665,182,668,677,652,605],"src/screens/SettingsScreen.tsx");
 __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
   var _interopRequireDefault = _$$_REQUIRE(_dependencyMap[0], "@babel/runtime/helpers/interopRequireDefault");
   Object.defineProperty(exports, "__esModule", {
@@ -112473,7 +112756,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
     getAccessToken
   };
   var _default = exports.default = GoogleAuthService;
-},694,[1,178,659,645],"src/services/GoogleAuthService.ts");
+},694,[1,178,646,654],"src/services/GoogleAuthService.ts");
 __d(function(global, require, _importDefaultUnused, _importAllUnused, module, exports, _dependencyMapUnused) {
   module.exports = {
   "name": "TimeAnalyzerTemp",
