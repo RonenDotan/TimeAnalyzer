@@ -104070,11 +104070,12 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
 },637,[],"node_modules/@notifee/react-native/dist/types/Library.js");
 __d(function(global, require, _importDefaultUnused, _importAllUnused, module, exports, _dependencyMapUnused) {
   module.exports = {
-  "major": 0,
-  "minor": 0,
-  "ticket_id": 23,
-  "sequence": 6
-};
+    "major":  0,
+    "minor":  0,
+    "ticket_id":  23,
+    "sequence":  7
+}
+;
 },638,[],"version.json");
 __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
   var _interopRequireDefault = _$$_REQUIRE(_dependencyMap[0], "@babel/runtime/helpers/interopRequireDefault");
@@ -108784,11 +108785,15 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
   }
 },682,[],"src/utils/planMatching.ts");
 __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
+  var _interopRequireDefault = _$$_REQUIRE(_dependencyMap[0], "@babel/runtime/helpers/interopRequireDefault");
   Object.defineProperty(exports, "__esModule", {
     value: true
   });
   exports.formatMin = formatMin;
   exports.parseDayPlan = parseDayPlan;
+  var _slicedToArray2 = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[1], "@babel/runtime/helpers/slicedToArray"));
+  // ─── Lookup tables ────────────────────────────────────────────────────────────
+
   var WORD_NUMS = {
     zero: 0,
     one: 1,
@@ -108810,25 +108815,148 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
     seventeen: 17,
     eighteen: 18,
     nineteen: 19,
-    twenty: 20
+    twenty: 20,
+    'twenty one': 21,
+    'twenty two': 22,
+    'twenty three': 23
+  };
+
+  // Word forms for sub-hour minutes ("nine thirty" → 9:30)
+  var WORD_MINS = {
+    'oh five': 5,
+    ten: 10,
+    fifteen: 15,
+    twenty: 20,
+    'twenty five': 25,
+    thirty: 30,
+    'thirty five': 35,
+    forty: 40,
+    'forty five': 45,
+    fifty: 50,
+    'fifty five': 55
   };
   var NAMED_TIMES = {
+    'early morning': 7 * 60,
     'after lunch': 13 * 60,
-    'midnight': 0,
-    'morning': 9 * 60,
-    'noon': 12 * 60,
-    'lunch': 12 * 60,
-    'afternoon': 14 * 60,
-    'evening': 18 * 60,
-    'night': 21 * 60
+    'late afternoon': 16 * 60,
+    'end of day': 17 * 60,
+    midnight: 0,
+    morning: 9 * 60,
+    noon: 12 * 60,
+    midday: 12 * 60,
+    lunchtime: 12 * 60,
+    lunch: 12 * 60,
+    afternoon: 14 * 60,
+    eod: 17 * 60,
+    evening: 18 * 60,
+    night: 21 * 60
   };
-  function escapeForRegex(s) {
-    return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\s+/g, '\\s+');
+
+  // ─── Helpers ──────────────────────────────────────────────────────────────────
+
+  function formatMin(min) {
+    return `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`;
+  }
+
+  /** Parse just a bare hour (word or digit) — used during normalization. */
+  function parseHourWord(token) {
+    var t = token.trim().toLowerCase();
+    if (WORD_NUMS[t] !== undefined) return WORD_NUMS[t] <= 23 ? WORD_NUMS[t] : null;
+    var m = t.match(/^(\d{1,2})$/);
+    if (!m) return null;
+    var h = parseInt(m[1], 10);
+    return h <= 23 ? h : null;
+  }
+
+  // ─── Input normalization ──────────────────────────────────────────────────────
+
+  /**
+   * Convert natural-language time expressions to simple numeric forms
+   * before the main regex matching runs.
+   */
+  function normalizeInput(raw) {
+    var s = raw.toLowerCase();
+
+    // a.m. / p.m. (with dots) → am / pm
+    s = s.replace(/\ba\.m\./g, 'am').replace(/\bp\.m\./g, 'pm');
+
+    // "an hour" / "half an hour" → normalized duration strings
+    s = s.replace(/\bhalf\s+an?\s+hours?\b/g, '0.5 hours');
+    s = s.replace(/\ban?\s+hours?\b/g, '1 hour');
+
+    // "quarter to X" → e.g. "quarter to ten" → "09:45"
+    s = s.replace(/quarter\s+to\s+(\w+)/g, (orig, h) => {
+      var hour = parseHourWord(h);
+      return hour !== null ? formatMin(hour * 60 - 15) : orig;
+    });
+
+    // "quarter past X" → X:15
+    s = s.replace(/quarter\s+past\s+(\w+)/g, (orig, h) => {
+      var hour = parseHourWord(h);
+      return hour !== null ? formatMin(hour * 60 + 15) : orig;
+    });
+
+    // "half past X" → X:30
+    s = s.replace(/half\s+past\s+(\w+)/g, (orig, h) => {
+      var hour = parseHourWord(h);
+      return hour !== null ? formatMin(hour * 60 + 30) : orig;
+    });
+
+    // "X o'clock" / "X oclock" → bare number
+    s = s.replace(/(\w+)\s+o'?clock/g, (orig, h) => {
+      var hour = parseHourWord(h);
+      return hour !== null ? String(hour) : orig;
+    });
+
+    // "X in the morning" → Xam
+    s = s.replace(/(\d+(?:[.:]\d{2})?|\w+)\s+in\s+the\s+morning/g, (_, t) => `${t}am`);
+
+    // "X in the afternoon/evening" → Xpm
+    s = s.replace(/(\d+(?:[.:]\d{2})?|\w+)\s+in\s+the\s+(?:afternoon|evening)/g, (_, t) => `${t}pm`);
+
+    // Word hour + word minute → "9:30"
+    // Sort by minWord length descending so "twenty five" is tried before "twenty"
+    var sortedMins = Object.entries(WORD_MINS).sort((a, b) => b[0].length - a[0].length);
+    for (var _ref of Object.entries(WORD_NUMS)) {
+      var _ref2 = (0, _slicedToArray2.default)(_ref, 2);
+      var hourWord = _ref2[0];
+      var hourVal = _ref2[1];
+      for (var _ref3 of sortedMins) {
+        var _ref4 = (0, _slicedToArray2.default)(_ref3, 2);
+        var minWord = _ref4[0];
+        var minVal = _ref4[1];
+        s = s.replace(new RegExp(`\\b${hourWord}\\s+${minWord}\\b`, 'g'), `${hourVal}:${String(minVal).padStart(2, '0')}`);
+      }
+    }
+
+    // European decimal notation "9.30" → "9:30"
+    s = s.replace(/\b(\d{1,2})\.(\d{2})\b/g, '$1:$2');
+    return s;
+  }
+
+  // ─── Regex components ─────────────────────────────────────────────────────────
+
+  function escapeForRegex(str) {
+    return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\s+/g, '\\s+');
   }
   var NAMED_PATTERN = Object.keys(NAMED_TIMES).sort((a, b) => b.length - a.length).map(escapeForRegex).join('|');
-  var WORD_PATTERN = Object.keys(WORD_NUMS).join('|');
+
+  // Sort word numbers by length desc so "twenty one" is tried before "twenty"
+  var WORD_PATTERN = Object.keys(WORD_NUMS).sort((a, b) => b.length - a.length).join('|');
   var TIME_TOKEN = `(?:${NAMED_PATTERN}|${WORD_PATTERN}|\\d{1,2}(?::\\d{2})?\\s*(?:am|pm)?)`;
-  var RANGE_RE = new RegExp(`(?:from\\s+)?(${TIME_TOKEN})(?:\\s+to\\s+|\\s+until\\s+|\\s*[-–]\\s*)(${TIME_TOKEN})\\s*(.*)`, 'i');
+  var CONNECTOR = `(?:\\s+to\\s+|\\s+until\\s+|\\s*[-–]\\s*)`;
+
+  // "[from] TIME [to|until|-] TIME [activity]"  (standard time-first)
+  var RANGE_RE = new RegExp(`^(?:from\\s+)?(${TIME_TOKEN})${CONNECTOR}(${TIME_TOKEN})\\s*(.*)$`, 'i');
+
+  // "activity [from] TIME [to|until|-] TIME"  (activity-first e.g. "standup 9 to 10")
+  var ACTIVITY_FIRST_RE = new RegExp(`^(.+?)\\s+(?:from\\s+)?(${TIME_TOKEN})${CONNECTOR}(${TIME_TOKEN})\\s*$`, 'i');
+
+  // "[from] TIME for X hours [activity]"  (duration e.g. "from 9 for 2 hours coding")
+  var DURATION_RE = new RegExp(`^(?:from\\s+)?(${TIME_TOKEN})\\s+for\\s+(${WORD_PATTERN}|0\\.5|\\d+(?:\\.5)?)\\s+hours?\\s*(.*)$`, 'i');
+
+  // ─── Time token parser ────────────────────────────────────────────────────────
+
   function parseTimeToken(token) {
     var t = token.trim().toLowerCase().replace(/\s+/g, ' ');
     if (NAMED_TIMES[t] !== undefined) return NAMED_TIMES[t];
@@ -108845,34 +108973,100 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
     if (ampm === 'am' && h === 12) h = 0;
     return h <= 23 ? h * 60 + min : null;
   }
+
+  // ─── Segment → block ─────────────────────────────────────────────────────────
+
+  function resolveEnd(startMin, endMin) {
+    // "10 to 2" → endMin(120) < startMin(600) and < noon → assume PM
+    return endMin <= startMin && endMin < 12 * 60 ? endMin + 12 * 60 : endMin;
+  }
+  function parseSegment(segment) {
+    var trimmed = segment.trim();
+    if (!trimmed) return null;
+
+    // 1. Standard time-first: "9 to 11 work" / "from 9 to 11 work"
+    var rf = trimmed.match(RANGE_RE);
+    if (rf) {
+      var startMin = parseTimeToken(rf[1]);
+      var endMin = parseTimeToken(rf[2]);
+      if (startMin !== null && endMin !== null) {
+        var resolved = resolveEnd(startMin, endMin);
+        if (resolved > startMin) return {
+          startMin,
+          endMin: resolved,
+          activity: rf[3].trim()
+        };
+      }
+    }
+
+    // 2. Duration: "from 9 for 2 hours coding"
+    var rd = trimmed.match(DURATION_RE);
+    if (rd) {
+      var _startMin = parseTimeToken(rd[1]);
+      var durStr = rd[2].toLowerCase().trim();
+      var durHours = WORD_NUMS[durStr] ?? parseFloat(durStr);
+      if (_startMin !== null && !isNaN(durHours) && durHours > 0) {
+        return {
+          startMin: _startMin,
+          endMin: _startMin + Math.round(durHours * 60),
+          activity: rd[3].trim()
+        };
+      }
+    }
+
+    // 3. Activity-first: "standup 9 to 10" / "deep work from 9 to 11"
+    var ra = trimmed.match(ACTIVITY_FIRST_RE);
+    if (ra) {
+      var activity = ra[1].trim();
+      var _startMin2 = parseTimeToken(ra[2]);
+      var _endMin = parseTimeToken(ra[3]);
+      if (_startMin2 !== null && _endMin !== null) {
+        var _resolved = resolveEnd(_startMin2, _endMin);
+        if (_resolved > _startMin2) return {
+          startMin: _startMin2,
+          endMin: _resolved,
+          activity
+        };
+      }
+    }
+    return null;
+  }
+
+  // ─── Block separators ─────────────────────────────────────────────────────────
+
   var BLOCK_SEPARATORS = /,\s*|\s+(?:and\s+then|after\s+that|then|and)\s+/i;
+
+  // ─── Main export ──────────────────────────────────────────────────────────────
+
   function parseDayPlan(raw) {
+    var normalized = normalizeInput(raw);
     var blocks = [];
-    var segments = raw.split(BLOCK_SEPARATORS);
-    for (var segment of segments) {
-      var trimmed = segment.trim();
-      if (!trimmed) continue;
-      var match = trimmed.match(RANGE_RE);
-      if (!match) continue;
-      var startMin = parseTimeToken(match[1]);
-      var endMin = parseTimeToken(match[2]);
-      var activity = match[3].trim();
-      if (startMin === null || endMin === null) continue;
-      // If end <= start, try interpreting end as pm (e.g. "10 to 2" → 10:00–14:00)
-      var resolvedEnd = endMin <= startMin && endMin < 12 * 60 ? endMin + 12 * 60 : endMin;
-      if (resolvedEnd <= startMin) continue;
-      blocks.push({
-        startMin,
-        endMin: resolvedEnd,
-        activity
-      });
+    for (var segment of normalized.split(BLOCK_SEPARATORS)) {
+      var block = parseSegment(segment);
+      if (block) blocks.push(block);
+    }
+
+    // Post-process: if a block's start time looks implausibly early (before 7am)
+    // relative to the previous block, assume it was meant as PM.
+    // Handles: "9 to 11 work, 2 to 4 meetings" → second block → 14:00–16:00
+    for (var i = 1; i < blocks.length; i++) {
+      var prev = blocks[i - 1];
+      var curr = blocks[i];
+      if (curr.startMin < 7 * 60 && curr.startMin < prev.endMin) {
+        var adjStart = curr.startMin + 12 * 60;
+        var adjEnd = curr.endMin + 12 * 60;
+        if (adjEnd <= 24 * 60 && adjStart > prev.endMin) {
+          blocks[i] = {
+            ...curr,
+            startMin: adjStart,
+            endMin: adjEnd
+          };
+        }
+      }
     }
     return blocks;
   }
-  function formatMin(min) {
-    return `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`;
-  }
-},683,[],"src/utils/parseDayPlan.ts");
+},683,[1,14],"src/utils/parseDayPlan.ts");
 __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
   Object.defineProperty(exports, "__esModule", {
     value: true
