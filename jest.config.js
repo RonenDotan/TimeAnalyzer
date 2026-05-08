@@ -9,6 +9,8 @@ module.exports = {
       '<rootDir>/__mocks__/@react-native-async-storage/async-storage.ts',
     '@op-engineering/op-sqlite':
       '<rootDir>/__mocks__/@op-engineering/op-sqlite.ts',
+    '@react-native-google-signin/google-signin':
+      '<rootDir>/__mocks__/@react-native-google-signin/google-signin.ts',
   },
   transformIgnorePatterns: [
     'node_modules/(?!(react-native|@react-native|react-native-safe-area-context)/)',

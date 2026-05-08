@@ -1,8 +1,9 @@
 import notifee, { EventType } from '@notifee/react-native';
-import React, { useEffect, useState } from 'react';
-import { Alert, StatusBar, useColorScheme, View } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { Alert, AppState, StatusBar, useColorScheme, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import v from './version.json';
+import CalendarSyncService from './src/services/CalendarSyncService';
 import SchedulerService from './src/services/SchedulerService';
 import SettingsService from './src/services/SettingsService';
 import StorageService from './src/services/StorageService';
@@ -11,10 +12,9 @@ import { ThemeProvider } from './src/contexts/ThemeContext';
 import CheckInScreen from './src/screens/CheckInScreen';
 import DayPlanScreen from './src/screens/DayPlanScreen';
 import ReportScreen from './src/screens/ReportScreen';
-
 import ReportsScreen from './src/screens/ReportsScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
-import { Theme } from './src/types/Settings';
+import { SyncIntervalMinutes, Theme } from './src/types/Settings';
 
 export const version = `v${v.major}.${v.minor}.${v.ticket_id}.${v.sequence}`;
 
@@ -34,15 +34,32 @@ function AppContent(): React.JSX.Element {
   const [planDate, setPlanDate] = useState<Date | undefined>(undefined);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [themeSetting, setThemeSetting] = useState<Theme>('system');
+  const [debugMode, setDebugMode] = useState(false);
   const systemScheme = useColorScheme();
+  const syncIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const isDark =
     themeSetting === 'dark' ? true :
     themeSetting === 'light' ? false :
     systemScheme === 'dark';
 
+  function startSyncInterval(intervalMinutes: SyncIntervalMinutes) {
+    if (syncIntervalRef.current) clearInterval(syncIntervalRef.current);
+    syncIntervalRef.current = null;
+    if (intervalMinutes > 0) {
+      syncIntervalRef.current = setInterval(
+        () => CalendarSyncService.syncChanged().catch(() => {}),
+        intervalMinutes * 60 * 1000,
+      );
+    }
+  }
+
   useEffect(() => {
-    SettingsService.load().then(s => setThemeSetting(s.theme));
+    SettingsService.load().then(s => {
+      setThemeSetting(s.theme);
+      setDebugMode(s.debugMode);
+      startSyncInterval(s.calendarSyncIntervalMinutes);
+    });
     SchedulerService.requestPermission().then(async granted => {
       if (!granted) return;
       const alarmOk = await SchedulerService.checkAlarmPermission();
@@ -62,6 +79,12 @@ function AppContent(): React.JSX.Element {
       } catch (e: any) {
         Alert.alert('Scheduler error', String(e?.message ?? e));
       }
+    });
+
+    // Run once on startup; interval is set up after settings load above
+    CalendarSyncService.syncChanged().catch(() => {});
+    const appStateSub = AppState.addEventListener('change', state => {
+      if (state === 'active') CalendarSyncService.syncChanged().catch(() => {});
     });
 
     const unsub = notifee.onForegroundEvent(({ type, detail }) => {
@@ -92,14 +115,22 @@ function AppContent(): React.JSX.Element {
       }
     });
 
-    return () => unsub();
+    return () => {
+      unsub();
+      if (syncIntervalRef.current) clearInterval(syncIntervalRef.current);
+      appStateSub.remove();
+    };
   }, []);
 
   function handleSettingsClose(saved: boolean) {
     setScreen('entries');
     if (saved) {
       SchedulerService.reschedule();
-      SettingsService.load().then(s => setThemeSetting(s.theme));
+      SettingsService.load().then(s => {
+        setThemeSetting(s.theme);
+        setDebugMode(s.debugMode);
+        startSyncInterval(s.calendarSyncIntervalMinutes);
+      });
     }
   }
 
@@ -142,7 +173,7 @@ function AppContent(): React.JSX.Element {
       {screen === 'settings' ? (
         <SettingsScreen onClose={handleSettingsClose} />
       ) : screen === 'dayplan' ? (
-        <DayPlanScreen initialDate={planDate} onClose={() => setScreen('entries')} />
+        <DayPlanScreen initialDate={planDate} onClose={() => setScreen('entries')} debugMode={debugMode} />
       ) : screen === 'checkin' ? (
         <CheckInScreen
           periodStart={checkInPeriod?.periodStart ?? Date.now() - 2 * 60 * 60 * 1000}
@@ -159,6 +190,7 @@ function AppContent(): React.JSX.Element {
               onStartCheckIn={handleStartCheckIn}
               onOpenMenu={() => setDrawerOpen(true)}
               onEditPlan={handleEditPlan}
+              debugMode={debugMode}
             />
           )}
           <DrawerMenu

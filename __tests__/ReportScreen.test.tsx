@@ -9,6 +9,11 @@ const entry: LogEntry = {
   timestampStart: new Date('2026-05-02T10:00:00').getTime(),
   timestampEnd: new Date('2026-05-02T12:00:00').getTime(),
   transcript: 'Worked on the report screen.',
+  calendarEventId: null,
+  source: 'app',
+  status: 1,
+  updatedAt: new Date('2026-05-02T10:00:00').getTime(),
+  syncedAt: null,
 };
 
 beforeEach(() => {

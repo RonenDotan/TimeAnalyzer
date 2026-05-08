@@ -7,6 +7,11 @@ const entry: LogEntry = {
   timestampStart: 1000000,
   timestampEnd: 1007200000,
   transcript: 'I was debugging the auth module.',
+  calendarEventId: null,
+  source: 'app',
+  status: 1,
+  updatedAt: 1000000,
+  syncedAt: null,
 };
 
 const noteStubs = {
@@ -19,8 +24,18 @@ const noteStubs = {
 const planStubs = {
   upsertDayPlan: jest.fn(),
   getDayPlan: jest.fn(),
-  replacePlanBlocks: jest.fn(),
+  upsertPlanBlocks: jest.fn(),
   getPlanBlocks: jest.fn(),
+  hardDeletePlanBlock: jest.fn(),
+  updateEntryCalendarEventId: jest.fn(),
+  updatePlanBlockCalendarEventId: jest.fn(),
+  getUnsyncedEntries: jest.fn(),
+  getPendingDeleteEntries: jest.fn(),
+  getUnsyncedPlanBlocksWithDate: jest.fn(),
+  getPendingDeletePlanBlocksWithDate: jest.fn(),
+  updateEntrySyncedAt: jest.fn(),
+  updatePlanBlockSyncedAt: jest.fn(),
+  hardResetSyncedAt: jest.fn(),
 };
 
 const mockProvider: StorageProvider = {
@@ -29,6 +44,7 @@ const mockProvider: StorageProvider = {
   getAll: jest.fn(),
   getByDateRange: jest.fn(),
   delete: jest.fn(),
+  hardDeleteEntry: jest.fn(),
   ...noteStubs,
   ...planStubs,
 };
@@ -60,10 +76,16 @@ test('getByDateRange() delegates to active provider with correct dates', async (
   expect(result).toEqual([entry]);
 });
 
-test('deleteEntry() delegates to active provider with correct id', async () => {
+test('deleteEntry() soft-deletes via active provider', async () => {
   await StorageService.deleteEntry(1);
   expect(mockProvider.delete).toHaveBeenCalledWith(1);
   expect(mockProvider.delete).toHaveBeenCalledTimes(1);
+});
+
+test('hardDeleteEntry() hard-deletes via active provider', async () => {
+  await StorageService.hardDeleteEntry(1);
+  expect(mockProvider.hardDeleteEntry).toHaveBeenCalledWith(1);
+  expect(mockProvider.hardDeleteEntry).toHaveBeenCalledTimes(1);
 });
 
 test('setProvider() switches the active provider', async () => {
@@ -73,6 +95,7 @@ test('setProvider() switches the active provider', async () => {
     getAll: jest.fn().mockResolvedValue([]),
     getByDateRange: jest.fn(),
     delete: jest.fn(),
+    hardDeleteEntry: jest.fn(),
     ...noteStubs,
     ...planStubs,
   };

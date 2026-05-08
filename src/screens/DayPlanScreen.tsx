@@ -12,7 +12,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import DictateBar from '../components/DictateBar';
 import TranscriptionService from '../services/TranscriptionService';
 import StorageService from '../services/StorageService';
-import { ParsedBlock } from '../types/DayPlan';
+import CalendarSyncService from '../services/CalendarSyncService';
+import { ParsedBlock, PlanBlock } from '../types/DayPlan';
 import { applyTranscription } from '../utils/parseTranscript';
 import { formatMin, parseDayPlan } from '../utils/parseDayPlan';
 import { ColorPalette, useTheme } from '../contexts/ThemeContext';
@@ -20,12 +21,17 @@ import { ColorPalette, useTheme } from '../contexts/ThemeContext';
 interface Props {
   initialDate?: Date;
   onClose: () => void;
+  debugMode?: boolean;
 }
 
 interface EditBlock {
+  id?: number;     // undefined for newly added blocks
   startText: string;
   endText: string;
   activity: string;
+  syncedAt?: number | null;
+  updatedAt?: number;
+  status?: 0 | 1;
 }
 
 type RecordingState = { index: number; ms: number } | null;
@@ -36,6 +42,18 @@ function toDateString(d: Date): string {
 
 function parsedToEdit(b: ParsedBlock): EditBlock {
   return { startText: formatMin(b.startMin), endText: formatMin(b.endMin), activity: b.activity };
+}
+
+function planBlockToEdit(b: PlanBlock): EditBlock {
+  return {
+    id: b.id,
+    startText: formatMin(b.startMin),
+    endText: formatMin(b.endMin),
+    activity: b.activity,
+    syncedAt: b.syncedAt,
+    updatedAt: b.updatedAt,
+    status: b.status,
+  };
 }
 
 function parseTimeText(text: string): number | null {
@@ -66,12 +84,13 @@ function formatHeader(dateStr: string): string {
   return date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 }
 
-export default function DayPlanScreen({ initialDate, onClose }: Props) {
+export default function DayPlanScreen({ initialDate, onClose, debugMode = false }: Props) {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const [currentDate, setCurrentDate] = useState<Date>(initialDate ?? new Date());
   const [rawInput, setRawInput] = useState('');
   const [blocks, setBlocks] = useState<EditBlock[]>([]);
+  const [deletedBlockIds, setDeletedBlockIds] = useState<number[]>([]);
   const [saving, setSaving] = useState(false);
   const [recording, setRecording] = useState<RecordingState>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -81,12 +100,13 @@ export default function DayPlanScreen({ initialDate, onClose }: Props) {
   useEffect(() => {
     async function load() {
       setBlocks([]);
+      setDeletedBlockIds([]);
       setRawInput('');
       try {
         const plan = await StorageService.getDayPlan(dateStr);
         if (!plan) return;
         const existing = await StorageService.getPlanBlocks(plan.id);
-        setBlocks(existing.map(b => parsedToEdit(b)));
+        setBlocks(existing.map(b => planBlockToEdit(b)));
       } catch (e: any) {
         Alert.alert('Load failed', String(e?.message ?? e));
       }
@@ -117,7 +137,13 @@ export default function DayPlanScreen({ initialDate, onClose }: Props) {
   }
 
   function removeBlock(index: number) {
-    setBlocks(prev => prev.filter((_, i) => i !== index));
+    setBlocks(prev => {
+      const block = prev[index];
+      if (block.id !== undefined) {
+        setDeletedBlockIds(ids => [...ids, block.id!]);
+      }
+      return prev.filter((_, i) => i !== index);
+    });
   }
 
   function addBlock() {
@@ -169,7 +195,7 @@ export default function DayPlanScreen({ initialDate, onClose }: Props) {
       }
     }
 
-    const parsed: ParsedBlock[] = [];
+    const parsed: Array<ParsedBlock & { id?: number }> = [];
     for (const b of currentBlocks) {
       const startMin = parseTimeText(b.startText);
       const endMin = parseTimeText(b.endText);
@@ -189,10 +215,10 @@ export default function DayPlanScreen({ initialDate, onClose }: Props) {
         Alert.alert('Missing activity', 'Every block needs an activity description.');
         return;
       }
-      parsed.push({ startMin, endMin, activity: b.activity.trim() });
+      parsed.push({ startMin, endMin, activity: b.activity.trim(), id: b.id });
     }
 
-    if (parsed.length === 0) {
+    if (parsed.length === 0 && deletedBlockIds.length === 0) {
       onClose();
       return;
     }
@@ -200,7 +226,9 @@ export default function DayPlanScreen({ initialDate, onClose }: Props) {
     setSaving(true);
     try {
       const plan = await StorageService.upsertDayPlan(dateStr);
-      await StorageService.replacePlanBlocks(plan.id, parsed);
+      await StorageService.upsertPlanBlocks(plan.id, parsed, deletedBlockIds);
+      setDeletedBlockIds([]);
+      CalendarSyncService.syncChanged().catch(() => {});
       onClose();
     } catch (e: any) {
       Alert.alert('Save failed', String(e?.message ?? e));
@@ -296,6 +324,8 @@ export default function DayPlanScreen({ initialDate, onClose }: Props) {
                   placeholder="Activity description…"
                   placeholderTextColor={colors.placeholder}
                   editable={!isRecording}
+                  multiline
+                  textAlignVertical="top"
                 />
                 <TouchableOpacity
                   style={[styles.micBtn, isRecording && styles.micBtnActive]}
@@ -307,6 +337,26 @@ export default function DayPlanScreen({ initialDate, onClose }: Props) {
                 <Text style={styles.recordingLabel}>
                   Recording… {(recording!.ms / 1000).toFixed(1)}s — tap ⏹ to stop
                 </Text>
+              )}
+              {debugMode && block.id !== undefined && (
+                <View style={styles.debugRow}>
+                  <Text style={styles.debugText}>
+                    synced: {block.syncedAt !== null && block.syncedAt !== undefined && block.updatedAt !== undefined && block.syncedAt >= block.updatedAt ? 'yes' : 'no'}
+                  </Text>
+                  {block.updatedAt !== undefined && (
+                    <Text style={styles.debugText}>
+                      upd: {new Date(block.updatedAt).toLocaleTimeString()}
+                    </Text>
+                  )}
+                  {block.syncedAt != null && (
+                    <Text style={styles.debugText}>
+                      sync_at: {new Date(block.syncedAt).toLocaleTimeString()}
+                    </Text>
+                  )}
+                  <Text style={styles.debugText}>
+                    status: {block.status === 1 ? 'active' : block.status === 0 ? 'del' : 'new'}
+                  </Text>
+                </View>
               )}
             </View>
           );
@@ -380,12 +430,12 @@ function makeStyles(colors: ColorPalette) {
       marginTop: 4,
     },
     blockCard: {
-      backgroundColor: colors.surface,
+      backgroundColor: '#039BE5' + '18',
       borderRadius: 12,
       padding: 14,
       gap: 10,
-      borderLeftWidth: 3,
-      borderLeftColor: colors.accent,
+      borderLeftWidth: 4,
+      borderLeftColor: '#039BE5',
     },
     blockTimes: { flexDirection: 'row', alignItems: 'center', gap: 8 },
     timeInput: {
@@ -393,7 +443,7 @@ function makeStyles(colors: ColorPalette) {
       fontWeight: '600',
       color: colors.text,
       borderBottomWidth: 1.5,
-      borderBottomColor: colors.accent,
+      borderBottomColor: '#039BE5',
       paddingVertical: 2,
       minWidth: 60,
       textAlign: 'center',
@@ -401,18 +451,21 @@ function makeStyles(colors: ColorPalette) {
     timeDash: { fontSize: 16, color: colors.textSecondary },
     removeBtn: { marginLeft: 'auto', paddingHorizontal: 4 },
     removeBtnText: { fontSize: 16, color: colors.placeholder },
-    activityRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    activityRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
     activityInput: {
       flex: 1,
       fontSize: 15,
       color: colors.text,
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: colors.border,
-      paddingVertical: 4,
+      backgroundColor: colors.surface + 'cc',
+      borderRadius: 8,
+      padding: 10,
+      minHeight: 64,
+      lineHeight: 22,
     },
     micBtn: {
       padding: 6,
       borderRadius: 8,
+      marginTop: 4,
     },
     micBtnActive: {
       backgroundColor: colors.recordBtn + '22',
@@ -425,5 +478,15 @@ function makeStyles(colors: ColorPalette) {
     },
     addBtn: { alignSelf: 'flex-start', paddingVertical: 4 },
     addBtnText: { fontSize: 15, color: colors.accent, fontWeight: '500' },
+    debugRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 10,
+      marginTop: 4,
+      paddingTop: 6,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: colors.border,
+    },
+    debugText: { fontSize: 11, color: colors.textSecondary, fontFamily: 'monospace' },
   });
 }

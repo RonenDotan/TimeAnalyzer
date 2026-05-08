@@ -1,18 +1,19 @@
 export type { LogEntry } from '../../types/LogEntry';
 export type { Note } from '../../types/Note';
-export type { DayPlan, PlanBlock, ParsedBlock } from '../../types/DayPlan';
+export type { DayPlan, PlanBlock, ParsedBlock, PlanBlockWithDate } from '../../types/DayPlan';
 
 import { LogEntry } from '../../types/LogEntry';
 import { Note } from '../../types/Note';
-import { DayPlan, ParsedBlock, PlanBlock } from '../../types/DayPlan';
+import { DayPlan, ParsedBlock, PlanBlock, PlanBlockWithDate } from '../../types/DayPlan';
 
 export interface StorageProvider {
   // entries
-  save(entry: Omit<LogEntry, 'id'>): Promise<LogEntry>;
+  save(entry: Omit<LogEntry, 'id' | 'status' | 'updatedAt' | 'syncedAt'>): Promise<LogEntry>;
   update(entry: LogEntry): Promise<void>;
   getAll(): Promise<LogEntry[]>;
   getByDateRange(start: Date, end: Date): Promise<LogEntry[]>;
-  delete(id: number): Promise<void>;
+  delete(id: number): Promise<void>;           // soft-delete (status=0)
+  hardDeleteEntry(id: number): Promise<void>;  // permanent delete (after calendar cleanup)
 
   // notes
   saveNote(note: Omit<Note, 'id'>): Promise<Note>;
@@ -23,6 +24,22 @@ export interface StorageProvider {
   // day plans
   upsertDayPlan(date: string): Promise<DayPlan>;
   getDayPlan(date: string): Promise<DayPlan | null>;
-  replacePlanBlocks(planId: number, blocks: ParsedBlock[]): Promise<PlanBlock[]>;
+  upsertPlanBlocks(
+    planId: number,
+    blocks: Array<ParsedBlock & { id?: number }>,
+    deletedIds: number[],
+  ): Promise<PlanBlock[]>;
   getPlanBlocks(planId: number): Promise<PlanBlock[]>;
+  hardDeletePlanBlock(id: number): Promise<void>;
+
+  // calendar sync queries
+  getUnsyncedEntries(): Promise<LogEntry[]>;
+  getPendingDeleteEntries(): Promise<LogEntry[]>;
+  getUnsyncedPlanBlocksWithDate(): Promise<PlanBlockWithDate[]>;
+  getPendingDeletePlanBlocksWithDate(): Promise<PlanBlockWithDate[]>;
+  updateEntryCalendarEventId(id: number, calendarEventId: string): Promise<void>;
+  updatePlanBlockCalendarEventId(id: number, calendarEventId: string): Promise<void>;
+  updateEntrySyncedAt(id: number, ts: number): Promise<void>;
+  updatePlanBlockSyncedAt(id: number, ts: number): Promise<void>;
+  hardResetSyncedAt(): Promise<void>;
 }

@@ -11,8 +11,11 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import CalendarSyncService from '../services/CalendarSyncService';
+import GoogleAuthService, { getSignInErrorMessage } from '../services/GoogleAuthService';
 import SettingsService from '../services/SettingsService';
 import SchedulerService from '../services/SchedulerService';
+import { GoogleIntegrationState } from '../types/Integrations';
 import { version } from '../../App';
 import {
   ANALYSIS_PROVIDERS,
@@ -20,6 +23,7 @@ import {
   DEFAULT_SETTINGS,
   FREQUENCY_OPTIONS,
   Settings,
+  SYNC_INTERVAL_OPTIONS,
   THEME_OPTIONS,
   TRANSCRIPTION_PROVIDERS,
 } from '../types/Settings';
@@ -29,7 +33,7 @@ interface Props {
   onClose: (saved: boolean) => void;
 }
 
-type SectionKey = 'schedule' | 'providers' | 'keywords' | 'theme' | 'notifications';
+type SectionKey = 'schedule' | 'providers' | 'keywords' | 'theme' | 'notifications' | 'integrations' | 'debug';
 
 export default function SettingsScreen({ onClose }: Props) {
   const insets = useSafeAreaInsets();
@@ -38,8 +42,11 @@ export default function SettingsScreen({ onClose }: Props) {
   const [groqKey, setGroqKey] = useState('');
   const [claudeKey, setClaudeKey] = useState('');
   const [openaiKey, setOpenaiKey] = useState('');
-  const [expanded, setExpanded] = useState<Set<SectionKey>>(new Set(['schedule']));
+  const [expanded, setExpanded] = useState<Set<SectionKey>>(new Set());
   const [pendingCount, setPendingCount] = useState<number | null>(null);
+  const [googleState, setGoogleState] = useState<GoogleIntegrationState | null>(null);
+  const [signingIn, setSigningIn] = useState(false);
+  const [syncing, setSyncing] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -47,11 +54,13 @@ export default function SettingsScreen({ onClose }: Props) {
       SettingsService.getGroqApiKey(),
       SettingsService.getClaudeApiKey(),
       SettingsService.getOpenAIApiKey(),
-    ]).then(([s, gk, ck, ok]) => {
+      GoogleAuthService.getState(),
+    ]).then(([s, gk, ck, ok, gs]) => {
       setSettings(s);
       setGroqKey(gk);
       setClaudeKey(ck);
       setOpenaiKey(ok);
+      setGoogleState(gs);
     });
   }, []);
 
@@ -72,6 +81,75 @@ export default function SettingsScreen({ onClose }: Props) {
     const days = [...settings.checkInDays] as Settings['checkInDays'];
     days[i] = !days[i];
     setSettings({ ...settings, checkInDays: days });
+  }
+
+  async function handleGoogleSignIn() {
+    setSigningIn(true);
+    try {
+      const state = await GoogleAuthService.signIn();
+      setGoogleState(state);
+      CalendarSyncService.hardSync().catch(() => {});
+    } catch (e: any) {
+      Alert.alert('Sign-in failed', getSignInErrorMessage(e));
+    } finally {
+      setSigningIn(false);
+    }
+  }
+
+  async function handleGoogleSignOut() {
+    Alert.alert(
+      'Disconnect Google',
+      'Check-ins and plans will no longer sync to Google Calendar.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Disconnect',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await GoogleAuthService.signOut();
+              setGoogleState({ connected: false, email: null, displayName: null, scopes: [] });
+            } catch (e: any) {
+              Alert.alert('Sign-out failed', e?.message ?? String(e));
+            }
+          },
+        },
+      ],
+    );
+  }
+
+  async function handleSyncNow() {
+    setSyncing(true);
+    try {
+      await CalendarSyncService.syncChanged();
+    } catch (e: any) {
+      Alert.alert('Sync failed', e?.message ?? String(e));
+    } finally {
+      setSyncing(false);
+    }
+  }
+
+  async function handleHardSync() {
+    Alert.alert(
+      'Hard Sync',
+      'Re-push all check-ins and plans to Google Calendar. Continue?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Sync All',
+          onPress: async () => {
+            setSyncing(true);
+            try {
+              await CalendarSyncService.hardSync();
+            } catch (e: any) {
+              Alert.alert('Sync failed', e?.message ?? String(e));
+            } finally {
+              setSyncing(false);
+            }
+          },
+        },
+      ],
+    );
   }
 
   async function handleSave() {
@@ -424,6 +502,104 @@ export default function SettingsScreen({ onClose }: Props) {
           </>
         )}
 
+        {/* ── INTEGRATIONS ─────────────────────────────────────── */}
+        <SectionHeader sectionKey="integrations" title="INTEGRATIONS" />
+        {expanded.has('integrations') && (
+          <>
+            <Text style={styles.sectionLabel}>GOOGLE CALENDAR</Text>
+            <View style={styles.card}>
+              <View style={styles.row}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.rowLabel}>Google Calendar</Text>
+                  {googleState?.email && (
+                    <Text style={styles.rowSub}>{googleState.email}</Text>
+                  )}
+                </View>
+                {googleState === null ? (
+                  <ActivityIndicator size="small" color={colors.accent} />
+                ) : googleState.connected ? (
+                  <View style={styles.connectedBadge}>
+                    <Text style={styles.connectedBadgeText}>Connected</Text>
+                  </View>
+                ) : (
+                  <Text style={[styles.rowSub, { color: colors.placeholder }]}>Not connected</Text>
+                )}
+              </View>
+              {googleState?.connected && (
+                <>
+                  <View style={[styles.row, styles.rowBorder]}>
+                    <TouchableOpacity
+                      style={[styles.syncActionBtn, syncing && styles.syncActionBtnDim]}
+                      onPress={handleSyncNow}
+                      disabled={syncing}>
+                      {syncing
+                        ? <ActivityIndicator size="small" color={colors.accent} />
+                        : <Text style={styles.syncActionBtnText}>Sync now</Text>}
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.syncActionBtn, syncing && styles.syncActionBtnDim]}
+                      onPress={handleHardSync}
+                      disabled={syncing}>
+                      <Text style={styles.syncActionBtnText}>Hard sync</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.disconnectBtn}
+                      onPress={handleGoogleSignOut}>
+                      <Text style={styles.disconnectBtnText}>Disconnect</Text>
+                    </TouchableOpacity>
+                  </View>
+                </>
+              )}
+              {!googleState?.connected && (
+                <View style={[styles.row, styles.rowBorder]}>
+                  <TouchableOpacity
+                    style={[styles.connectBtn, signingIn && styles.connectBtnDim]}
+                    onPress={handleGoogleSignIn}
+                    disabled={signingIn}>
+                    {signingIn
+                      ? <ActivityIndicator size="small" color="#fff" />
+                      : <Text style={styles.connectBtnText}>Sign in with Google</Text>}
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+
+            <Text style={styles.sectionLabel}>SYNC INTERVAL</Text>
+            <View style={styles.card}>
+              {SYNC_INTERVAL_OPTIONS.map((opt, i) => (
+                <TouchableOpacity
+                  key={opt.value}
+                  style={[styles.row, i > 0 && styles.rowBorder]}
+                  onPress={() => set({ calendarSyncIntervalMinutes: opt.value })}>
+                  <View>
+                    <Text style={styles.rowLabel}>{opt.label}</Text>
+                    <Text style={styles.rowSub}>{opt.sublabel}</Text>
+                  </View>
+                  {settings.calendarSyncIntervalMinutes === opt.value && (
+                    <Text style={styles.checkmark}>✓</Text>
+                  )}
+                </TouchableOpacity>
+              ))}
+            </View>
+          </>
+        )}
+
+        {/* Debug section */}
+        <SectionHeader sectionKey="debug" title="DEBUG" />
+        {expanded.has('debug') && (
+          <View style={styles.card}>
+            <TouchableOpacity
+              style={styles.row}
+              onPress={() => set({ debugMode: !settings.debugMode })}>
+              <View>
+                <Text style={styles.rowLabel}>Debug mode</Text>
+                <Text style={styles.rowSub}>Show sync fields on each entry</Text>
+              </View>
+              {settings.debugMode && <Text style={styles.checkmark}>✓</Text>}
+            </TouchableOpacity>
+          </View>
+        )}
+
         <Text style={styles.versionText}>{version}</Text>
       </ScrollView>
     </View>
@@ -496,6 +672,39 @@ function makeStyles(colors: ColorPalette) {
       paddingVertical: 4,
       textAlign: 'right',
     },
+    connectedBadge: {
+      backgroundColor: colors.accent + '22',
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      borderRadius: 10,
+    },
+    connectedBadgeText: { fontSize: 11, color: colors.accent, fontWeight: '600' },
+    syncActionBtn: {
+      borderWidth: 1,
+      borderColor: colors.accent,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 7,
+    },
+    syncActionBtnDim: { opacity: 0.5 },
+    syncActionBtnText: { fontSize: 13, color: colors.accent, fontWeight: '500' },
+    connectBtn: {
+      backgroundColor: colors.accent,
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      borderRadius: 8,
+      alignItems: 'center',
+    },
+    connectBtnDim: { opacity: 0.6 },
+    connectBtnText: { fontSize: 14, fontWeight: '600', color: '#fff' },
+    disconnectBtn: {
+      borderWidth: 1,
+      borderColor: colors.border,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 7,
+    },
+    disconnectBtnText: { fontSize: 13, color: colors.textSecondary },
     versionText: {
       fontSize: 12,
       color: colors.textSecondary,
