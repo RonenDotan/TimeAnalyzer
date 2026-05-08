@@ -10,7 +10,9 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import EntryDetailScreen from './EntryDetailScreen';
 import StorageService from '../services/StorageService';
+import GoalsService from '../services/GoalsService';
 import { LogEntry } from '../types/LogEntry';
+import { Goal } from '../types/Goal';
 import { ColorPalette, useTheme } from '../contexts/ThemeContext';
 import { DayPlan, PlanBlock } from '../types/DayPlan';
 import { allMatchingBlocks, isCovered } from '../utils/planMatching';
@@ -64,17 +66,20 @@ export default function ReportScreen({ onStartCheckIn, onOpenMenu, onEditPlan, i
   const [selectedEntry, setSelectedEntry] = useState<LogEntry | null>(null);
   const [dayPlan, setDayPlan] = useState<DayPlan | null>(null);
   const [planBlocks, setPlanBlocks] = useState<PlanBlock[]>([]);
+  const [goals, setGoals] = useState<Goal[]>([]);
 
   const loadEntries = useCallback(async (date: Date) => {
     setLoading(true);
     const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-    const [results, plan, calBlocks] = await Promise.all([
+    const [results, plan, calBlocks, loadedGoals] = await Promise.all([
       StorageService.getByDateRange(startOfDay(date), endOfDay(date)),
       StorageService.getDayPlan(dateStr),
       StorageService.getCalendarPlanBlocksByDate(dateStr),
+      GoalsService.getGoals(dateStr),
     ]);
     setEntries(results.sort((a, b) => a.timestampStart - b.timestampStart));
     setDayPlan(plan);
+    setGoals(loadedGoals);
     if (plan) {
       const appBlocks = await StorageService.getPlanBlocks(plan.id);
       setPlanBlocks([...appBlocks, ...calBlocks].sort((a, b) => a.startMin - b.startMin));
@@ -143,6 +148,23 @@ export default function ReportScreen({ onStartCheckIn, onOpenMenu, onEditPlan, i
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.list}>
+          {/* Goals summary */}
+          {goals.length > 0 && (
+            <View style={styles.goalsSection}>
+              <Text style={styles.goalsSectionHeader}>
+                GOALS · {goals.filter(g => g.done).length}/{goals.length} completed
+              </Text>
+              {goals.map(goal => (
+                <View key={goal.id} style={styles.goalSummaryRow}>
+                  <Text style={styles.goalSummaryIcon}>{goal.done ? '✅' : '❌'}</Text>
+                  <Text style={[styles.goalSummaryText, goal.done && styles.goalSummaryDone]}>
+                    {goal.text}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          )}
+
           {/* Plan section — always shown if plan exists */}
           {planBlocks.length > 0 && (() => {
             const coveredCount = planBlocks.filter(b => isCovered(b, entries)).length;
@@ -307,6 +329,29 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
       elevation: 8,
     },
     fabIcon: { fontSize: 32, color: '#fff', lineHeight: 36 },
+    goalsSection: {
+      backgroundColor: colors.surface,
+      borderRadius: 12,
+      padding: 14,
+      gap: 6,
+      marginBottom: 4,
+    },
+    goalsSectionHeader: {
+      fontSize: 11,
+      fontWeight: '600',
+      color: colors.textSecondary,
+      letterSpacing: 0.5,
+      marginBottom: 6,
+    },
+    goalSummaryRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      paddingVertical: 3,
+    },
+    goalSummaryIcon: { fontSize: 16 },
+    goalSummaryText: { fontSize: 15, color: colors.text, flex: 1, lineHeight: 22 },
+    goalSummaryDone: { textDecorationLine: 'line-through', color: colors.textSecondary },
     planSection: {
       backgroundColor: '#039BE5' + '18',
       borderRadius: 12,

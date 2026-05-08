@@ -14,9 +14,11 @@ import TranscriptionService from '../services/TranscriptionService';
 import StorageService from '../services/StorageService';
 import CalendarSyncService from '../services/CalendarSyncService';
 import { ParsedBlock, PlanBlock } from '../types/DayPlan';
+import { Goal } from '../types/Goal';
 import { applyTranscription } from '../utils/parseTranscript';
 import { formatMin, parseDayPlan } from '../utils/parseDayPlan';
 import { ColorPalette, useTheme } from '../contexts/ThemeContext';
+import GoalsService from '../services/GoalsService';
 
 interface Props {
   initialDate?: Date;
@@ -93,6 +95,8 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false,
   const [blocks, setBlocks] = useState<EditBlock[]>([]);
   const [calendarBlocks, setCalendarBlocks] = useState<PlanBlock[]>([]);
   const [deletedBlockIds, setDeletedBlockIds] = useState<number[]>([]);
+  const [goals, setGoals] = useState<Goal[]>([]);
+  const [newGoalText, setNewGoalText] = useState('');
   const [saving, setSaving] = useState(false);
   const [recording, setRecording] = useState<RecordingState>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -105,12 +109,16 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false,
       setCalendarBlocks([]);
       setDeletedBlockIds([]);
       setRawInput('');
+      setGoals([]);
+      setNewGoalText('');
       try {
-        const [plan, calBlocks] = await Promise.all([
+        const [plan, calBlocks, loadedGoals] = await Promise.all([
           StorageService.getDayPlan(dateStr),
           StorageService.getCalendarPlanBlocksByDate(dateStr),
+          GoalsService.getGoals(dateStr),
         ]);
         setCalendarBlocks(calBlocks);
+        setGoals(loadedGoals);
         if (!plan) return;
         const existing = await StorageService.getPlanBlocks(plan.id);
         setBlocks(existing.map(b => planBlockToEdit(b)));
@@ -190,6 +198,44 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false,
       TranscriptionService.stop().catch(() => {});
     };
   }, []);
+
+  async function addGoal() {
+    const text = newGoalText.trim();
+    if (!text) return;
+    try {
+      const now = Date.now();
+      const saved = await GoalsService.saveGoal({
+        date: dateStr,
+        text,
+        done: false,
+        sortOrder: goals.length,
+        createdAt: now,
+        updatedAt: now,
+      });
+      setGoals(prev => [...prev, saved]);
+      setNewGoalText('');
+    } catch (e: any) {
+      Alert.alert('Failed to add goal', String(e?.message ?? e));
+    }
+  }
+
+  async function toggleGoal(goal: Goal) {
+    try {
+      const updated = await GoalsService.toggleGoal(goal);
+      setGoals(prev => prev.map(g => g.id === updated.id ? updated : g));
+    } catch (e: any) {
+      Alert.alert('Failed to update goal', String(e?.message ?? e));
+    }
+  }
+
+  async function deleteGoal(id: number) {
+    try {
+      await GoalsService.deleteGoal(id);
+      setGoals(prev => prev.filter(g => g.id !== id));
+    } catch (e: any) {
+      Alert.alert('Failed to delete goal', String(e?.message ?? e));
+    }
+  }
 
   async function handleSave() {
     let currentBlocks = blocks;
@@ -287,6 +333,38 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false,
               <Text style={styles.parseBtnText}>Parse into blocks</Text>
             </TouchableOpacity>
           )}
+        </View>
+
+        {/* Goals checklist */}
+        <Text style={styles.sectionLabel}>GOALS</Text>
+        <View style={styles.goalsCard}>
+          {goals.map(goal => (
+            <View key={goal.id} style={styles.goalRow}>
+              <TouchableOpacity onPress={() => toggleGoal(goal)} style={styles.goalCheckbox}>
+                <Text style={styles.goalCheckboxIcon}>{goal.done ? '✅' : '⬜'}</Text>
+              </TouchableOpacity>
+              <Text style={[styles.goalText, goal.done && styles.goalTextDone]}>{goal.text}</Text>
+              <TouchableOpacity onPress={() => deleteGoal(goal.id)} style={styles.goalDeleteBtn}>
+                <Text style={styles.goalDeleteIcon}>✕</Text>
+              </TouchableOpacity>
+            </View>
+          ))}
+          <View style={styles.goalInputRow}>
+            <TextInput
+              style={styles.goalInput}
+              value={newGoalText}
+              onChangeText={setNewGoalText}
+              placeholder="Add a goal…"
+              placeholderTextColor={colors.placeholder}
+              onSubmitEditing={addGoal}
+              returnKeyType="done"
+            />
+            {newGoalText.trim().length > 0 && (
+              <TouchableOpacity onPress={addGoal} style={styles.goalAddBtn}>
+                <Text style={styles.goalAddBtnText}>Add</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
 
         {/* Block list */}
@@ -537,6 +615,35 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
       color: calendarColor,
       fontWeight: '600',
     },
+    goalsCard: {
+      backgroundColor: colors.surface,
+      borderRadius: 12,
+      padding: 12,
+      gap: 4,
+    },
+    goalRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: 6,
+      gap: 8,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.border,
+    },
+    goalCheckbox: { padding: 2 },
+    goalCheckboxIcon: { fontSize: 18 },
+    goalText: { flex: 1, fontSize: 15, color: colors.text, lineHeight: 22 },
+    goalTextDone: { textDecorationLine: 'line-through', color: colors.textSecondary },
+    goalDeleteBtn: { paddingHorizontal: 6 },
+    goalDeleteIcon: { fontSize: 14, color: colors.placeholder },
+    goalInputRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingTop: 6 },
+    goalInput: { flex: 1, fontSize: 15, color: colors.text, paddingVertical: 4 },
+    goalAddBtn: {
+      paddingHorizontal: 14,
+      paddingVertical: 6,
+      backgroundColor: colors.accent,
+      borderRadius: 8,
+    },
+    goalAddBtnText: { fontSize: 14, color: '#fff', fontWeight: '600' },
     debugRow: {
       flexDirection: 'row',
       flexWrap: 'wrap',
