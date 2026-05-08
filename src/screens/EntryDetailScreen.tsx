@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import StorageService from '../services/StorageService';
+import CalendarSyncService from '../services/CalendarSyncService';
 import { LogEntry } from '../types/LogEntry';
 import { Note } from '../types/Note';
 import DictateBar from '../components/DictateBar';
@@ -104,6 +105,7 @@ export default function EntryDetailScreen({ entry, onSave, onClose }: Props) {
     setNotes(refreshed);
     setEditingNotes({});
     setEditing(false);
+    CalendarSyncService.syncChanged().catch(() => {});
     onSave(updated);
   }
 
@@ -285,25 +287,27 @@ function makeStyles(colors: ColorPalette) {
       justifyContent: 'space-between',
       paddingHorizontal: 16,
       paddingVertical: 12,
-      backgroundColor: colors.surface,
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: colors.border,
+      backgroundColor: '#33B679' + '18',
+      borderBottomWidth: 2,
+      borderBottomColor: '#33B679',
     },
     headerTitle: { fontSize: 17, fontWeight: '600', color: colors.text },
     headerId: { fontSize: 13, fontWeight: '400', color: colors.border },
-    headerBtn: { fontSize: 17, color: colors.accent },
-    editBtn: { color: colors.accent },
+    headerBtn: { fontSize: 17, color: '#33B679' },
+    editBtn: { color: '#33B679' },
     saveBtn: { fontWeight: '600' },
     body: { padding: 16, gap: 20, paddingBottom: 40 },
     section: {
-      backgroundColor: colors.surface,
+      backgroundColor: '#33B679' + '18',
       borderRadius: 12,
       padding: 16,
+      borderLeftWidth: 4,
+      borderLeftColor: '#33B679',
     },
     label: {
       fontSize: 11,
       fontWeight: '600',
-      color: colors.textSecondary,
+      color: '#33B679',
       letterSpacing: 0.5,
       marginBottom: 10,
     },
@@ -314,7 +318,7 @@ function makeStyles(colors: ColorPalette) {
       fontWeight: '600',
       color: colors.text,
       borderBottomWidth: 1.5,
-      borderBottomColor: colors.accent,
+      borderBottomColor: '#33B679',
       paddingVertical: 4,
       minWidth: 60,
       textAlign: 'center',
@@ -327,29 +331,30 @@ function makeStyles(colors: ColorPalette) {
       lineHeight: 24,
       minHeight: 120,
       borderWidth: 1,
-      borderColor: colors.accent,
+      borderColor: '#33B679',
       borderRadius: 8,
       padding: 10,
+      backgroundColor: colors.surface + 'cc',
     },
     notesGroupLabel: {
       fontSize: 11,
       fontWeight: '600',
-      color: colors.textSecondary,
+      color: '#33B679',
       letterSpacing: 0.5,
       marginLeft: 4,
       marginBottom: 8,
     },
     emptyNotes: { fontSize: 14, color: colors.placeholder, marginLeft: 4 },
     noteCard: {
-      backgroundColor: colors.surface,
+      backgroundColor: '#33B679' + '12',
       borderRadius: 12,
       padding: 14,
       shadowColor: '#000',
       shadowOpacity: 0.04,
       shadowRadius: 3,
       elevation: 1,
-      borderLeftWidth: 3,
-      borderLeftColor: colors.accent,
+      borderLeftWidth: 4,
+      borderLeftColor: '#33B679',
     },
     noteCardHeader: {
       flexDirection: 'row',
@@ -365,21 +370,22 @@ function makeStyles(colors: ColorPalette) {
       color: colors.text,
       lineHeight: 22,
       borderWidth: 1,
-      borderColor: colors.accent,
+      borderColor: '#33B679',
       borderRadius: 8,
       padding: 8,
       minHeight: 60,
       textAlignVertical: 'top',
+      backgroundColor: colors.surface + 'cc',
     },
     addNoteCard: {
-      backgroundColor: colors.surface,
+      backgroundColor: '#33B679' + '12',
       borderRadius: 12,
       padding: 14,
       flexDirection: 'row',
       alignItems: 'flex-end',
       gap: 10,
       borderWidth: StyleSheet.hairlineWidth,
-      borderColor: colors.border,
+      borderColor: '#33B679',
       borderStyle: 'dashed',
     },
     addNoteInput: {
@@ -392,7 +398,7 @@ function makeStyles(colors: ColorPalette) {
     addNoteBtn: {
       paddingHorizontal: 14,
       paddingVertical: 8,
-      backgroundColor: colors.accent,
+      backgroundColor: '#33B679',
       borderRadius: 8,
     },
     addNoteBtnDisabled: { backgroundColor: colors.placeholder },

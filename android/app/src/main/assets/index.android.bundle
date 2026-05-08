@@ -104065,7 +104065,7 @@ __d(function(global, require, _importDefaultUnused, _importAllUnused, module, ex
   "major": 0,
   "minor": 0,
   "ticket_id": 18,
-  "sequence": 36
+  "sequence": 37
 };
 },638,[],"version.json");
 __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
@@ -107773,9 +107773,10 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
   var _SchedulerService = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[5], "../services/SchedulerService"));
   var _SettingsService = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[6], "../services/SettingsService"));
   var _StorageService = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[7], "../services/StorageService"));
-  var _TranscriptionService = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[8], "../services/TranscriptionService"));
-  var _PlanHintBar = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[9], "../components/PlanHintBar"));
-  var _jsxRuntime = _$$_REQUIRE(_dependencyMap[10], "react/jsx-runtime");
+  var _CalendarSyncService = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[8], "../services/CalendarSyncService"));
+  var _TranscriptionService = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[9], "../services/TranscriptionService"));
+  var _PlanHintBar = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[10], "../components/PlanHintBar"));
+  var _jsxRuntime = _$$_REQUIRE(_dependencyMap[11], "react/jsx-runtime");
   var _jsxFileName = "C:\\Users\\ronen\\TimeAnalyzer\\src\\screens\\CheckInScreen.tsx";
   function _interopRequireWildcard(e, t) { if ("function" == typeof WeakMap) var r = new WeakMap(), n = new WeakMap(); return (_interopRequireWildcard = function (e, t) { if (!t && e && e.__esModule) return e; var o, i, f = { __proto__: null, default: e }; if (null === e || "object" != typeof e && "function" != typeof e) return f; if (o = t ? n : r) { if (o.has(e)) return o.get(e); o.set(e, f); } for (var _t in e) "default" !== _t && {}.hasOwnProperty.call(e, _t) && ((i = (o = Object.defineProperty) && Object.getOwnPropertyDescriptor(e, _t)) && (i.get || i.set) ? o(f, _t, i) : f[_t] = e[_t]); return f; })(e, t); }
   function formatDuration(ms) {
@@ -107794,8 +107795,8 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
     onDone,
     onCancel
   }) {
-    var insets = (0, _$$_REQUIRE(_dependencyMap[11], "react-native-safe-area-context").useSafeAreaInsets)();
-    var _useTheme = (0, _$$_REQUIRE(_dependencyMap[12], "../contexts/ThemeContext").useTheme)(),
+    var insets = (0, _$$_REQUIRE(_dependencyMap[12], "react-native-safe-area-context").useSafeAreaInsets)();
+    var _useTheme = (0, _$$_REQUIRE(_dependencyMap[13], "../contexts/ThemeContext").useTheme)(),
       colors = _useTheme.colors;
     var _useState = (0, _react.useState)('idle'),
       _useState2 = (0, _slicedToArray2.default)(_useState, 2),
@@ -107884,7 +107885,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         setPhase('transcribing');
         try {
           var finalText = yield _TranscriptionService.default.stop();
-          var _parseTranscriptAndNo2 = (0, _$$_REQUIRE(_dependencyMap[13], "../utils/parseTranscript").parseTranscriptAndNotes)(finalText || partialTranscript, noteKeyword),
+          var _parseTranscriptAndNo2 = (0, _$$_REQUIRE(_dependencyMap[14], "../utils/parseTranscript").parseTranscriptAndNotes)(finalText || partialTranscript, noteKeyword),
             parsed = _parseTranscriptAndNo2.transcript,
             detectedNotes = _parseTranscriptAndNo2.notes;
           setTranscript(parsed);
@@ -107935,13 +107936,14 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         if (!moreToday) {
           yield _SchedulerService.default.fireEndOfDayReport();
         }
+        _CalendarSyncService.default.syncChanged().catch(() => {});
         onDone(transcript);
       });
       return _handleConfirm.apply(this, arguments);
     }
     var canSubmitTyped = transcript.trim().length > 0;
     function handleTypedSubmit() {
-      var _parseTranscriptAndNo = (0, _$$_REQUIRE(_dependencyMap[13], "../utils/parseTranscript").parseTranscriptAndNotes)(transcript, noteKeyword),
+      var _parseTranscriptAndNo = (0, _$$_REQUIRE(_dependencyMap[14], "../utils/parseTranscript").parseTranscriptAndNotes)(transcript, noteKeyword),
         parsed = _parseTranscriptAndNo.transcript,
         detectedNotes = _parseTranscriptAndNo.notes;
       setTranscript(parsed);
@@ -108340,7 +108342,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       }
     });
   }
-},678,[1,178,14,71,2,656,658,640,679,681,182,668,677,684],"src/screens/CheckInScreen.tsx");
+},678,[1,178,14,71,2,656,658,640,639,679,681,182,668,677,684],"src/screens/CheckInScreen.tsx");
 __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
   var _interopRequireDefault = _$$_REQUIRE(_dependencyMap[0], "@babel/runtime/helpers/interopRequireDefault");
   Object.defineProperty(exports, "__esModule", {
@@ -108702,7 +108704,8 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
   var _DictateBar = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[5], "../components/DictateBar"));
   var _TranscriptionService = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[6], "../services/TranscriptionService"));
   var _StorageService = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[7], "../services/StorageService"));
-  var _jsxRuntime = _$$_REQUIRE(_dependencyMap[8], "react/jsx-runtime");
+  var _CalendarSyncService = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[8], "../services/CalendarSyncService"));
+  var _jsxRuntime = _$$_REQUIRE(_dependencyMap[9], "react/jsx-runtime");
   var _jsxFileName = "C:\\Users\\ronen\\TimeAnalyzer\\src\\screens\\DayPlanScreen.tsx";
   function _interopRequireWildcard(e, t) { if ("function" == typeof WeakMap) var r = new WeakMap(), n = new WeakMap(); return (_interopRequireWildcard = function (e, t) { if (!t && e && e.__esModule) return e; var o, i, f = { __proto__: null, default: e }; if (null === e || "object" != typeof e && "function" != typeof e) return f; if (o = t ? n : r) { if (o.has(e)) return o.get(e); o.set(e, f); } for (var _t in e) "default" !== _t && {}.hasOwnProperty.call(e, _t) && ((i = (o = Object.defineProperty) && Object.getOwnPropertyDescriptor(e, _t)) && (i.get || i.set) ? o(f, _t, i) : f[_t] = e[_t]); return f; })(e, t); }
   function toDateString(d) {
@@ -108710,16 +108713,16 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
   }
   function parsedToEdit(b) {
     return {
-      startText: (0, _$$_REQUIRE(_dependencyMap[9], "../utils/parseDayPlan").formatMin)(b.startMin),
-      endText: (0, _$$_REQUIRE(_dependencyMap[9], "../utils/parseDayPlan").formatMin)(b.endMin),
+      startText: (0, _$$_REQUIRE(_dependencyMap[10], "../utils/parseDayPlan").formatMin)(b.startMin),
+      endText: (0, _$$_REQUIRE(_dependencyMap[10], "../utils/parseDayPlan").formatMin)(b.endMin),
       activity: b.activity
     };
   }
   function planBlockToEdit(b) {
     return {
       id: b.id,
-      startText: (0, _$$_REQUIRE(_dependencyMap[9], "../utils/parseDayPlan").formatMin)(b.startMin),
-      endText: (0, _$$_REQUIRE(_dependencyMap[9], "../utils/parseDayPlan").formatMin)(b.endMin),
+      startText: (0, _$$_REQUIRE(_dependencyMap[10], "../utils/parseDayPlan").formatMin)(b.startMin),
+      endText: (0, _$$_REQUIRE(_dependencyMap[10], "../utils/parseDayPlan").formatMin)(b.endMin),
       activity: b.activity,
       syncedAt: b.syncedAt,
       updatedAt: b.updatedAt,
@@ -108737,7 +108740,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
   function normalizeTimeText(text) {
     var min = parseTimeText(text);
     if (min === null) return text;
-    return (0, _$$_REQUIRE(_dependencyMap[9], "../utils/parseDayPlan").formatMin)(min);
+    return (0, _$$_REQUIRE(_dependencyMap[10], "../utils/parseDayPlan").formatMin)(min);
   }
   function formatHeader(dateStr) {
     var _dateStr$split$map = dateStr.split('-').map(Number),
@@ -108764,8 +108767,8 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
     onClose,
     debugMode = false
   }) {
-    var insets = (0, _$$_REQUIRE(_dependencyMap[10], "react-native-safe-area-context").useSafeAreaInsets)();
-    var _useTheme = (0, _$$_REQUIRE(_dependencyMap[11], "../contexts/ThemeContext").useTheme)(),
+    var insets = (0, _$$_REQUIRE(_dependencyMap[11], "react-native-safe-area-context").useSafeAreaInsets)();
+    var _useTheme = (0, _$$_REQUIRE(_dependencyMap[12], "../contexts/ThemeContext").useTheme)(),
       colors = _useTheme.colors;
     var _useState = (0, _react.useState)(initialDate ?? new Date()),
       _useState2 = (0, _slicedToArray2.default)(_useState, 2),
@@ -108822,7 +108825,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       setCurrentDate(d => new Date(d.getTime() + 86_400_000));
     }
     function handleParse() {
-      var parsed = (0, _$$_REQUIRE(_dependencyMap[9], "../utils/parseDayPlan").parseDayPlan)(rawInput);
+      var parsed = (0, _$$_REQUIRE(_dependencyMap[10], "../utils/parseDayPlan").parseDayPlan)(rawInput);
       if (parsed.length === 0) {
         _reactNative.Alert.alert('Nothing parsed', 'Try: "from 8 to 10 backend work, 10 to 12 meetings"');
         return;
@@ -108910,7 +108913,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       _handleSave = (0, _asyncToGenerator2.default)(function* () {
         var currentBlocks = blocks;
         if (rawInput.trim().length > 0) {
-          var autoParsed = (0, _$$_REQUIRE(_dependencyMap[9], "../utils/parseDayPlan").parseDayPlan)(rawInput);
+          var autoParsed = (0, _$$_REQUIRE(_dependencyMap[10], "../utils/parseDayPlan").parseDayPlan)(rawInput);
           if (autoParsed.length > 0) {
             currentBlocks = [...currentBlocks, ...autoParsed.map(parsedToEdit)];
             setBlocks(currentBlocks);
@@ -108953,6 +108956,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
           var plan = yield _StorageService.default.upsertDayPlan(dateStr);
           yield _StorageService.default.upsertPlanBlocks(plan.id, parsed, deletedBlockIds);
           setDeletedBlockIds([]);
+          _CalendarSyncService.default.syncChanged().catch(() => {});
           onClose();
         } catch (e) {
           _reactNative.Alert.alert('Save failed', String(e?.message ?? e));
@@ -109021,7 +109025,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
             multiline: true,
             textAlignVertical: "top"
           }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_DictateBar.default, {
-            onResult: raw => setRawInput(prev => (0, _$$_REQUIRE(_dependencyMap[12], "../utils/parseTranscript").applyTranscription)(prev, raw))
+            onResult: raw => setRawInput(prev => (0, _$$_REQUIRE(_dependencyMap[13], "../utils/parseTranscript").applyTranscription)(prev, raw))
           }), rawInput.trim().length > 0 && /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
             style: styles.parseBtn,
             onPress: handleParse,
@@ -109312,7 +109316,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       }
     });
   }
-},685,[1,178,14,71,2,686,679,640,182,683,668,677,684],"src/screens/DayPlanScreen.tsx");
+},685,[1,178,14,71,2,686,679,640,639,182,683,668,677,684],"src/screens/DayPlanScreen.tsx");
 __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
   var _interopRequireDefault = _$$_REQUIRE(_dependencyMap[0], "@babel/runtime/helpers/interopRequireDefault");
   Object.defineProperty(exports, "__esModule", {
@@ -109966,10 +109970,11 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
   var _react = _interopRequireWildcard(_$$_REQUIRE(_dependencyMap[3], "react"));
   var _reactNative = _$$_REQUIRE(_dependencyMap[4], "react-native");
   var _StorageService = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[5], "../services/StorageService"));
-  var _DictateBar = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[6], "../components/DictateBar"));
-  var _SettingsService = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[7], "../services/SettingsService"));
-  var _NoteDetailScreen = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[8], "./NoteDetailScreen"));
-  var _jsxRuntime = _$$_REQUIRE(_dependencyMap[9], "react/jsx-runtime");
+  var _CalendarSyncService = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[6], "../services/CalendarSyncService"));
+  var _DictateBar = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[7], "../components/DictateBar"));
+  var _SettingsService = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[8], "../services/SettingsService"));
+  var _NoteDetailScreen = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[9], "./NoteDetailScreen"));
+  var _jsxRuntime = _$$_REQUIRE(_dependencyMap[10], "react/jsx-runtime");
   var _jsxFileName = "C:\\Users\\ronen\\TimeAnalyzer\\src\\screens\\EntryDetailScreen.tsx";
   function _interopRequireWildcard(e, t) { if ("function" == typeof WeakMap) var r = new WeakMap(), n = new WeakMap(); return (_interopRequireWildcard = function (e, t) { if (!t && e && e.__esModule) return e; var o, i, f = { __proto__: null, default: e }; if (null === e || "object" != typeof e && "function" != typeof e) return f; if (o = t ? n : r) { if (o.has(e)) return o.get(e); o.set(e, f); } for (var _t in e) "default" !== _t && {}.hasOwnProperty.call(e, _t) && ((i = (o = Object.defineProperty) && Object.getOwnPropertyDescriptor(e, _t)) && (i.get || i.set) ? o(f, _t, i) : f[_t] = e[_t]); return f; })(e, t); }
   function tsToTimeString(ts) {
@@ -109991,8 +109996,8 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
     onSave,
     onClose
   }) {
-    var insets = (0, _$$_REQUIRE(_dependencyMap[10], "react-native-safe-area-context").useSafeAreaInsets)();
-    var _useTheme = (0, _$$_REQUIRE(_dependencyMap[11], "../contexts/ThemeContext").useTheme)(),
+    var insets = (0, _$$_REQUIRE(_dependencyMap[11], "react-native-safe-area-context").useSafeAreaInsets)();
+    var _useTheme = (0, _$$_REQUIRE(_dependencyMap[12], "../contexts/ThemeContext").useTheme)(),
       colors = _useTheme.colors;
     var _useState = (0, _react.useState)(false),
       _useState2 = (0, _slicedToArray2.default)(_useState, 2),
@@ -110079,6 +110084,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         setNotes(refreshed);
         setEditingNotes({});
         setEditing(false);
+        _CalendarSyncService.default.syncChanged().catch(() => {});
         onSave(updated);
       });
       return _handleSave.apply(this, arguments);
@@ -110206,7 +110212,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
               autoFocus: true,
               textAlignVertical: "top"
             }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_DictateBar.default, {
-              onResult: raw => setTranscript(prev => (0, _$$_REQUIRE(_dependencyMap[12], "../utils/parseTranscript").applyTranscription)(prev, raw, appendKeyword))
+              onResult: raw => setTranscript(prev => (0, _$$_REQUIRE(_dependencyMap[13], "../utils/parseTranscript").applyTranscription)(prev, raw, appendKeyword))
             })]
           }) : /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
             style: styles.transcriptText,
@@ -110285,9 +110291,9 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         justifyContent: 'space-between',
         paddingHorizontal: 16,
         paddingVertical: 12,
-        backgroundColor: colors.surface,
-        borderBottomWidth: _reactNative.StyleSheet.hairlineWidth,
-        borderBottomColor: colors.border
+        backgroundColor: '#33B679' + '18',
+        borderBottomWidth: 2,
+        borderBottomColor: '#33B679'
       },
       headerTitle: {
         fontSize: 17,
@@ -110301,10 +110307,10 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       },
       headerBtn: {
         fontSize: 17,
-        color: colors.accent
+        color: '#33B679'
       },
       editBtn: {
-        color: colors.accent
+        color: '#33B679'
       },
       saveBtn: {
         fontWeight: '600'
@@ -110315,14 +110321,16 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         paddingBottom: 40
       },
       section: {
-        backgroundColor: colors.surface,
+        backgroundColor: '#33B679' + '18',
         borderRadius: 12,
-        padding: 16
+        padding: 16,
+        borderLeftWidth: 4,
+        borderLeftColor: '#33B679'
       },
       label: {
         fontSize: 11,
         fontWeight: '600',
-        color: colors.textSecondary,
+        color: '#33B679',
         letterSpacing: 0.5,
         marginBottom: 10
       },
@@ -110341,7 +110349,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         fontWeight: '600',
         color: colors.text,
         borderBottomWidth: 1.5,
-        borderBottomColor: colors.accent,
+        borderBottomColor: '#33B679',
         paddingVertical: 4,
         minWidth: 60,
         textAlign: 'center'
@@ -110361,14 +110369,15 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         lineHeight: 24,
         minHeight: 120,
         borderWidth: 1,
-        borderColor: colors.accent,
+        borderColor: '#33B679',
         borderRadius: 8,
-        padding: 10
+        padding: 10,
+        backgroundColor: colors.surface + 'cc'
       },
       notesGroupLabel: {
         fontSize: 11,
         fontWeight: '600',
-        color: colors.textSecondary,
+        color: '#33B679',
         letterSpacing: 0.5,
         marginLeft: 4,
         marginBottom: 8
@@ -110379,15 +110388,15 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         marginLeft: 4
       },
       noteCard: {
-        backgroundColor: colors.surface,
+        backgroundColor: '#33B679' + '12',
         borderRadius: 12,
         padding: 14,
         shadowColor: '#000',
         shadowOpacity: 0.04,
         shadowRadius: 3,
         elevation: 1,
-        borderLeftWidth: 3,
-        borderLeftColor: colors.accent
+        borderLeftWidth: 4,
+        borderLeftColor: '#33B679'
       },
       noteCardHeader: {
         flexDirection: 'row',
@@ -110415,21 +110424,22 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         color: colors.text,
         lineHeight: 22,
         borderWidth: 1,
-        borderColor: colors.accent,
+        borderColor: '#33B679',
         borderRadius: 8,
         padding: 8,
         minHeight: 60,
-        textAlignVertical: 'top'
+        textAlignVertical: 'top',
+        backgroundColor: colors.surface + 'cc'
       },
       addNoteCard: {
-        backgroundColor: colors.surface,
+        backgroundColor: '#33B679' + '12',
         borderRadius: 12,
         padding: 14,
         flexDirection: 'row',
         alignItems: 'flex-end',
         gap: 10,
         borderWidth: _reactNative.StyleSheet.hairlineWidth,
-        borderColor: colors.border,
+        borderColor: '#33B679',
         borderStyle: 'dashed'
       },
       addNoteInput: {
@@ -110442,7 +110452,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       addNoteBtn: {
         paddingHorizontal: 14,
         paddingVertical: 8,
-        backgroundColor: colors.accent,
+        backgroundColor: '#33B679',
         borderRadius: 8
       },
       addNoteBtnDisabled: {
@@ -110455,7 +110465,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       }
     });
   }
-},688,[1,178,14,71,2,640,686,658,689,182,668,677,684],"src/screens/EntryDetailScreen.tsx");
+},688,[1,178,14,71,2,640,639,686,658,689,182,668,677,684],"src/screens/EntryDetailScreen.tsx");
 __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
   var _interopRequireDefault = _$$_REQUIRE(_dependencyMap[0], "@babel/runtime/helpers/interopRequireDefault");
   Object.defineProperty(exports, "__esModule", {

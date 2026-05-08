@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import SchedulerService from '../services/SchedulerService';
 import SettingsService from '../services/SettingsService';
 import StorageService from '../services/StorageService';
+import CalendarSyncService from '../services/CalendarSyncService';
 import TranscriptionService from '../services/TranscriptionService';
 import { parseTranscriptAndNotes } from '../utils/parseTranscript';
 import { ColorPalette, useTheme } from '../contexts/ThemeContext';
@@ -154,6 +155,7 @@ export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel
     if (!moreToday) {
       await SchedulerService.fireEndOfDayReport();
     }
+    CalendarSyncService.syncChanged().catch(() => {});
     onDone(transcript);
   }
 

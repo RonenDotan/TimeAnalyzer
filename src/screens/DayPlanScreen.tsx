@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import DictateBar from '../components/DictateBar';
 import TranscriptionService from '../services/TranscriptionService';
 import StorageService from '../services/StorageService';
+import CalendarSyncService from '../services/CalendarSyncService';
 import { ParsedBlock, PlanBlock } from '../types/DayPlan';
 import { applyTranscription } from '../utils/parseTranscript';
 import { formatMin, parseDayPlan } from '../utils/parseDayPlan';
@@ -227,6 +228,7 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false 
       const plan = await StorageService.upsertDayPlan(dateStr);
       await StorageService.upsertPlanBlocks(plan.id, parsed, deletedBlockIds);
       setDeletedBlockIds([]);
+      CalendarSyncService.syncChanged().catch(() => {});
       onClose();
     } catch (e: any) {
       Alert.alert('Save failed', String(e?.message ?? e));
