@@ -5,6 +5,9 @@ const SETTINGS_KEY = 'checkin_settings';
 const GROQ_KEY = 'groq_api_key';
 const CLAUDE_KEY = 'claude_api_key';
 const OPENAI_KEY = 'openai_api_key';
+const CALENDAR_COLOR_KEY = 'calendar_color';
+
+export const DEFAULT_CALENDAR_COLOR = '#7986CB';
 
 async function load(): Promise<Settings> {
   const raw = await AsyncStorage.getItem(SETTINGS_KEY);
@@ -65,6 +68,15 @@ async function setOpenAIApiKey(key: string): Promise<void> {
   await AsyncStorage.setItem(OPENAI_KEY, key);
 }
 
+async function getCalendarColor(): Promise<string> {
+  const stored = await AsyncStorage.getItem(CALENDAR_COLOR_KEY);
+  return stored ?? DEFAULT_CALENDAR_COLOR;
+}
+
+async function setCalendarColor(color: string): Promise<void> {
+  await AsyncStorage.setItem(CALENDAR_COLOR_KEY, color);
+}
+
 const SettingsService = {
   load,
   save,
@@ -74,5 +86,7 @@ const SettingsService = {
   setClaudeApiKey,
   getOpenAIApiKey,
   setOpenAIApiKey,
+  getCalendarColor,
+  setCalendarColor,
 };
 export default SettingsService;

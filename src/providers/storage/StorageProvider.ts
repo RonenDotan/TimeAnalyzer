@@ -32,7 +32,7 @@ export interface StorageProvider {
   getPlanBlocks(planId: number): Promise<PlanBlock[]>;
   hardDeletePlanBlock(id: number): Promise<void>;
 
-  // calendar sync queries
+  // calendar sync queries (push — source='app' only)
   getUnsyncedEntries(): Promise<LogEntry[]>;
   getPendingDeleteEntries(): Promise<LogEntry[]>;
   getUnsyncedPlanBlocksWithDate(): Promise<PlanBlockWithDate[]>;
@@ -42,4 +42,15 @@ export interface StorageProvider {
   updateEntrySyncedAt(id: number, ts: number): Promise<void>;
   updatePlanBlockSyncedAt(id: number, ts: number): Promise<void>;
   hardResetSyncedAt(): Promise<void>;
+
+  // calendar pull (source='calendar')
+  upsertCalendarPlanBlock(
+    dateStr: string,
+    calendarEventId: string,
+    startMin: number,
+    endMin: number,
+    activity: string,
+  ): Promise<void>;
+  softDeleteCalendarBlocksNotIn(dateStr: string, calendarEventIds: string[]): Promise<void>;
+  getCalendarPlanBlocksByDate(dateStr: string): Promise<PlanBlock[]>;
 }
