@@ -110,6 +110,24 @@ async function hardResetSyncedAt(): Promise<void> {
   return activeProvider.hardResetSyncedAt();
 }
 
+async function getCalendarPlanBlocksByDate(dateStr: string): Promise<PlanBlock[]> {
+  return activeProvider.getCalendarPlanBlocksByDate(dateStr);
+}
+
+async function upsertCalendarPlanBlock(
+  dateStr: string,
+  calendarEventId: string,
+  startMin: number,
+  endMin: number,
+  activity: string,
+): Promise<void> {
+  return activeProvider.upsertCalendarPlanBlock(dateStr, calendarEventId, startMin, endMin, activity);
+}
+
+async function softDeleteCalendarBlocksNotIn(dateStr: string, calendarEventIds: string[]): Promise<void> {
+  return activeProvider.softDeleteCalendarBlocksNotIn(dateStr, calendarEventIds);
+}
+
 const StorageService = {
   save, update, getAll, getByDateRange, deleteEntry, hardDeleteEntry,
   saveNote, updateNote, getNotesByEntryId, deleteNote,
@@ -118,6 +136,7 @@ const StorageService = {
   getUnsyncedPlanBlocksWithDate, getPendingDeletePlanBlocksWithDate,
   updateEntryCalendarEventId, updatePlanBlockCalendarEventId,
   updateEntrySyncedAt, updatePlanBlockSyncedAt, hardResetSyncedAt,
+  getCalendarPlanBlocksByDate, upsertCalendarPlanBlock, softDeleteCalendarBlocksNotIn,
   setProvider,
 };
 export default StorageService;

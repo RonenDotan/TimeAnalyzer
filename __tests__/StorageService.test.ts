@@ -36,6 +36,9 @@ const planStubs = {
   updateEntrySyncedAt: jest.fn(),
   updatePlanBlockSyncedAt: jest.fn(),
   hardResetSyncedAt: jest.fn(),
+  getCalendarPlanBlocksByDate: jest.fn(),
+  upsertCalendarPlanBlock: jest.fn(),
+  softDeleteCalendarBlocksNotIn: jest.fn(),
 };
 
 const mockProvider: StorageProvider = {

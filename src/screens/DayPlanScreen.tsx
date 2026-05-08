@@ -22,6 +22,7 @@ interface Props {
   initialDate?: Date;
   onClose: () => void;
   debugMode?: boolean;
+  calendarColor?: string;
 }
 
 interface EditBlock {
@@ -84,12 +85,13 @@ function formatHeader(dateStr: string): string {
   return date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 }
 
-export default function DayPlanScreen({ initialDate, onClose, debugMode = false }: Props) {
+export default function DayPlanScreen({ initialDate, onClose, debugMode = false, calendarColor = '#7986CB' }: Props) {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const [currentDate, setCurrentDate] = useState<Date>(initialDate ?? new Date());
   const [rawInput, setRawInput] = useState('');
   const [blocks, setBlocks] = useState<EditBlock[]>([]);
+  const [calendarBlocks, setCalendarBlocks] = useState<PlanBlock[]>([]);
   const [deletedBlockIds, setDeletedBlockIds] = useState<number[]>([]);
   const [saving, setSaving] = useState(false);
   const [recording, setRecording] = useState<RecordingState>(null);
@@ -100,10 +102,15 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false 
   useEffect(() => {
     async function load() {
       setBlocks([]);
+      setCalendarBlocks([]);
       setDeletedBlockIds([]);
       setRawInput('');
       try {
-        const plan = await StorageService.getDayPlan(dateStr);
+        const [plan, calBlocks] = await Promise.all([
+          StorageService.getDayPlan(dateStr),
+          StorageService.getCalendarPlanBlocksByDate(dateStr),
+        ]);
+        setCalendarBlocks(calBlocks);
         if (!plan) return;
         const existing = await StorageService.getPlanBlocks(plan.id);
         setBlocks(existing.map(b => planBlockToEdit(b)));
@@ -237,7 +244,7 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false 
     }
   }
 
-  const styles = makeStyles(colors);
+  const styles = makeStyles(colors, calendarColor);
 
   return (
     <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
@@ -283,7 +290,7 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false 
         </View>
 
         {/* Block list */}
-        {blocks.length > 0 && (
+        {(blocks.length > 0 || calendarBlocks.length > 0) && (
           <Text style={styles.sectionLabel}>PLAN BLOCKS</Text>
         )}
         {blocks.map((block, i) => {
@@ -362,6 +369,33 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false 
           );
         })}
 
+        {/* Calendar-imported blocks (read-only, sorted by start time) */}
+        {[...calendarBlocks]
+          .sort((a, b) => a.startMin - b.startMin)
+          .map(block => (
+            <View key={`cal-${block.id}`} style={styles.calendarBlockCard}>
+              <View style={styles.blockTimes}>
+                <Text style={styles.calendarBlockTime}>
+                  {formatMin(block.startMin)} – {formatMin(block.endMin)}
+                </Text>
+                <Text style={styles.calendarBadge}>🗓 G</Text>
+              </View>
+              <Text style={styles.calendarBlockActivity}>{block.activity}</Text>
+              {debugMode && (
+                <View style={styles.debugRow}>
+                  <Text style={styles.debugText}>
+                    synced: {block.syncedAt !== null && block.syncedAt >= block.updatedAt ? 'yes' : 'no'}
+                  </Text>
+                  {block.updatedAt !== undefined && (
+                    <Text style={styles.debugText}>
+                      upd: {new Date(block.updatedAt).toLocaleTimeString()}
+                    </Text>
+                  )}
+                </View>
+              )}
+            </View>
+          ))}
+
         <TouchableOpacity style={styles.addBtn} onPress={addBlock}>
           <Text style={styles.addBtnText}>+ Add block manually</Text>
         </TouchableOpacity>
@@ -370,7 +404,7 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false 
   );
 }
 
-function makeStyles(colors: ColorPalette) {
+function makeStyles(colors: ColorPalette, calendarColor: string) {
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
     header: {
@@ -478,6 +512,31 @@ function makeStyles(colors: ColorPalette) {
     },
     addBtn: { alignSelf: 'flex-start', paddingVertical: 4 },
     addBtnText: { fontSize: 15, color: colors.accent, fontWeight: '500' },
+    calendarBlockCard: {
+      backgroundColor: calendarColor + '18',
+      borderRadius: 12,
+      padding: 14,
+      gap: 6,
+      borderLeftWidth: 4,
+      borderLeftColor: calendarColor,
+      borderStyle: 'dashed',
+    },
+    calendarBlockTime: {
+      fontSize: 15,
+      fontWeight: '600',
+      color: calendarColor,
+      flex: 1,
+    },
+    calendarBlockActivity: {
+      fontSize: 15,
+      color: colors.text,
+      lineHeight: 22,
+    },
+    calendarBadge: {
+      fontSize: 12,
+      color: calendarColor,
+      fontWeight: '600',
+    },
     debugRow: {
       flexDirection: 'row',
       flexWrap: 'wrap',

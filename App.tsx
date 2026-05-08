@@ -15,6 +15,7 @@ import ReportScreen from './src/screens/ReportScreen';
 import ReportsScreen from './src/screens/ReportsScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 import { SyncIntervalMinutes, Theme } from './src/types/Settings';
+import { DEFAULT_CALENDAR_COLOR } from './src/services/SettingsService';
 
 export const version = `v${v.major}.${v.minor}.${v.ticket_id}.${v.sequence}`;
 
@@ -35,6 +36,7 @@ function AppContent(): React.JSX.Element {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [themeSetting, setThemeSetting] = useState<Theme>('system');
   const [debugMode, setDebugMode] = useState(false);
+  const [calendarColor, setCalendarColor] = useState(DEFAULT_CALENDAR_COLOR);
   const systemScheme = useColorScheme();
   const syncIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -60,6 +62,7 @@ function AppContent(): React.JSX.Element {
       setDebugMode(s.debugMode);
       startSyncInterval(s.calendarSyncIntervalMinutes);
     });
+    SettingsService.getCalendarColor().then(setCalendarColor);
     SchedulerService.requestPermission().then(async granted => {
       if (!granted) return;
       const alarmOk = await SchedulerService.checkAlarmPermission();
@@ -132,6 +135,7 @@ function AppContent(): React.JSX.Element {
         startSyncInterval(s.calendarSyncIntervalMinutes);
       });
     }
+    SettingsService.getCalendarColor().then(setCalendarColor);
   }
 
   function handleCheckInDone() {
@@ -173,7 +177,7 @@ function AppContent(): React.JSX.Element {
       {screen === 'settings' ? (
         <SettingsScreen onClose={handleSettingsClose} />
       ) : screen === 'dayplan' ? (
-        <DayPlanScreen initialDate={planDate} onClose={() => setScreen('entries')} debugMode={debugMode} />
+        <DayPlanScreen initialDate={planDate} onClose={() => setScreen('entries')} debugMode={debugMode} calendarColor={calendarColor} />
       ) : screen === 'checkin' ? (
         <CheckInScreen
           periodStart={checkInPeriod?.periodStart ?? Date.now() - 2 * 60 * 60 * 1000}
@@ -191,6 +195,7 @@ function AppContent(): React.JSX.Element {
               onOpenMenu={() => setDrawerOpen(true)}
               onEditPlan={handleEditPlan}
               debugMode={debugMode}
+              calendarColor={calendarColor}
             />
           )}
           <DrawerMenu

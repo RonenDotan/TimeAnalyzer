@@ -310,7 +310,7 @@ const SQLiteStorageProvider: StorageProvider = {
 
   async getPlanBlocks(planId) {
     const result = getDb().executeSync(
-      'SELECT * FROM plan_blocks WHERE plan_id = ? AND status = 1 ORDER BY start_min ASC',
+      "SELECT * FROM plan_blocks WHERE plan_id = ? AND source = 'app' AND status = 1 ORDER BY start_min ASC",
       [planId],
     );
     return (result.rows ?? []).map(rowToPlanBlock);
@@ -337,7 +337,7 @@ const SQLiteStorageProvider: StorageProvider = {
       SELECT pb.*, dp.date
       FROM plan_blocks pb
       JOIN day_plans dp ON pb.plan_id = dp.id
-      WHERE pb.status = 1 AND (pb.synced_at IS NULL OR pb.updated_at > pb.synced_at)
+      WHERE pb.source = 'app' AND pb.status = 1 AND (pb.synced_at IS NULL OR pb.updated_at > pb.synced_at)
     `);
     return (result.rows ?? []).map(rowToPlanBlockWithDate);
   },
@@ -347,7 +347,7 @@ const SQLiteStorageProvider: StorageProvider = {
       SELECT pb.*, dp.date
       FROM plan_blocks pb
       JOIN day_plans dp ON pb.plan_id = dp.id
-      WHERE pb.status = 0
+      WHERE pb.source = 'app' AND pb.status = 0
     `);
     return (result.rows ?? []).map(rowToPlanBlockWithDate);
   },
@@ -375,8 +375,68 @@ const SQLiteStorageProvider: StorageProvider = {
   },
 
   async hardResetSyncedAt() {
-    getDb().executeSync('UPDATE log_entries SET synced_at = NULL WHERE status = 1');
-    getDb().executeSync('UPDATE plan_blocks SET synced_at = NULL WHERE status = 1');
+    getDb().executeSync("UPDATE log_entries SET synced_at = NULL WHERE status = 1 AND source = 'app'");
+    getDb().executeSync("UPDATE plan_blocks SET synced_at = NULL WHERE status = 1 AND source = 'app'");
+  },
+
+  async getCalendarPlanBlocksByDate(dateStr) {
+    const result = getDb().executeSync(`
+      SELECT pb.* FROM plan_blocks pb
+      JOIN day_plans dp ON pb.plan_id = dp.id
+      WHERE dp.date = ? AND pb.source = 'calendar' AND pb.status = 1
+      ORDER BY pb.start_min ASC
+    `, [dateStr]);
+    return (result.rows ?? []).map(rowToPlanBlock);
+  },
+
+  async upsertCalendarPlanBlock(dateStr, calendarEventId, startMin, endMin, activity) {
+    const db = getDb();
+    const now = Date.now();
+    // Ensure day_plan row exists (include created_at — required NOT NULL column)
+    db.executeSync(
+      'INSERT OR IGNORE INTO day_plans (date, created_at) VALUES (?, ?)',
+      [dateStr, now],
+    );
+    const planRow = db.executeSync('SELECT id FROM day_plans WHERE date = ?', [dateStr]);
+    const planId = (planRow.rows?.[0] as any)?.id as number;
+
+    const existing = db.executeSync(
+      'SELECT id FROM plan_blocks WHERE calendar_event_id = ?',
+      [calendarEventId],
+    );
+    if ((existing.rows ?? []).length > 0) {
+      // Update existing
+      db.executeSync(
+        'UPDATE plan_blocks SET start_min = ?, end_min = ?, activity = ?, status = 1, synced_at = ? WHERE calendar_event_id = ?',
+        [startMin, endMin, activity, now, calendarEventId],
+      );
+    } else {
+      // Insert new
+      db.executeSync(
+        "INSERT INTO plan_blocks (plan_id, start_min, end_min, activity, calendar_event_id, source, status, updated_at, synced_at) VALUES (?, ?, ?, ?, ?, 'calendar', 1, ?, ?)",
+        [planId, startMin, endMin, activity, calendarEventId, now, now],
+      );
+    }
+  },
+
+  async softDeleteCalendarBlocksNotIn(dateStr, calendarEventIds) {
+    const planRow = getDb().executeSync('SELECT id FROM day_plans WHERE date = ?', [dateStr]);
+    const planId = (planRow.rows?.[0] as any)?.id as number | undefined;
+    if (!planId) return;
+
+    if (calendarEventIds.length === 0) {
+      // Delete all calendar blocks for this day
+      getDb().executeSync(
+        "UPDATE plan_blocks SET status = 0 WHERE plan_id = ? AND source = 'calendar' AND status = 1",
+        [planId],
+      );
+    } else {
+      const placeholders = calendarEventIds.map(() => '?').join(', ');
+      getDb().executeSync(
+        `UPDATE plan_blocks SET status = 0 WHERE plan_id = ? AND source = 'calendar' AND status = 1 AND calendar_event_id NOT IN (${placeholders})`,
+        [planId, ...calendarEventIds],
+      );
+    }
   },
 };
 

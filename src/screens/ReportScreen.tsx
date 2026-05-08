@@ -22,6 +22,7 @@ interface Props {
   onEditPlan?: (date: Date) => void;
   initialDate?: Date;
   debugMode?: boolean;
+  calendarColor?: string;
 }
 
 function startOfDay(date: Date): Date {
@@ -54,7 +55,7 @@ function isToday(date: Date): boolean {
   );
 }
 
-export default function ReportScreen({ onStartCheckIn, onOpenMenu, onEditPlan, initialDate, debugMode = false }: Props) {
+export default function ReportScreen({ onStartCheckIn, onOpenMenu, onEditPlan, initialDate, debugMode = false, calendarColor = '#7986CB' }: Props) {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const [currentDate, setCurrentDate] = useState<Date>(initialDate ?? new Date());
@@ -67,17 +68,18 @@ export default function ReportScreen({ onStartCheckIn, onOpenMenu, onEditPlan, i
   const loadEntries = useCallback(async (date: Date) => {
     setLoading(true);
     const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-    const [results, plan] = await Promise.all([
+    const [results, plan, calBlocks] = await Promise.all([
       StorageService.getByDateRange(startOfDay(date), endOfDay(date)),
       StorageService.getDayPlan(dateStr),
+      StorageService.getCalendarPlanBlocksByDate(dateStr),
     ]);
     setEntries(results.sort((a, b) => a.timestampStart - b.timestampStart));
     setDayPlan(plan);
     if (plan) {
-      const blocks = await StorageService.getPlanBlocks(plan.id);
-      setPlanBlocks(blocks);
+      const appBlocks = await StorageService.getPlanBlocks(plan.id);
+      setPlanBlocks([...appBlocks, ...calBlocks].sort((a, b) => a.startMin - b.startMin));
     } else {
-      setPlanBlocks([]);
+      setPlanBlocks(calBlocks.sort((a, b) => a.startMin - b.startMin));
     }
     setLoading(false);
   }, []);
@@ -95,7 +97,7 @@ export default function ReportScreen({ onStartCheckIn, onOpenMenu, onEditPlan, i
   }
 
   const canGoForward = !isToday(currentDate);
-  const styles = makeStyles(colors);
+  const styles = makeStyles(colors, calendarColor);
 
   function handleEntrySaved(updated: LogEntry) {
     setEntries(prev => prev.map(e => e.id === updated.id ? updated : e));
@@ -154,11 +156,19 @@ export default function ReportScreen({ onStartCheckIn, onOpenMenu, onEditPlan, i
                 </TouchableOpacity>
                 {planBlocks.map(block => {
                   const covered = isCovered(block, entries);
+                  const isCalendar = block.source === 'calendar';
                   return (
                     <View key={block.id} style={styles.planBlock}>
-                      <View style={[styles.planDot, covered ? styles.planDotCovered : styles.planDotMissed]} />
+                      <View style={[
+                        styles.planDot,
+                        isCalendar
+                          ? styles.planDotCalendar
+                          : covered ? styles.planDotCovered : styles.planDotMissed,
+                      ]} />
                       <Text style={styles.planTime}>{formatMin(block.startMin)}–{formatMin(block.endMin)}</Text>
-                      <Text style={[styles.planActivity, !covered && styles.planActivityMissed]}>{block.activity}</Text>
+                      <Text style={[styles.planActivity, !covered && styles.planActivityMissed]}>
+                        {block.activity}{isCalendar ? ' 🗓' : ''}
+                      </Text>
                     </View>
                   );
                 })}
@@ -227,7 +237,7 @@ export default function ReportScreen({ onStartCheckIn, onOpenMenu, onEditPlan, i
   );
 }
 
-function makeStyles(colors: ColorPalette) {
+function makeStyles(colors: ColorPalette, calendarColor: string) {
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
     topBar: {
@@ -316,6 +326,7 @@ function makeStyles(colors: ColorPalette) {
     planDot: { width: 10, height: 10, borderRadius: 5 },
     planDotCovered: { backgroundColor: '#039BE5' },
     planDotMissed: { backgroundColor: colors.border },
+    planDotCalendar: { backgroundColor: calendarColor },
     planTime: { fontSize: 13, fontWeight: '600', color: colors.textSecondary, width: 100 },
     planActivity: { fontSize: 14, color: colors.text, flex: 1 },
     planActivityMissed: { color: colors.textSecondary },

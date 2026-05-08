@@ -2,10 +2,15 @@ import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { LogEntry } from '../types/LogEntry';
 import { PlanBlockWithDate } from '../types/DayPlan';
 import StorageService from './StorageService';
+import SettingsService, { DEFAULT_CALENDAR_COLOR } from './SettingsService';
 
 const CALENDAR_API = 'https://www.googleapis.com/calendar/v3';
 const PLAN_COLOR   = '7';  // Peacock (blue)
 const ACTUAL_COLOR = '2';  // Sage (green)
+
+// Rolling pull window: yesterday through +7 days
+const PULL_DAYS_BACK    = 1;
+const PULL_DAYS_FORWARD = 7;
 
 let isSyncing = false;
 
@@ -104,6 +109,89 @@ async function pushPlanBlock(block: PlanBlockWithDate): Promise<void> {
   }
 }
 
+// Convert ISO 8601 datetime to minutes-from-midnight in local time
+function isoToMinutes(iso: string): number {
+  const d = new Date(iso);
+  return d.getHours() * 60 + d.getMinutes();
+}
+
+// Format Date as YYYY-MM-DD
+function toDateStr(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+/**
+ * Pull Google Calendar events for a rolling window and upsert into plan_blocks
+ * with source='calendar'. Events already pushed by TimeAnalyzer are excluded.
+ * Events deleted from Google Calendar are soft-deleted locally.
+ */
+async function pullCalendarEvents(): Promise<void> {
+  const now = new Date();
+  const windowStart = new Date(now);
+  windowStart.setDate(windowStart.getDate() - PULL_DAYS_BACK);
+  windowStart.setHours(0, 0, 0, 0);
+
+  const windowEnd = new Date(now);
+  windowEnd.setDate(windowEnd.getDate() + PULL_DAYS_FORWARD);
+  windowEnd.setHours(23, 59, 59, 999);
+
+  // Fetch all events in the window
+  const params = new URLSearchParams({
+    timeMin: windowStart.toISOString(),
+    timeMax: windowEnd.toISOString(),
+    singleEvents: 'true',
+    orderBy: 'startTime',
+    maxResults: '250',
+  });
+
+  const data = await apiRequest('GET', `/calendars/primary/events?${params.toString()}`);
+  const items: any[] = data?.items ?? [];
+
+  // Group fetched external event IDs by date
+  const fetchedIdsByDate: Record<string, string[]> = {};
+
+  for (const item of items) {
+    // Skip our own events
+    if (item.extendedProperties?.private?.source === 'timeanalyzer') continue;
+    // Skip all-day events (no dateTime)
+    if (!item.start?.dateTime || !item.end?.dateTime) continue;
+    // Skip cancelled events
+    if (item.status === 'cancelled') continue;
+
+    const startDate = new Date(item.start.dateTime);
+    const endDate = new Date(item.end.dateTime);
+    const dateStr = toDateStr(startDate);
+
+    const startMin = isoToMinutes(item.start.dateTime);
+    const endMin   = isoToMinutes(item.end.dateTime);
+    const activity = item.summary ?? '(No title)';
+    const eventId  = item.id as string;
+
+    // Handle events that span midnight: cap at 23:59
+    const effectiveEndMin = endDate.toDateString() !== startDate.toDateString()
+      ? 23 * 60 + 59
+      : endMin;
+
+    await StorageService.upsertCalendarPlanBlock(dateStr, eventId, startMin, effectiveEndMin, activity);
+
+    if (!fetchedIdsByDate[dateStr]) fetchedIdsByDate[dateStr] = [];
+    fetchedIdsByDate[dateStr].push(eventId);
+  }
+
+  // Soft-delete local calendar blocks not present in the fetched results, per day
+  const dates: string[] = [];
+  for (let i = -PULL_DAYS_BACK; i <= PULL_DAYS_FORWARD; i++) {
+    const d = new Date(now);
+    d.setDate(d.getDate() + i);
+    dates.push(toDateStr(d));
+  }
+  for (const dateStr of dates) {
+    const fetchedIds = fetchedIdsByDate[dateStr] ?? [];
+    await StorageService.softDeleteCalendarBlocksNotIn(dateStr, fetchedIds);
+  }
+}
+
 /**
  * Push all rows that have changed since last sync.
  * Called every 15 min and on foreground resume.
@@ -116,6 +204,12 @@ async function syncChanged(): Promise<void> {
 
   isSyncing = true;
   try {
+    // 0. Fetch calendar color once (only if still at default — i.e. never fetched before)
+    const currentColor = await SettingsService.getCalendarColor();
+    if (currentColor === DEFAULT_CALENDAR_COLOR) {
+      await fetchAndStoreCalendarColor();
+    }
+
     // 1. Push / update unsynced check-in entries
     const unsyncedEntries = await StorageService.getUnsyncedEntries();
     for (const entry of unsyncedEntries) {
@@ -163,6 +257,13 @@ async function syncChanged(): Promise<void> {
         // Will retry next interval
       }
     }
+
+    // 5. Pull external calendar events into plan_blocks (source='calendar')
+    try {
+      await pullCalendarEvents();
+    } catch {
+      // Pull failure is non-fatal — will retry next sync
+    }
   } finally {
     isSyncing = false;
   }
@@ -174,8 +275,21 @@ async function syncChanged(): Promise<void> {
  */
 async function hardSync(): Promise<void> {
   await StorageService.hardResetSyncedAt();
+  await fetchAndStoreCalendarColor(); // Always refresh color on hard sync
   isSyncing = false; // Clear any stuck lock before re-running
   await syncChanged();
+}
+
+async function fetchAndStoreCalendarColor(): Promise<void> {
+  try {
+    const data = await apiRequest('GET', '/users/me/calendarList/primary');
+    const color: string | undefined = data?.backgroundColor;
+    if (color && /^#[0-9A-Fa-f]{6}$/.test(color)) {
+      await SettingsService.setCalendarColor(color);
+    }
+  } catch {
+    // Non-fatal — keep existing color
+  }
 }
 
 async function isConnected(): Promise<boolean> {
