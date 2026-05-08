@@ -298,7 +298,7 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false,
         <TouchableOpacity onPress={onClose}>
           <Text style={styles.cancel}>Cancel</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>Plan</Text>
+        <Text style={styles.title}>Plans</Text>
         <TouchableOpacity onPress={handleSave} disabled={saving}>
           <Text style={[styles.save, saving && styles.saveDim]}>Save</Text>
         </TouchableOpacity>

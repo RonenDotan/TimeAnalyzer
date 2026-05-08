@@ -11,6 +11,7 @@ import DrawerMenu, { DrawerScreen } from './src/components/DrawerMenu';
 import { ThemeProvider } from './src/contexts/ThemeContext';
 import CheckInScreen from './src/screens/CheckInScreen';
 import DayPlanScreen from './src/screens/DayPlanScreen';
+import GoalsScreen from './src/screens/GoalsScreen';
 import ReportScreen from './src/screens/ReportScreen';
 import ReportsScreen from './src/screens/ReportsScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
@@ -19,7 +20,7 @@ import { DEFAULT_CALENDAR_COLOR } from './src/services/SettingsService';
 
 export const version = `v${v.major}.${v.minor}.${v.ticket_id}.${v.sequence}`;
 
-type Screen = 'entries' | 'checkin' | 'settings' | 'reports' | 'dayplan';
+type Screen = 'entries' | 'checkin' | 'settings' | 'reports' | 'dayplan' | 'goals';
 type Period = { periodStart: number; periodEnd: number };
 
 // ID format: checkin-{periodStart}-{fireAt}
@@ -170,7 +171,8 @@ function AppContent(): React.JSX.Element {
   const drawerScreen: DrawerScreen =
     screen === 'settings' ? 'settings' :
     screen === 'reports'  ? 'reports'  :
-    screen === 'dayplan'  ? 'dayplan'  : 'entries';
+    screen === 'dayplan'  ? 'dayplan'  :
+    screen === 'goals'    ? 'goals'    : 'entries';
 
   return (
     <ThemeProvider isDark={isDark}>
@@ -178,6 +180,8 @@ function AppContent(): React.JSX.Element {
         <SettingsScreen onClose={handleSettingsClose} />
       ) : screen === 'dayplan' ? (
         <DayPlanScreen initialDate={planDate} onClose={() => setScreen('entries')} debugMode={debugMode} calendarColor={calendarColor} />
+      ) : screen === 'goals' ? (
+        <GoalsScreen onClose={() => setScreen('entries')} />
       ) : screen === 'checkin' ? (
         <CheckInScreen
           periodStart={checkInPeriod?.periodStart ?? Date.now() - 2 * 60 * 60 * 1000}
