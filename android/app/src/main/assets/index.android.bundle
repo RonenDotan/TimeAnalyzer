@@ -104065,7 +104065,7 @@ __d(function(global, require, _importDefaultUnused, _importAllUnused, module, ex
   "major": 0,
   "minor": 0,
   "ticket_id": 18,
-  "sequence": 37
+  "sequence": 38
 };
 },638,[],"version.json");
 __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
@@ -111385,7 +111385,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       _useState8 = (0, _slicedToArray2.default)(_useState7, 2),
       openaiKey = _useState8[0],
       setOpenaiKey = _useState8[1];
-    var _useState9 = (0, _react.useState)(new Set(['schedule'])),
+    var _useState9 = (0, _react.useState)(new Set()),
       _useState0 = (0, _slicedToArray2.default)(_useState9, 2),
       expanded = _useState0[0],
       setExpanded = _useState0[1];

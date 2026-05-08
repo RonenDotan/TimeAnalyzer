@@ -42,7 +42,7 @@ export default function SettingsScreen({ onClose }: Props) {
   const [groqKey, setGroqKey] = useState('');
   const [claudeKey, setClaudeKey] = useState('');
   const [openaiKey, setOpenaiKey] = useState('');
-  const [expanded, setExpanded] = useState<Set<SectionKey>>(new Set(['schedule']));
+  const [expanded, setExpanded] = useState<Set<SectionKey>>(new Set());
   const [pendingCount, setPendingCount] = useState<number | null>(null);
   const [googleState, setGoogleState] = useState<GoogleIntegrationState | null>(null);
   const [signingIn, setSigningIn] = useState(false);
