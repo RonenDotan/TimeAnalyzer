@@ -1,29 +1,34 @@
-import { Goal } from '../../types/Goal';
+import { Goal, GoalContribution } from '../../types/Goal';
 import { GoalsProvider } from './GoalsProvider';
 
 /**
  * Google Tasks implementation of GoalsProvider.
  *
- * STUB — not implemented yet. See issue #25.
+ * STUB — not implemented. See issue #25.
  *
  * When implementing:
  *   1. Add 'https://www.googleapis.com/auth/tasks' OAuth scope to CalendarSyncService
  *   2. Create a TimeAnalyzer task list on first run (Tasks API: POST /lists)
  *   3. Map Goal ↔ Google Task:
  *        goal.text      ↔ task.title
- *        goal.done      ↔ task.status ('completed' | 'needsAction')
- *        goal.date      ↔ task.due (RFC 3339)
- *        goal.taskId    ↔ task.id
- *        goal.listId    ↔ the TimeAnalyzer list id
- *   4. Sync strategy: local-first. Push on save/update/delete. Pull on app open.
- *   5. On reinstall: pull all tasks from the TimeAnalyzer list and seed SQLite.
+ *        goal.progress  ↔ task.notes (serialised, no native % field)
+ *        goal.status    ↔ task.status ('completed' | 'needsAction')
+ *        goal.targetAt  ↔ task.due (RFC 3339)
+ *        goal.startAt   ↔ task.notes (serialised)
+ *   4. goal_contributions have no native Tasks equivalent — store in task.notes as JSON
+ *   5. Sync: local-first. Push on save/update/delete. Pull on app open.
  *
  * API reference: https://developers.google.com/tasks/reference/rest
  */
 const GoogleTasksGoalsProvider: GoalsProvider = {
-  async getGoals(_date: string): Promise<Goal[]> {
-    // TODO (issue #25): GET /lists/{listId}/tasks?dueMin=...&dueMax=...
-    throw new Error('GoogleTasksGoalsProvider.getGoals not implemented — see issue #25');
+  async getActiveGoals(_asOf: number): Promise<Goal[]> {
+    // TODO (issue #25): GET /lists/{listId}/tasks?showCompleted=false
+    throw new Error('GoogleTasksGoalsProvider.getActiveGoals not implemented — see issue #25');
+  },
+
+  async getAllGoals(): Promise<Goal[]> {
+    // TODO (issue #25): GET /lists/{listId}/tasks?showCompleted=true&showHidden=true
+    throw new Error('GoogleTasksGoalsProvider.getAllGoals not implemented — see issue #25');
   },
 
   async saveGoal(_goal: Omit<Goal, 'id'>): Promise<Goal> {
@@ -41,9 +46,14 @@ const GoogleTasksGoalsProvider: GoalsProvider = {
     throw new Error('GoogleTasksGoalsProvider.deleteGoal not implemented — see issue #25');
   },
 
-  async reorderGoals(_date: string, _orderedIds: number[]): Promise<void> {
-    // TODO (issue #25): POST /lists/{listId}/tasks/{taskId}/move for each id
-    throw new Error('GoogleTasksGoalsProvider.reorderGoals not implemented — see issue #25');
+  async addContribution(_contribution: Omit<GoalContribution, 'id'>): Promise<GoalContribution> {
+    // TODO (issue #25): store in task.notes as serialised JSON
+    throw new Error('GoogleTasksGoalsProvider.addContribution not implemented — see issue #25');
+  },
+
+  async getContributions(_goalId: number): Promise<GoalContribution[]> {
+    // TODO (issue #25): parse contributions from task.notes JSON
+    throw new Error('GoogleTasksGoalsProvider.getContributions not implemented — see issue #25');
   },
 };
 

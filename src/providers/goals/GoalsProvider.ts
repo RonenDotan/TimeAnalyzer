@@ -1,25 +1,31 @@
-import { Goal } from '../../types/Goal';
+import { Goal, GoalContribution } from '../../types/Goal';
 
 /**
  * Interface for all goal persistence operations.
  *
- * Two implementations exist:
+ * Two implementations:
  *   SQLiteGoalsProvider      — active, on-device storage
  *   GoogleTasksGoalsProvider — stub, ready for issue #25
  */
 export interface GoalsProvider {
-  /** Return all goals for a date, ordered by sortOrder ASC. */
-  getGoals(date: string): Promise<Goal[]>;
+  /** All goals where start_at <= asOf <= target_at (or no target), status = 'active'. */
+  getActiveGoals(asOf: number): Promise<Goal[]>;
 
-  /** Persist a new goal. Returns the saved goal with its generated id. */
+  /** All goals regardless of status or date range. */
+  getAllGoals(): Promise<Goal[]>;
+
+  /** Persist a new goal. Returns saved goal with generated id. */
   saveGoal(goal: Omit<Goal, 'id'>): Promise<Goal>;
 
-  /** Update an existing goal (text, done, sortOrder, updatedAt). */
+  /** Update an existing goal. */
   updateGoal(goal: Goal): Promise<void>;
 
-  /** Permanently delete a goal by id. */
+  /** Permanently delete a goal and its contributions. */
   deleteGoal(id: number): Promise<void>;
 
-  /** Update sortOrder for all goals on a day. orderedIds = ids in new order. */
-  reorderGoals(date: string, orderedIds: number[]): Promise<void>;
+  /** Record a contribution (session delta) for a goal. */
+  addContribution(contribution: Omit<GoalContribution, 'id'>): Promise<GoalContribution>;
+
+  /** All contributions for a goal, newest first. */
+  getContributions(goalId: number): Promise<GoalContribution[]>;
 }

@@ -1,14 +1,25 @@
+export type GoalStatus = 'active' | 'done' | 'canceled';
+
 export interface Goal {
-  id: number;        // INTEGER PRIMARY KEY AUTOINCREMENT
-  date: string;      // 'YYYY-MM-DD'
-  text: string;      // what the user wants to achieve
-  done: boolean;     // tapped to check off
-  sortOrder: number; // display order within the day
-  createdAt: number; // epoch ms
-  updatedAt: number; // epoch ms
+  id: number;
+  text: string;
+  startAt: number;        // epoch ms — when goal becomes active
+  targetAt: number | null; // epoch ms — optional deadline (includes time)
+  progress: number;       // 0–100
+  status: GoalStatus;
+  createdAt: number;      // epoch ms
+  updatedAt: number;      // epoch ms
 
   // Future: Google Tasks sync fields (issue #25)
-  // taskId?: string;   // Google Tasks task ID
-  // listId?: string;   // Google Tasks list ID
-  // syncedAt?: number; // epoch ms of last successful sync
+  // taskId?: string;
+  // listId?: string;
+  // syncedAt?: number;
+}
+
+export interface GoalContribution {
+  id: number;
+  goalId: number;
+  entryId: number | null;  // null = manual update not tied to a check-in
+  contributionPct: number; // delta added in this session (e.g. 15 = +15%)
+  createdAt: number;       // epoch ms
 }

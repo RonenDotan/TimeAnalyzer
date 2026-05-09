@@ -1,5 +1,5 @@
 import { open } from '@op-engineering/op-sqlite';
-import { Goal } from '../../types/Goal';
+import { Goal, GoalContribution, GoalStatus } from '../../types/Goal';
 import { GoalsProvider } from './GoalsProvider';
 
 type DB = ReturnType<typeof open>;
@@ -8,19 +8,38 @@ let db: DB | null = null;
 function getDb(): DB {
   if (!db) {
     db = open({ name: 'time-analyzer.sqlite' });
+
     db.executeSync(`
       CREATE TABLE IF NOT EXISTS goals (
         id          INTEGER PRIMARY KEY AUTOINCREMENT,
-        date        TEXT    NOT NULL,
         text        TEXT    NOT NULL,
-        done        INTEGER NOT NULL DEFAULT 0,
-        sort_order  INTEGER NOT NULL DEFAULT 0,
+        start_at    INTEGER NOT NULL,
+        target_at   INTEGER,
+        progress    INTEGER NOT NULL DEFAULT 0,
+        status      TEXT    NOT NULL DEFAULT 'active',
         created_at  INTEGER NOT NULL,
         updated_at  INTEGER NOT NULL DEFAULT 0
       )
     `);
+
     db.executeSync(`
-      CREATE INDEX IF NOT EXISTS idx_goals_date ON goals (date)
+      CREATE TABLE IF NOT EXISTS goal_contributions (
+        id               INTEGER PRIMARY KEY AUTOINCREMENT,
+        goal_id          INTEGER NOT NULL,
+        entry_id         INTEGER,
+        contribution_pct INTEGER NOT NULL,
+        created_at       INTEGER NOT NULL
+      )
+    `);
+
+    db.executeSync(`
+      CREATE INDEX IF NOT EXISTS idx_goals_status    ON goals (status)
+    `);
+    db.executeSync(`
+      CREATE INDEX IF NOT EXISTS idx_goals_start_at  ON goals (start_at)
+    `);
+    db.executeSync(`
+      CREATE INDEX IF NOT EXISTS idx_contributions_goal ON goal_contributions (goal_id)
     `);
   }
   return db;
@@ -29,20 +48,42 @@ function getDb(): DB {
 function rowToGoal(row: Record<string, unknown>): Goal {
   return {
     id:        row.id as number,
-    date:      row.date as string,
     text:      row.text as string,
-    done:      (row.done as number) === 1,
-    sortOrder: row.sort_order as number,
+    startAt:   row.start_at as number,
+    targetAt:  (row.target_at as number | null) ?? null,
+    progress:  row.progress as number,
+    status:    (row.status as GoalStatus) ?? 'active',
     createdAt: row.created_at as number,
     updatedAt: row.updated_at as number,
   };
 }
 
+function rowToContribution(row: Record<string, unknown>): GoalContribution {
+  return {
+    id:              row.id as number,
+    goalId:          row.goal_id as number,
+    entryId:         (row.entry_id as number | null) ?? null,
+    contributionPct: row.contribution_pct as number,
+    createdAt:       row.created_at as number,
+  };
+}
+
 const SQLiteGoalsProvider: GoalsProvider = {
-  async getGoals(date) {
+  async getActiveGoals(asOf) {
     const result = getDb().executeSync(
-      'SELECT * FROM goals WHERE date = ? ORDER BY sort_order ASC, id ASC',
-      [date],
+      `SELECT * FROM goals
+       WHERE status = 'active'
+         AND start_at <= ?
+         AND (target_at IS NULL OR target_at >= ?)
+       ORDER BY created_at ASC`,
+      [asOf, asOf],
+    );
+    return (result.rows ?? []).map(rowToGoal);
+  },
+
+  async getAllGoals() {
+    const result = getDb().executeSync(
+      'SELECT * FROM goals ORDER BY created_at DESC',
     );
     return (result.rows ?? []).map(rowToGoal);
   },
@@ -50,8 +91,9 @@ const SQLiteGoalsProvider: GoalsProvider = {
   async saveGoal(goal) {
     const now = Date.now();
     const result = getDb().executeSync(
-      'INSERT INTO goals (date, text, done, sort_order, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)',
-      [goal.date, goal.text, goal.done ? 1 : 0, goal.sortOrder, goal.createdAt ?? now, now],
+      `INSERT INTO goals (text, start_at, target_at, progress, status, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [goal.text, goal.startAt, goal.targetAt ?? null, goal.progress, goal.status, goal.createdAt ?? now, now],
     );
     return { ...goal, id: result.insertId as number, createdAt: goal.createdAt ?? now, updatedAt: now };
   },
@@ -59,22 +101,33 @@ const SQLiteGoalsProvider: GoalsProvider = {
   async updateGoal(goal) {
     const now = Date.now();
     getDb().executeSync(
-      'UPDATE goals SET text = ?, done = ?, sort_order = ?, updated_at = ? WHERE id = ?',
-      [goal.text, goal.done ? 1 : 0, goal.sortOrder, now, goal.id],
+      `UPDATE goals SET text = ?, start_at = ?, target_at = ?, progress = ?, status = ?, updated_at = ?
+       WHERE id = ?`,
+      [goal.text, goal.startAt, goal.targetAt ?? null, goal.progress, goal.status, now, goal.id],
     );
   },
 
   async deleteGoal(id) {
+    getDb().executeSync('DELETE FROM goal_contributions WHERE goal_id = ?', [id]);
     getDb().executeSync('DELETE FROM goals WHERE id = ?', [id]);
   },
 
-  async reorderGoals(_date, orderedIds) {
-    orderedIds.forEach((id, index) => {
-      getDb().executeSync(
-        'UPDATE goals SET sort_order = ? WHERE id = ?',
-        [index, id],
-      );
-    });
+  async addContribution(contribution) {
+    const now = Date.now();
+    const result = getDb().executeSync(
+      `INSERT INTO goal_contributions (goal_id, entry_id, contribution_pct, created_at)
+       VALUES (?, ?, ?, ?)`,
+      [contribution.goalId, contribution.entryId ?? null, contribution.contributionPct, now],
+    );
+    return { ...contribution, id: result.insertId as number, createdAt: now };
+  },
+
+  async getContributions(goalId) {
+    const result = getDb().executeSync(
+      'SELECT * FROM goal_contributions WHERE goal_id = ? ORDER BY created_at DESC',
+      [goalId],
+    );
+    return (result.rows ?? []).map(rowToContribution);
   },
 };
 

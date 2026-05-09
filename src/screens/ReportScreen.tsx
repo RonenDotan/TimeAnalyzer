@@ -75,7 +75,7 @@ export default function ReportScreen({ onStartCheckIn, onOpenMenu, onEditPlan, i
       StorageService.getByDateRange(startOfDay(date), endOfDay(date)),
       StorageService.getDayPlan(dateStr),
       StorageService.getCalendarPlanBlocksByDate(dateStr),
-      GoalsService.getGoals(dateStr),
+      GoalsService.getActiveGoals(startOfDay(date).getTime()),
     ]);
     setEntries(results.sort((a, b) => a.timestampStart - b.timestampStart));
     setDayPlan(plan);
@@ -148,18 +148,24 @@ export default function ReportScreen({ onStartCheckIn, onOpenMenu, onEditPlan, i
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.list}>
-          {/* Goals summary */}
+          {/* Active goals */}
           {goals.length > 0 && (
             <View style={styles.goalsSection}>
-              <Text style={styles.goalsSectionHeader}>
-                GOALS · {goals.filter(g => g.done).length}/{goals.length} completed
-              </Text>
+              <Text style={styles.goalsSectionHeader}>ACTIVE GOALS</Text>
               {goals.map(goal => (
                 <View key={goal.id} style={styles.goalSummaryRow}>
-                  <Text style={styles.goalSummaryIcon}>{goal.done ? '✅' : '❌'}</Text>
-                  <Text style={[styles.goalSummaryText, goal.done && styles.goalSummaryDone]}>
-                    {goal.text}
-                  </Text>
+                  <View style={styles.goalSummaryTop}>
+                    <Text style={styles.goalSummaryText}>{goal.text}</Text>
+                    <Text style={styles.goalSummaryPct}>{goal.progress}%</Text>
+                  </View>
+                  <View style={styles.goalProgressBg}>
+                    <View style={[styles.goalProgressFill, { width: `${goal.progress}%` as any }]} />
+                  </View>
+                  {goal.targetAt !== null && (
+                    <Text style={styles.goalTargetDate}>
+                      📅 {new Date(goal.targetAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    </Text>
+                  )}
                 </View>
               ))}
             </View>
@@ -333,7 +339,7 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
       backgroundColor: colors.surface,
       borderRadius: 12,
       padding: 14,
-      gap: 6,
+      gap: 10,
       marginBottom: 4,
     },
     goalsSectionHeader: {
@@ -341,17 +347,14 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
       fontWeight: '600',
       color: colors.textSecondary,
       letterSpacing: 0.5,
-      marginBottom: 6,
     },
-    goalSummaryRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 8,
-      paddingVertical: 3,
-    },
-    goalSummaryIcon: { fontSize: 16 },
-    goalSummaryText: { fontSize: 15, color: colors.text, flex: 1, lineHeight: 22 },
-    goalSummaryDone: { textDecorationLine: 'line-through', color: colors.textSecondary },
+    goalSummaryRow: { gap: 4 },
+    goalSummaryTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    goalSummaryText: { fontSize: 14, color: colors.text, flex: 1, lineHeight: 20 },
+    goalSummaryPct: { fontSize: 13, fontWeight: '600', color: colors.accent },
+    goalProgressBg: { height: 4, backgroundColor: colors.border, borderRadius: 2, overflow: 'hidden' },
+    goalProgressFill: { height: 4, backgroundColor: colors.accent, borderRadius: 2 },
+    goalTargetDate: { fontSize: 11, color: colors.textSecondary },
     planSection: {
       backgroundColor: '#039BE5' + '18',
       borderRadius: 12,
