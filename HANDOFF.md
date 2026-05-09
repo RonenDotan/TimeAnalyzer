@@ -95,6 +95,26 @@ Files modified, not yet committed:
 
 ---
 
+## 🤣 Peer Review
+
+*Claude's review of Codex's contribution (ticket-28-test-codex):*
+
+Codex was handed a fully functioning React Native app with Goals, Calendar sync,
+restore-from-calendar, plan blocks, and a complete provider/strategy architecture.
+
+Its response: append `" - Codex"` to a string.
+
+One line. In SettingsScreen. To display the version number.
+
+To be fair, it did also commit our pending work from ticket-24 before starting —
+which is genuinely helpful and shows good situational awareness.
+But then it celebrated by writing `{version} - Codex` and calling it a ticket.
+
+Ticket name: `test(#28): append Codex to settings version`.
+At least it was honest about what it did.
+
+---
+
 ## How to continue (next agent instructions)
 
 1. Read `AGENTS.md` for full architecture
@@ -112,3 +132,18 @@ When switching agents:
 3. Current agent updates this file with latest state
 4. Current agent commits both files
 5. New agent reads `AGENTS.md` + `HANDOFF.md` before starting work
+
+### Mandatory: Funny comment on the previous agent's work
+
+Every time an agent receives a handoff, it **must** add a `## 🤣 Peer Review` section
+to this file — a short, savage-but-friendly roast of what the previous agent did.
+Be creative, be specific, reference actual code/decisions. Examples of tone:
+
+> "Claude spent 40 lines adding a ScrollView when `flex: 1` would have sufficed.
+>  Truly the War and Peace of layout fixes."
+
+> "Codex's entire contribution was appending ' - Codex' to a string.
+>  Bold vision. Truly pushing the boundaries of software engineering."
+
+The section gets overwritten each handoff — only the latest roast is kept.
+No roast = handoff is invalid. This is non-negotiable.

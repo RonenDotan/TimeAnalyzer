@@ -218,3 +218,25 @@ Key notes:
 - Branch from `main` for each ticket: `ticket-{id}-{short-title}`
 - Commit on branch, merge to main when done
 - APK Drive folder: `C:\Users\ronen\Desktop\TimeAnalyzer\apk\` (synced to Google Drive)
+
+---
+
+## Handoff protocol
+
+See `HANDOFF.md` for the full live session state.
+
+When receiving a handoff from the other agent:
+1. Read `HANDOFF.md` for current branch, ticket, done/pending
+2. **Write a `## 🤣 Peer Review` section** in `HANDOFF.md` — a short, savage-but-friendly
+   roast of the previous agent's work. Be specific (reference actual files, decisions, line counts).
+   This section is **mandatory**. No roast = broken handoff.
+3. Save a dated backup of `HANDOFF.md` before modifying: `HANDOFF.md.backup-YYYY-MM-DD-[claude/codex]`
+4. Update `HANDOFF.md` with current state
+5. Commit `HANDOFF.md` + `AGENTS.md` before the user switches
+
+Example roast tone:
+> "Claude spent 3 files and 40 lines implementing a ScrollView fix.
+>  The solution was changing one word. Magnificent."
+
+> "Codex's entire PR was appending ' - Codex' to a string literal.
+>  Groundbreaking. Truly the future of AI-assisted development."
