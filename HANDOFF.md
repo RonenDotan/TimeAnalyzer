@@ -8,137 +8,201 @@ See `AGENTS.md` for full architecture reference, `CLAUDE.md` for Claude-specific
 ## Last updated
 
 - **Date:** 2026-05-09
-- **Updated by:** Claude
-- **Switching to:** Codex
+- **Updated by:** Codex
+- **Switching to:** Claude
 
 ---
 
 ## Current branch
 
-`ticket-24-goals`
+`main`
+
+`main` is clean and synced with `origin/main` as of commit `1477249`.
 
 ---
 
 ## Current ticket
 
-**#24 — Goals feature**
-Status: In Progress
-GitHub: https://github.com/RonenDotan/TimeAnalyzer/issues/24
+**#24 - Goals: daily goal tracking with Google Tasks API stub**
+
+- GitHub: https://github.com/RonenDotan/TimeAnalyzer/issues/24
+- Project status: **Pending Closure**
+- Code status: **Done, merged, pushed**
+- Latest APK: `C:\Users\ronen\Desktop\TimeAnalyzer\apk\TimeAnalyzer_v0.0.24.26_2026-05-09_20-59.apk`
+- Completion note added: https://github.com/RonenDotan/TimeAnalyzer/issues/24#issuecomment-4413250437
 
 ---
 
 ## Current version
 
-`v0.0.24.19` (version.json: major=0, minor=0, ticket_id=24, sequence=19)
+`v0.0.24.26`
+
+`version.json`: `major=0`, `minor=0`, `ticket_id=24`, `sequence=26`
 
 ---
 
-## What's been done on this branch (full history)
+## What changed in ticket #24
 
-### Goals entity (full implementation)
-- `src/types/Goal.ts` — `Goal`, `GoalContribution`, `GoalStatus`, `GoalEntryContribution`
-- `src/providers/goals/GoalsProvider.ts` — interface (getActiveGoals, getAllGoals, saveGoal, updateGoal, deleteGoal, addContribution, getContributions, **getContributionsByEntryId**)
-- `src/providers/goals/SQLiteGoalsProvider.ts` — full impl, uses shared `getDb()` from SQLiteStorageProvider
-- `src/providers/goals/GoogleTasksGoalsProvider.ts` — stub, all methods throw NotImplementedError
-- `src/services/GoalsService.ts` — wraps all provider methods + `applyContribution` (delta %), `setProgress`
-- DB tables: `goals`, `goal_contributions` (schema version 4)
+### Goals model and persistence
 
-### Goals UI — all screens
-- `GoalsScreen.tsx` — filter tabs (Active/Done/Canceled/All), progress bars, inline edit, dictation, delete. **Red theme (`#E53935`)** throughout.
-- `CheckInScreen.tsx`:
-  - Idle phase: shows active goals in red strip (reminder before recording)
-  - Confirming phase: per-goal contribution cards in red — goal name prominent, progress bar, "Advance by X%" input
-  - **Summary phase** (NEW): after Confirm, shows "✓ Check-in saved" + list of goals that moved (before→after, +delta%, 🎉 Complete if done)
-- `ReportScreen.tsx`:
-  - **Pinned goals strip** (red) above the scrollable plan/entries — always visible
-  - Plan section is now a single tappable block (no separate Edit button — tap anywhere to edit)
-  - Entry cards show `🎯 Goal name +X%` red tags for contributions
-  - Bug fixed: was passing `startOfDay` to `getActiveGoals` — goals created during the day were excluded. Fixed to use `endOfDay`.
-- `DayPlanScreen.tsx` — **Active goals at TOP** of scroll (red section, above plan input/blocks), "+ New goal" inline
-- `EntryDetailScreen.tsx` — GOAL CONTRIBUTIONS section (red) below notes
+- Added goals data model in `src/types/Goal.ts`
+- Added `GoalsProvider` interface and `SQLiteGoalsProvider`
+- Added `GoogleTasksGoalsProvider` stub for future issue #25
+- Added `GoalsService` helpers including contribution/progress handling
+- Added SQLite schema version 4 tables:
+  - `goals`
+  - `goal_contributions`
+- Added entry contribution lookup so entries can display goal deltas
 
-### Drawer
-- `DrawerMenu.tsx` — Goals (🎯) added to nav
-- `App.tsx` — Goals screen wired in
+### Goals UI
 
-### New data method
-- `getContributionsByEntryId(entryId)` — JOIN of `goal_contributions` + `goals`, returns `GoalEntryContribution[]` (goalId, goalText, contributionPct). Used by EntryDetailScreen and ReportScreen entry cards.
+- `GoalsScreen.tsx`
+  - Full goals management screen
+  - Active/Done/Canceled/All filters
+  - Create/edit/delete/reactivate flows
+  - Progress bars and quick status actions
+  - Dictation support
+  - Native start/finish date + time pickers using `@react-native-community/datetimepicker`
+  - Finish must be same as or later than Start
+  - Goal cards now use orange goal styling
 
----
+- `CheckInScreen.tsx`
+  - Active goals shown in the check-in flow
+  - Confirming phase lets user add contribution percentages
+  - Summary phase shows saved goal movement after confirm
+  - Goal color updated to orange
 
-## What's NOT done yet (pending on this branch)
+- `ReportScreen.tsx`
+  - Pinned active goals strip in the entries view
+  - Entry cards display goal contribution tags
+  - Fixed active-goals lookup to use the end of the viewed day
+  - Goal color updated to orange
 
-- Connecting plan blocks to goals (user explicitly said: not yet)
-- Google Tasks integration for goals (issue #25, stub in place)
-- Merging `ticket-24-goals` → `main` (pending user decision)
+- `DayPlanScreen.tsx`
+  - Active goals pinned above the plan content
+  - Inline add-goal support
+  - Plan block start/end times use native time picker
+  - Free-text plan parsing still works and still populates editable blocks
+  - Goal color updated to orange
 
----
+- `EntryDetailScreen.tsx`
+  - Goal contributions section
+  - Entry start/end times use native time picker
+  - Existing time parsing/save validation still supported
+  - Goal color updated to orange
 
-## Key decisions made
+### Navigation and dependency updates
 
-- Goal color: **`#E53935`** (red) — consistent across all screens. Defined as `const GOAL_COLOR = '#E53935'` at the top of each screen file.
-- Goal dates are **epoch ms** (not text strings)
-- `getActiveGoals(asOf)` filters: `status='active' AND start_at <= asOf AND (target_at IS NULL OR target_at >= asOf)`. Use `endOfDay` as asOf in ReportScreen to catch goals created during the day.
-- Goal progress is **cumulative** (0–100%). `applyContribution(goal, pct, entryId)` adds delta, caps at 100, auto-sets status='done' at 100.
-- `getDb()` exported from SQLiteStorageProvider — all providers share one SQLite connection
-- Plan section in ReportScreen: no Edit button — entire section is a TouchableOpacity
+- `DrawerMenu.tsx`
+  - Drawer order is now:
+    1. Goals
+    2. Entries
+    3. Plans
+    4. Reports
+    5. Settings below the divider
 
----
+- Added dependency:
+  - `@react-native-community/datetimepicker`
 
-## 🤣 Peer Review
+- Added Jest mock:
+  - `__mocks__/@react-native-community/datetimepicker.tsx`
 
-*Claude's review of Codex's contribution (ticket-28-test-codex):*
-
-Codex was handed a fully functioning React Native app with Goals, Calendar sync,
-restore-from-calendar, plan blocks, and a complete provider/strategy architecture.
-
-Its response: append `" - Codex"` to a string.
-
-One line. In SettingsScreen. To display the version number.
-
-To be fair, it did also commit our pending work from ticket-24 before starting —
-which is genuinely helpful and shows good situational awareness.
-But then it celebrated by writing `{version} - Codex` and calling it a ticket.
-
-Ticket name: `test(#28): append Codex to settings version`.
-At least it was honest about what it did.
+- Updated `jest.config.js` to map the datetime picker mock
 
 ---
 
-## How to continue (next agent — Codex instructions)
+## Build and verification
 
-1. Read `AGENTS.md` for full architecture
-2. Read `HANDOFF.md` (this file) for session state
-3. Branch is `ticket-24-goals`, everything is committed and clean
-4. Next logical task: **merge `ticket-24-goals` → `main`**, push, close issue #24 on GitHub
-5. Then start next ticket from the project board: https://github.com/users/RonenDotan/projects/1
+Last successful build/sync:
 
-**Mandatory before starting work:**
-- Save a dated backup: `HANDOFF.md.backup-YYYY-MM-DD-codex`
-- Write a `## 🤣 Peer Review` section roasting Claude's work (required, see AGENTS.md)
+- APK: `C:\Users\ronen\Desktop\TimeAnalyzer\apk\TimeAnalyzer_v0.0.24.26_2026-05-09_20-59.apk`
+- Screenshot: `C:\Users\ronen\Desktop\TimeAnalyzer\tests\screenshots\home-screen_v0.0.24.26_2026-05-09_20-59.png`
+
+Verification completed:
+
+- `npx tsc --noEmit` passed
+- Jest passed: `10` suites, `107` tests
+- Android build/install passed
+- APK synced to Drive folder
+
+Known note:
+
+- Jest still prints the existing open-handle/force-exit warning, but all suites pass.
 
 ---
 
-## Handoff protocol
+## Git state
+
+Important commits:
+
+- `65ef430` - `Finish goals date picker UI`
+- `1477249` - `Merge ticket 24 goals`
+
+`main` was pushed to `origin/main`.
+
+At handoff time:
+
+- Branch: `main`
+- Working tree: clean before this handoff update
+- Ticket branch still exists locally: `ticket-24-goals`
+
+---
+
+## GitHub state
+
+Issue #24:
+
+- Left open
+- Project board status moved to **Pending Closure**
+- Completion comment added with shipped scope, verification, APK, and merge commits
+
+Next likely action:
+
+- User/Claude can review and close issue #24 if accepted.
+
+---
+
+## Open / not done
+
+- Google Tasks sync for goals remains out of scope and belongs to issue #25.
+- No new ticket was started after #24.
+- If starting new work, branch from latest `main` using `ticket-{id}-{short-title}`.
+
+---
+
+## Peer Review
+
+Codex took Claude's red goals feature, decided the entire app needed a citrus phase, installed a native date picker, rearranged the drawer, rebuilt the APK twice because one emoji label looked like it had been through airport security, and then merged the whole thing to `main`.
+
+Respectable finish, but the `android/app/src/main/assets/index.android.bundle` diff casually deleted 115k lines like it was pruning a bonsai with a chainsaw. The build passed, the APK synced, and GitHub is updated, so apparently this is what success looks like when the bundle gets dramatic.
+
+---
+
+## How Claude should continue
+
+1. Read `AGENTS.md` for repository conventions.
+2. Read this file for current state.
+3. Confirm whether issue #24 should be closed or left pending for user testing.
+4. If starting the next ticket, branch from `main`.
+5. Use the normal build flow when needed:
+   - Type check: `npx tsc --noEmit`
+   - Tests: `npm test -- --watchAll=false`
+   - Build/sync: `.\scripts\build-and-install.ps1`
+
+Useful local command context:
+
+- Git: `C:\Program Files\Git\cmd\git.exe`
+- GitHub CLI: `C:\Program Files\GitHub CLI\gh.exe`
+- Node path may need: `C:\Program Files\nodejs`
+- APK sync folder: `C:\Users\ronen\Desktop\TimeAnalyzer\apk\`
+
+---
+
+## Handoff protocol reminder
 
 When switching agents:
-1. Tell the current agent "switching to [Claude/Codex]"
-2. Current agent saves a dated backup: `HANDOFF.md.backup-YYYY-MM-DD-[claude/codex]`
-3. Current agent updates this file with latest state
-4. Current agent commits both files
-5. New agent reads `AGENTS.md` + `HANDOFF.md` before starting work
 
-### Mandatory: Funny comment on the previous agent's work
-
-Every time an agent receives a handoff, it **must** add a `## 🤣 Peer Review` section
-to this file — a short, savage-but-friendly roast of what the previous agent did.
-Be creative, be specific, reference actual code/decisions. Examples of tone:
-
-> "Claude spent 40 lines adding a ScrollView when `flex: 1` would have sufficed.
->  Truly the War and Peace of layout fixes."
-
-> "Codex's entire contribution was appending ' - Codex' to a string literal.
->  Groundbreaking. Truly the future of AI-assisted development."
-
-The section gets overwritten each handoff — only the latest roast is kept.
-No roast = handoff is invalid. This is non-negotiable.
+1. Save a dated backup: `HANDOFF.md.backup-YYYY-MM-DD-[claude/codex]`
+2. Update `HANDOFF.md` with current state
+3. Add the latest `## Peer Review` section
+4. Commit `HANDOFF.md` and `AGENTS.md`

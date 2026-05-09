@@ -82,7 +82,7 @@ src/
     EntryDetailScreen.tsx
     SettingsScreen.tsx
   components/
-    DrawerMenu.tsx                # nav: Entries, Plans, Goals | Reports, Settings
+    DrawerMenu.tsx                # nav: Goals, Entries, Plans, Reports | Settings
     DictateBar.tsx
     PlanHintBar.tsx
   types/
