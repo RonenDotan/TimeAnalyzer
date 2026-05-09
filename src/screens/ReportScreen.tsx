@@ -151,35 +151,35 @@ export default function ReportScreen({ onStartCheckIn, onOpenMenu, onEditPlan, i
         </TouchableOpacity>
       </View>
 
+      {/* Pinned active goals — always visible above plan/entries */}
+      {!loading && goals.length > 0 && (
+        <View style={styles.pinnedGoals}>
+          <Text style={styles.pinnedGoalsHeader}>🎯  ACTIVE GOALS</Text>
+          {goals.map(goal => (
+            <View key={goal.id} style={styles.pinnedGoalRow}>
+              <View style={styles.pinnedGoalInfo}>
+                <Text style={styles.pinnedGoalText} numberOfLines={1}>{goal.text}</Text>
+                <View style={styles.pinnedBarBg}>
+                  <View style={[styles.pinnedBarFill, { width: `${goal.progress}%` as any }]} />
+                </View>
+                {goal.targetAt !== null && (
+                  <Text style={styles.pinnedGoalDeadline}>
+                    📅 {new Date(goal.targetAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  </Text>
+                )}
+              </View>
+              <Text style={styles.pinnedGoalPct}>{goal.progress}%</Text>
+            </View>
+          ))}
+        </View>
+      )}
+
       {loading ? (
         <View style={styles.centeredFull}>
           <ActivityIndicator size="large" color={colors.accent} />
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.list}>
-          {/* Active goals */}
-          {goals.length > 0 && (
-            <View style={styles.goalsSection}>
-              <Text style={styles.goalsSectionHeader}>ACTIVE GOALS</Text>
-              {goals.map(goal => (
-                <View key={goal.id} style={styles.goalSummaryRow}>
-                  <View style={styles.goalSummaryTop}>
-                    <Text style={styles.goalSummaryText}>{goal.text}</Text>
-                    <Text style={styles.goalSummaryPct}>{goal.progress}%</Text>
-                  </View>
-                  <View style={styles.goalProgressBg}>
-                    <View style={[styles.goalProgressFill, { width: `${goal.progress}%` as any }]} />
-                  </View>
-                  {goal.targetAt !== null && (
-                    <Text style={styles.goalTargetDate}>
-                      📅 {new Date(goal.targetAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                    </Text>
-                  )}
-                </View>
-              ))}
-            </View>
-          )}
-
           {/* Plan section — always shown if plan exists */}
           {planBlocks.length > 0 && (() => {
             const coveredCount = planBlocks.filter(b => isCovered(b, entries)).length;
@@ -244,7 +244,9 @@ export default function ReportScreen({ onStartCheckIn, onOpenMenu, onEditPlan, i
                     <View style={styles.goalTagRow}>
                       {entryContributions[entry.id].map((c, i) => (
                         <View key={i} style={styles.goalTag}>
-                          <Text style={styles.goalTagText}>🎯 +{c.contributionPct}%</Text>
+                          <Text style={styles.goalTagText} numberOfLines={1}>
+                            🎯 {c.goalText}  +{c.contributionPct}%
+                          </Text>
                         </View>
                       ))}
                     </View>
@@ -353,26 +355,33 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
       elevation: 8,
     },
     fabIcon: { fontSize: 32, color: '#fff', lineHeight: 36 },
-    goalsSection: {
-      backgroundColor: colors.surface,
-      borderRadius: 12,
-      padding: 14,
-      gap: 10,
-      marginBottom: 4,
+    // Pinned goals strip — sits between dayNav and scroll content
+    pinnedGoals: {
+      backgroundColor: colors.accent + '14',
+      borderBottomWidth: 2,
+      borderBottomColor: colors.accent + '40',
+      paddingHorizontal: 16,
+      paddingVertical: 10,
+      gap: 8,
     },
-    goalsSectionHeader: {
+    pinnedGoalsHeader: {
       fontSize: 11,
-      fontWeight: '600',
-      color: colors.textSecondary,
-      letterSpacing: 0.5,
+      fontWeight: '700',
+      color: colors.accent,
+      letterSpacing: 0.8,
+      marginBottom: 2,
     },
-    goalSummaryRow: { gap: 4 },
-    goalSummaryTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    goalSummaryText: { fontSize: 14, color: colors.text, flex: 1, lineHeight: 20 },
-    goalSummaryPct: { fontSize: 13, fontWeight: '600', color: colors.accent },
-    goalProgressBg: { height: 4, backgroundColor: colors.border, borderRadius: 2, overflow: 'hidden' },
-    goalProgressFill: { height: 4, backgroundColor: colors.accent, borderRadius: 2 },
-    goalTargetDate: { fontSize: 11, color: colors.textSecondary },
+    pinnedGoalRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+    },
+    pinnedGoalInfo: { flex: 1, gap: 3 },
+    pinnedGoalText: { fontSize: 13, color: colors.text, fontWeight: '500' },
+    pinnedBarBg: { height: 4, backgroundColor: colors.border, borderRadius: 2, overflow: 'hidden' },
+    pinnedBarFill: { height: 4, backgroundColor: colors.accent, borderRadius: 2 },
+    pinnedGoalDeadline: { fontSize: 10, color: colors.textSecondary },
+    pinnedGoalPct: { fontSize: 14, fontWeight: '700', color: colors.accent, minWidth: 38, textAlign: 'right' },
     planSection: {
       backgroundColor: '#039BE5' + '18',
       borderRadius: 12,
@@ -402,16 +411,18 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
       paddingTop: 8,
     },
     planTag: { fontSize: 12, color: '#039BE5', marginTop: 6, fontWeight: '500' },
-    goalTagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 6 },
+    goalTagRow: { flexDirection: 'column', gap: 4, marginTop: 6 },
     goalTag: {
       backgroundColor: '#33B679' + '20',
       borderRadius: 6,
       paddingHorizontal: 8,
-      paddingVertical: 3,
+      paddingVertical: 4,
       borderWidth: 1,
       borderColor: '#33B679' + '50',
+      alignSelf: 'flex-start',
+      maxWidth: '100%',
     },
-    goalTagText: { fontSize: 11, color: '#33B679', fontWeight: '600' },
+    goalTagText: { fontSize: 12, color: '#33B679', fontWeight: '600' },
     debugRow: {
       flexDirection: 'row',
       gap: 12,

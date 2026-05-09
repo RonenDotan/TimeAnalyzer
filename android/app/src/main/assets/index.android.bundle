@@ -108360,11 +108360,13 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
     var timerRef = (0, _react.useRef)(null);
     (0, _react.useEffect)(() => {
       _SettingsService.default.load().then(s => setNoteKeyword(s.noteKeyword));
+      // Pre-load goals so they're visible even before recording starts
+      _GoalsService.default.getActiveGoals(periodEnd).then(setActiveGoals);
       return () => {
         if (timerRef.current) clearInterval(timerRef.current);
         _TranscriptionService.default.stop().catch(() => {});
       };
-    }, []);
+    }, [periodEnd]);
     function requestMicPermission() {
       return _requestMicPermission.apply(this, arguments);
     }
@@ -108557,7 +108559,33 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         contentContainerStyle: styles.body,
         keyboardShouldPersistTaps: "handled",
         children: [phase === 'idle' && /*#__PURE__*/(0, _jsxRuntime.jsxs)(_jsxRuntime.Fragment, {
-          children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TextInput, {
+          children: [activeGoals.length > 0 && /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+            style: styles.idleGoalsSection,
+            children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+              style: styles.idleGoalsLabel,
+              children: "\uD83C\uDFAF  Goals in scope"
+            }), activeGoals.map(goal => /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+              style: styles.idleGoalRow,
+              children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+                style: styles.idleGoalInfo,
+                children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                  style: styles.idleGoalText,
+                  numberOfLines: 1,
+                  children: goal.text
+                }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
+                  style: styles.idleBarBg,
+                  children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
+                    style: [styles.idleBarFill, {
+                      width: `${goal.progress}%`
+                    }]
+                  })
+                })]
+              }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
+                style: styles.idleGoalPct,
+                children: [goal.progress, "%"]
+              })]
+            }, goal.id))]
+          }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TextInput, {
             style: styles.typeInput,
             value: transcript,
             onChangeText: setTranscript,
@@ -108663,16 +108691,15 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
             style: styles.goalsSection,
             children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
               style: styles.goalsSectionLabel,
-              children: "GOALS \u2014 how much did you advance?"
+              children: "\uD83C\uDFAF  HOW MUCH DID YOU ADVANCE EACH GOAL?"
             }), activeGoals.map(goal => /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-              style: styles.goalContribRow,
-              children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-                style: styles.goalContribInfo,
-                children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                  style: styles.goalContribText,
-                  numberOfLines: 2,
-                  children: goal.text
-                }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
+              style: styles.goalContribCard,
+              children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                style: styles.goalContribName,
+                children: goal.text
+              }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+                style: styles.goalContribBarRow,
+                children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
                   style: styles.progressBarBg,
                   children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
                     style: [styles.progressBarFill, {
@@ -108684,8 +108711,11 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
                   children: [goal.progress, "% done"]
                 })]
               }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-                style: styles.goalContribInput,
-                children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TextInput, {
+                style: styles.goalContribInputRow,
+                children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                  style: styles.goalContribInputLabel,
+                  children: "Advance by"
+                }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TextInput, {
                   style: styles.pctInput,
                   value: contributions[goal.id] ?? '',
                   onChangeText: v => setContributions(prev => ({
@@ -108974,65 +109004,120 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         color: colors.accent,
         fontWeight: '500'
       },
-      goalsSection: {
+      // Idle phase — goals reminder
+      idleGoalsSection: {
         width: '100%',
-        gap: 8
+        backgroundColor: colors.accent + '12',
+        borderRadius: 12,
+        padding: 12,
+        gap: 8,
+        borderLeftWidth: 3,
+        borderLeftColor: colors.accent
       },
-      goalsSectionLabel: {
+      idleGoalsLabel: {
         fontSize: 11,
-        fontWeight: '600',
-        color: colors.textSecondary,
+        fontWeight: '700',
+        color: colors.accent,
         letterSpacing: 0.5
       },
-      goalContribRow: {
+      idleGoalRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 12,
-        backgroundColor: colors.surface,
-        borderRadius: 10,
-        padding: 12
+        gap: 10
       },
-      goalContribInfo: {
+      idleGoalInfo: {
         flex: 1,
-        gap: 4
+        gap: 3
       },
-      goalContribText: {
-        fontSize: 14,
+      idleGoalText: {
+        fontSize: 13,
         color: colors.text,
-        lineHeight: 20
+        fontWeight: '500'
       },
-      progressBarBg: {
-        height: 4,
+      idleBarBg: {
+        height: 3,
         backgroundColor: colors.border,
         borderRadius: 2,
         overflow: 'hidden'
       },
-      progressBarFill: {
-        height: 4,
+      idleBarFill: {
+        height: 3,
         backgroundColor: colors.accent,
         borderRadius: 2
+      },
+      idleGoalPct: {
+        fontSize: 13,
+        fontWeight: '700',
+        color: colors.accent,
+        minWidth: 36,
+        textAlign: 'right'
+      },
+      // Confirming phase — contribution cards
+      goalsSection: {
+        width: '100%',
+        gap: 10
+      },
+      goalsSectionLabel: {
+        fontSize: 11,
+        fontWeight: '700',
+        color: colors.accent,
+        letterSpacing: 0.5
+      },
+      goalContribCard: {
+        backgroundColor: colors.surface,
+        borderRadius: 12,
+        padding: 14,
+        gap: 8,
+        borderLeftWidth: 3,
+        borderLeftColor: colors.accent
+      },
+      goalContribName: {
+        fontSize: 15,
+        fontWeight: '600',
+        color: colors.text,
+        lineHeight: 22
+      },
+      goalContribBarRow: {
+        gap: 4
+      },
+      progressBarBg: {
+        height: 5,
+        backgroundColor: colors.border,
+        borderRadius: 3,
+        overflow: 'hidden'
+      },
+      progressBarFill: {
+        height: 5,
+        backgroundColor: colors.accent,
+        borderRadius: 3
       },
       goalProgressLabel: {
         fontSize: 11,
         color: colors.textSecondary
       },
-      goalContribInput: {
+      goalContribInputRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 2
+        gap: 8,
+        marginTop: 4
+      },
+      goalContribInputLabel: {
+        fontSize: 14,
+        color: colors.textSecondary,
+        flex: 1
       },
       pctInput: {
-        width: 48,
+        width: 56,
         textAlign: 'center',
-        fontSize: 16,
-        fontWeight: '600',
+        fontSize: 18,
+        fontWeight: '700',
         color: colors.text,
-        borderBottomWidth: 1.5,
+        borderBottomWidth: 2,
         borderBottomColor: colors.accent,
         paddingVertical: 2
       },
       pctLabel: {
-        fontSize: 14,
+        fontSize: 16,
         color: colors.textSecondary
       },
       confirmRow: {
@@ -111973,6 +112058,38 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
             children: '›'
           })
         })]
+      }), !loading && goals.length > 0 && /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+        style: styles.pinnedGoals,
+        children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+          style: styles.pinnedGoalsHeader,
+          children: "\uD83C\uDFAF  ACTIVE GOALS"
+        }), goals.map(goal => /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+          style: styles.pinnedGoalRow,
+          children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+            style: styles.pinnedGoalInfo,
+            children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+              style: styles.pinnedGoalText,
+              numberOfLines: 1,
+              children: goal.text
+            }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
+              style: styles.pinnedBarBg,
+              children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
+                style: [styles.pinnedBarFill, {
+                  width: `${goal.progress}%`
+                }]
+              })
+            }), goal.targetAt !== null && /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
+              style: styles.pinnedGoalDeadline,
+              children: ["\uD83D\uDCC5 ", new Date(goal.targetAt).toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric'
+              })]
+            })]
+          }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
+            style: styles.pinnedGoalPct,
+            children: [goal.progress, "%"]
+          })]
+        }, goal.id))]
       }), loading ? /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
         style: styles.centeredFull,
         children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.ActivityIndicator, {
@@ -111981,39 +112098,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         })
       }) : /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.ScrollView, {
         contentContainerStyle: styles.list,
-        children: [goals.length > 0 && /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-          style: styles.goalsSection,
-          children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-            style: styles.goalsSectionHeader,
-            children: "ACTIVE GOALS"
-          }), goals.map(goal => /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-            style: styles.goalSummaryRow,
-            children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-              style: styles.goalSummaryTop,
-              children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                style: styles.goalSummaryText,
-                children: goal.text
-              }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
-                style: styles.goalSummaryPct,
-                children: [goal.progress, "%"]
-              })]
-            }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
-              style: styles.goalProgressBg,
-              children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
-                style: [styles.goalProgressFill, {
-                  width: `${goal.progress}%`
-                }]
-              })
-            }), goal.targetAt !== null && /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
-              style: styles.goalTargetDate,
-              children: ["\uD83D\uDCC5 ", new Date(goal.targetAt).toLocaleDateString('en-US', {
-                month: 'short',
-                day: 'numeric',
-                year: 'numeric'
-              })]
-            })]
-          }, goal.id))]
-        }), planBlocks.length > 0 && (() => {
+        children: [planBlocks.length > 0 && (() => {
           var coveredCount = planBlocks.filter(b => (0, _$$_REQUIRE(_dependencyMap[11], "../utils/planMatching").isCovered)(b, entries)).length;
           return /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
             style: styles.planSection,
@@ -112079,7 +112164,8 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
                 style: styles.goalTag,
                 children: /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
                   style: styles.goalTagText,
-                  children: ["\uD83C\uDFAF +", c.contributionPct, "%"]
+                  numberOfLines: 1,
+                  children: ["\uD83C\uDFAF ", c.goalText, "  +", c.contributionPct, "%"]
                 })
               }, i))
             }), debugMode && /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
@@ -112240,52 +112326,57 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         color: '#fff',
         lineHeight: 36
       },
-      goalsSection: {
-        backgroundColor: colors.surface,
-        borderRadius: 12,
-        padding: 14,
-        gap: 10,
-        marginBottom: 4
+      // Pinned goals strip — sits between dayNav and scroll content
+      pinnedGoals: {
+        backgroundColor: colors.accent + '14',
+        borderBottomWidth: 2,
+        borderBottomColor: colors.accent + '40',
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        gap: 8
       },
-      goalsSectionHeader: {
+      pinnedGoalsHeader: {
         fontSize: 11,
-        fontWeight: '600',
-        color: colors.textSecondary,
-        letterSpacing: 0.5
+        fontWeight: '700',
+        color: colors.accent,
+        letterSpacing: 0.8,
+        marginBottom: 2
       },
-      goalSummaryRow: {
-        gap: 4
-      },
-      goalSummaryTop: {
+      pinnedGoalRow: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center'
+        alignItems: 'center',
+        gap: 10
       },
-      goalSummaryText: {
-        fontSize: 14,
-        color: colors.text,
+      pinnedGoalInfo: {
         flex: 1,
-        lineHeight: 20
+        gap: 3
       },
-      goalSummaryPct: {
+      pinnedGoalText: {
         fontSize: 13,
-        fontWeight: '600',
-        color: colors.accent
+        color: colors.text,
+        fontWeight: '500'
       },
-      goalProgressBg: {
+      pinnedBarBg: {
         height: 4,
         backgroundColor: colors.border,
         borderRadius: 2,
         overflow: 'hidden'
       },
-      goalProgressFill: {
+      pinnedBarFill: {
         height: 4,
         backgroundColor: colors.accent,
         borderRadius: 2
       },
-      goalTargetDate: {
-        fontSize: 11,
+      pinnedGoalDeadline: {
+        fontSize: 10,
         color: colors.textSecondary
+      },
+      pinnedGoalPct: {
+        fontSize: 14,
+        fontWeight: '700',
+        color: colors.accent,
+        minWidth: 38,
+        textAlign: 'right'
       },
       planSection: {
         backgroundColor: '#039BE5' + '18',
@@ -112359,21 +112450,22 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         fontWeight: '500'
       },
       goalTagRow: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 6,
+        flexDirection: 'column',
+        gap: 4,
         marginTop: 6
       },
       goalTag: {
         backgroundColor: '#33B679' + '20',
         borderRadius: 6,
         paddingHorizontal: 8,
-        paddingVertical: 3,
+        paddingVertical: 4,
         borderWidth: 1,
-        borderColor: '#33B679' + '50'
+        borderColor: '#33B679' + '50',
+        alignSelf: 'flex-start',
+        maxWidth: '100%'
       },
       goalTagText: {
-        fontSize: 11,
+        fontSize: 12,
         color: '#33B679',
         fontWeight: '600'
       },

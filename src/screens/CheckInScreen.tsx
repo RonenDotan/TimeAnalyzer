@@ -69,11 +69,13 @@ export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel
 
   useEffect(() => {
     SettingsService.load().then(s => setNoteKeyword(s.noteKeyword));
+    // Pre-load goals so they're visible even before recording starts
+    GoalsService.getActiveGoals(periodEnd).then(setActiveGoals);
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
       TranscriptionService.stop().catch(() => {});
     };
-  }, []);
+  }, [periodEnd]);
 
   async function requestMicPermission(): Promise<boolean> {
     if (Platform.OS !== 'android') return true;
@@ -236,6 +238,23 @@ export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel
         keyboardShouldPersistTaps="handled">
         {phase === 'idle' && (
           <>
+            {/* Active goals reminder — shown before recording so user knows what to think about */}
+            {activeGoals.length > 0 && (
+              <View style={styles.idleGoalsSection}>
+                <Text style={styles.idleGoalsLabel}>🎯  Goals in scope</Text>
+                {activeGoals.map(goal => (
+                  <View key={goal.id} style={styles.idleGoalRow}>
+                    <View style={styles.idleGoalInfo}>
+                      <Text style={styles.idleGoalText} numberOfLines={1}>{goal.text}</Text>
+                      <View style={styles.idleBarBg}>
+                        <View style={[styles.idleBarFill, { width: `${goal.progress}%` as any }]} />
+                      </View>
+                    </View>
+                    <Text style={styles.idleGoalPct}>{goal.progress}%</Text>
+                  </View>
+                ))}
+              </View>
+            )}
             <TextInput
               style={styles.typeInput}
               value={transcript}
@@ -321,20 +340,24 @@ export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel
               <Text style={styles.addNoteBtnText}>+ Add note</Text>
             </TouchableOpacity>
 
-            {/* Active goals — contribution input */}
+            {/* Active goals — contribution input per goal */}
             {activeGoals.length > 0 && (
               <View style={styles.goalsSection}>
-                <Text style={styles.goalsSectionLabel}>GOALS — how much did you advance?</Text>
+                <Text style={styles.goalsSectionLabel}>🎯  HOW MUCH DID YOU ADVANCE EACH GOAL?</Text>
                 {activeGoals.map(goal => (
-                  <View key={goal.id} style={styles.goalContribRow}>
-                    <View style={styles.goalContribInfo}>
-                      <Text style={styles.goalContribText} numberOfLines={2}>{goal.text}</Text>
+                  <View key={goal.id} style={styles.goalContribCard}>
+                    {/* Goal name — prominent, full width */}
+                    <Text style={styles.goalContribName}>{goal.text}</Text>
+                    {/* Progress bar + current % */}
+                    <View style={styles.goalContribBarRow}>
                       <View style={styles.progressBarBg}>
                         <View style={[styles.progressBarFill, { width: `${goal.progress}%` as any }]} />
                       </View>
                       <Text style={styles.goalProgressLabel}>{goal.progress}% done</Text>
                     </View>
-                    <View style={styles.goalContribInput}>
+                    {/* Advance-by input — clearly labeled */}
+                    <View style={styles.goalContribInputRow}>
+                      <Text style={styles.goalContribInputLabel}>Advance by</Text>
                       <TextInput
                         style={styles.pctInput}
                         value={contributions[goal.id] ?? ''}
@@ -514,30 +537,57 @@ function makeStyles(colors: ColorPalette) {
     noteRemoveText: { fontSize: 16, color: colors.placeholder },
     addNoteBtn: { alignSelf: 'flex-start' },
     addNoteBtnText: { fontSize: 15, color: colors.accent, fontWeight: '500' },
-    goalsSection: { width: '100%', gap: 8 },
+    // Idle phase — goals reminder
+    idleGoalsSection: {
+      width: '100%',
+      backgroundColor: colors.accent + '12',
+      borderRadius: 12,
+      padding: 12,
+      gap: 8,
+      borderLeftWidth: 3,
+      borderLeftColor: colors.accent,
+    },
+    idleGoalsLabel: { fontSize: 11, fontWeight: '700', color: colors.accent, letterSpacing: 0.5 },
+    idleGoalRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+    idleGoalInfo: { flex: 1, gap: 3 },
+    idleGoalText: { fontSize: 13, color: colors.text, fontWeight: '500' },
+    idleBarBg: { height: 3, backgroundColor: colors.border, borderRadius: 2, overflow: 'hidden' },
+    idleBarFill: { height: 3, backgroundColor: colors.accent, borderRadius: 2 },
+    idleGoalPct: { fontSize: 13, fontWeight: '700', color: colors.accent, minWidth: 36, textAlign: 'right' },
+    // Confirming phase — contribution cards
+    goalsSection: { width: '100%', gap: 10 },
     goalsSectionLabel: {
-      fontSize: 11, fontWeight: '600', color: colors.textSecondary, letterSpacing: 0.5,
+      fontSize: 11, fontWeight: '700', color: colors.accent, letterSpacing: 0.5,
     },
-    goalContribRow: {
-      flexDirection: 'row', alignItems: 'center', gap: 12,
-      backgroundColor: colors.surface, borderRadius: 10, padding: 12,
+    goalContribCard: {
+      backgroundColor: colors.surface,
+      borderRadius: 12,
+      padding: 14,
+      gap: 8,
+      borderLeftWidth: 3,
+      borderLeftColor: colors.accent,
     },
-    goalContribInfo: { flex: 1, gap: 4 },
-    goalContribText: { fontSize: 14, color: colors.text, lineHeight: 20 },
+    goalContribName: {
+      fontSize: 15, fontWeight: '600', color: colors.text, lineHeight: 22,
+    },
+    goalContribBarRow: { gap: 4 },
     progressBarBg: {
-      height: 4, backgroundColor: colors.border, borderRadius: 2, overflow: 'hidden',
+      height: 5, backgroundColor: colors.border, borderRadius: 3, overflow: 'hidden',
     },
     progressBarFill: {
-      height: 4, backgroundColor: colors.accent, borderRadius: 2,
+      height: 5, backgroundColor: colors.accent, borderRadius: 3,
     },
     goalProgressLabel: { fontSize: 11, color: colors.textSecondary },
-    goalContribInput: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+    goalContribInputRow: {
+      flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4,
+    },
+    goalContribInputLabel: { fontSize: 14, color: colors.textSecondary, flex: 1 },
     pctInput: {
-      width: 48, textAlign: 'center', fontSize: 16, fontWeight: '600',
-      color: colors.text, borderBottomWidth: 1.5, borderBottomColor: colors.accent,
+      width: 56, textAlign: 'center', fontSize: 18, fontWeight: '700',
+      color: colors.text, borderBottomWidth: 2, borderBottomColor: colors.accent,
       paddingVertical: 2,
     },
-    pctLabel: { fontSize: 14, color: colors.textSecondary },
+    pctLabel: { fontSize: 16, color: colors.textSecondary },
     confirmRow: { flexDirection: 'row', gap: 12, width: '100%' },
     rerecordBtn: {
       flex: 1,
