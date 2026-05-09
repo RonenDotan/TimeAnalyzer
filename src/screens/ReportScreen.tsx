@@ -76,7 +76,7 @@ export default function ReportScreen({ onStartCheckIn, onOpenMenu, onEditPlan, i
       StorageService.getByDateRange(startOfDay(date), endOfDay(date)),
       StorageService.getDayPlan(dateStr),
       StorageService.getCalendarPlanBlocksByDate(dateStr),
-      GoalsService.getActiveGoals(startOfDay(date).getTime()),
+      GoalsService.getActiveGoals(endOfDay(date).getTime()),
     ]);
     const sorted = results.sort((a, b) => a.timestampStart - b.timestampStart);
     setEntries(sorted);

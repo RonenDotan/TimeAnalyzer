@@ -104076,7 +104076,7 @@ __d(function(global, require, _importDefaultUnused, _importAllUnused, module, ex
     "major":  0,
     "minor":  0,
     "ticket_id":  24,
-    "sequence":  16
+    "sequence":  18
 }
 ;
 },638,[],"version.json");
@@ -111962,7 +111962,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       var _ref = (0, _asyncToGenerator2.default)(function* (date) {
         setLoading(true);
         var dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-        var _yield$Promise$all = yield Promise.all([_StorageService.default.getByDateRange(startOfDay(date), endOfDay(date)), _StorageService.default.getDayPlan(dateStr), _StorageService.default.getCalendarPlanBlocksByDate(dateStr), _GoalsService.default.getActiveGoals(startOfDay(date).getTime())]),
+        var _yield$Promise$all = yield Promise.all([_StorageService.default.getByDateRange(startOfDay(date), endOfDay(date)), _StorageService.default.getDayPlan(dateStr), _StorageService.default.getCalendarPlanBlocksByDate(dateStr), _GoalsService.default.getActiveGoals(endOfDay(date).getTime())]),
           _yield$Promise$all2 = (0, _slicedToArray2.default)(_yield$Promise$all, 4),
           results = _yield$Promise$all2[0],
           plan = _yield$Promise$all2[1],
