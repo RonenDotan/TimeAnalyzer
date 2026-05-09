@@ -211,7 +211,10 @@ export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel
         <PlanHintBar periodStart={periodStart} periodEnd={periodEnd} />
       </View>
 
-      <View style={styles.body}>
+      <ScrollView
+        style={styles.bodyScroll}
+        contentContainerStyle={styles.body}
+        keyboardShouldPersistTaps="handled">
         {phase === 'idle' && (
           <>
             <TextInput
@@ -339,7 +342,7 @@ export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel
             </View>
           </>
         )}
-      </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
@@ -347,6 +350,7 @@ export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel
 function makeStyles(colors: ColorPalette) {
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
+    bodyScroll: { flex: 1 },
     header: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -368,11 +372,12 @@ function makeStyles(colors: ColorPalette) {
     periodSub: { fontSize: 14, color: colors.textSecondary, marginTop: 4 },
     hintRow: { paddingHorizontal: 24, width: '100%' },
     body: {
-      flex: 1,
+      flexGrow: 1,
       alignItems: 'center',
       justifyContent: 'flex-start',
       paddingHorizontal: 24,
       paddingTop: 24,
+      paddingBottom: 32,
       gap: 20,
     },
     typeInput: {

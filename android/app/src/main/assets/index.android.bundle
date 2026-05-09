@@ -104075,8 +104075,8 @@ __d(function(global, require, _importDefaultUnused, _importAllUnused, module, ex
   module.exports = {
     "major":  0,
     "minor":  0,
-    "ticket_id":  26,
-    "sequence":  1
+    "ticket_id":  24,
+    "sequence":  14
 }
 ;
 },638,[],"version.json");
@@ -108538,8 +108538,10 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
           periodStart: periodStart,
           periodEnd: periodEnd
         })
-      }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-        style: styles.body,
+      }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.ScrollView, {
+        style: styles.bodyScroll,
+        contentContainerStyle: styles.body,
+        keyboardShouldPersistTaps: "handled",
         children: [phase === 'idle' && /*#__PURE__*/(0, _jsxRuntime.jsxs)(_jsxRuntime.Fragment, {
           children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TextInput, {
             style: styles.typeInput,
@@ -108714,6 +108716,9 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         flex: 1,
         backgroundColor: colors.background
       },
+      bodyScroll: {
+        flex: 1
+      },
       header: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -108755,11 +108760,12 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         width: '100%'
       },
       body: {
-        flex: 1,
+        flexGrow: 1,
         alignItems: 'center',
         justifyContent: 'flex-start',
         paddingHorizontal: 24,
         paddingTop: 24,
+        paddingBottom: 32,
         gap: 20
       },
       typeInput: {
@@ -109791,8 +109797,9 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
   var _DictateBar = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[5], "../components/DictateBar"));
   var _TranscriptionService = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[6], "../services/TranscriptionService"));
   var _StorageService = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[7], "../services/StorageService"));
-  var _CalendarSyncService = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[8], "../services/CalendarSyncService"));
-  var _jsxRuntime = _$$_REQUIRE(_dependencyMap[9], "react/jsx-runtime");
+  var _GoalsService = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[8], "../services/GoalsService"));
+  var _CalendarSyncService = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[9], "../services/CalendarSyncService"));
+  var _jsxRuntime = _$$_REQUIRE(_dependencyMap[10], "react/jsx-runtime");
   var _jsxFileName = "C:\\Users\\ronen\\TimeAnalyzer\\src\\screens\\DayPlanScreen.tsx";
   function _interopRequireWildcard(e, t) { if ("function" == typeof WeakMap) var r = new WeakMap(), n = new WeakMap(); return (_interopRequireWildcard = function (e, t) { if (!t && e && e.__esModule) return e; var o, i, f = { __proto__: null, default: e }; if (null === e || "object" != typeof e && "function" != typeof e) return f; if (o = t ? n : r) { if (o.has(e)) return o.get(e); o.set(e, f); } for (var _t in e) "default" !== _t && {}.hasOwnProperty.call(e, _t) && ((i = (o = Object.defineProperty) && Object.getOwnPropertyDescriptor(e, _t)) && (i.get || i.set) ? o(f, _t, i) : f[_t] = e[_t]); return f; })(e, t); }
   function toDateString(d) {
@@ -109800,16 +109807,16 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
   }
   function parsedToEdit(b) {
     return {
-      startText: (0, _$$_REQUIRE(_dependencyMap[10], "../utils/parseDayPlan").formatMin)(b.startMin),
-      endText: (0, _$$_REQUIRE(_dependencyMap[10], "../utils/parseDayPlan").formatMin)(b.endMin),
+      startText: (0, _$$_REQUIRE(_dependencyMap[11], "../utils/parseDayPlan").formatMin)(b.startMin),
+      endText: (0, _$$_REQUIRE(_dependencyMap[11], "../utils/parseDayPlan").formatMin)(b.endMin),
       activity: b.activity
     };
   }
   function planBlockToEdit(b) {
     return {
       id: b.id,
-      startText: (0, _$$_REQUIRE(_dependencyMap[10], "../utils/parseDayPlan").formatMin)(b.startMin),
-      endText: (0, _$$_REQUIRE(_dependencyMap[10], "../utils/parseDayPlan").formatMin)(b.endMin),
+      startText: (0, _$$_REQUIRE(_dependencyMap[11], "../utils/parseDayPlan").formatMin)(b.startMin),
+      endText: (0, _$$_REQUIRE(_dependencyMap[11], "../utils/parseDayPlan").formatMin)(b.endMin),
       activity: b.activity,
       syncedAt: b.syncedAt,
       updatedAt: b.updatedAt,
@@ -109827,7 +109834,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
   function normalizeTimeText(text) {
     var min = parseTimeText(text);
     if (min === null) return text;
-    return (0, _$$_REQUIRE(_dependencyMap[10], "../utils/parseDayPlan").formatMin)(min);
+    return (0, _$$_REQUIRE(_dependencyMap[11], "../utils/parseDayPlan").formatMin)(min);
   }
   function formatHeader(dateStr) {
     var _dateStr$split$map = dateStr.split('-').map(Number),
@@ -109855,8 +109862,8 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
     debugMode = false,
     calendarColor = '#7986CB'
   }) {
-    var insets = (0, _$$_REQUIRE(_dependencyMap[11], "react-native-safe-area-context").useSafeAreaInsets)();
-    var _useTheme = (0, _$$_REQUIRE(_dependencyMap[12], "../contexts/ThemeContext").useTheme)(),
+    var insets = (0, _$$_REQUIRE(_dependencyMap[12], "react-native-safe-area-context").useSafeAreaInsets)();
+    var _useTheme = (0, _$$_REQUIRE(_dependencyMap[13], "../contexts/ThemeContext").useTheme)(),
       colors = _useTheme.colors;
     var _useState = (0, _react.useState)(initialDate ?? new Date()),
       _useState2 = (0, _slicedToArray2.default)(_useState, 2),
@@ -109886,8 +109893,30 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       _useState12 = (0, _slicedToArray2.default)(_useState11, 2),
       recording = _useState12[0],
       setRecording = _useState12[1];
+    var _useState13 = (0, _react.useState)([]),
+      _useState14 = (0, _slicedToArray2.default)(_useState13, 2),
+      goals = _useState14[0],
+      setGoals = _useState14[1];
+    var _useState15 = (0, _react.useState)(''),
+      _useState16 = (0, _slicedToArray2.default)(_useState15, 2),
+      newGoalText = _useState16[0],
+      setNewGoalText = _useState16[1];
+    var _useState17 = (0, _react.useState)(false),
+      _useState18 = (0, _slicedToArray2.default)(_useState17, 2),
+      addingGoal = _useState18[0],
+      setAddingGoal = _useState18[1];
     var timerRef = (0, _react.useRef)(null);
     var dateStr = toDateString(currentDate);
+    function loadGoals() {
+      return _loadGoals.apply(this, arguments);
+    }
+    function _loadGoals() {
+      _loadGoals = (0, _asyncToGenerator2.default)(function* () {
+        var active = yield _GoalsService.default.getActiveGoals(Date.now());
+        setGoals(active);
+      });
+      return _loadGoals.apply(this, arguments);
+    }
     (0, _react.useEffect)(() => {
       function load() {
         return _load.apply(this, arguments);
@@ -109914,6 +109943,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         return _load.apply(this, arguments);
       }
       load();
+      loadGoals();
     }, [dateStr]);
     function goToPrevDay() {
       setCurrentDate(d => new Date(d.getTime() - 86_400_000));
@@ -109922,7 +109952,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       setCurrentDate(d => new Date(d.getTime() + 86_400_000));
     }
     function handleParse() {
-      var parsed = (0, _$$_REQUIRE(_dependencyMap[10], "../utils/parseDayPlan").parseDayPlan)(rawInput);
+      var parsed = (0, _$$_REQUIRE(_dependencyMap[11], "../utils/parseDayPlan").parseDayPlan)(rawInput);
       if (parsed.length === 0) {
         _reactNative.Alert.alert('Nothing parsed', 'Try: "from 8 to 10 backend work, 10 to 12 meetings"');
         return;
@@ -110003,6 +110033,29 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         _TranscriptionService.default.stop().catch(() => {});
       };
     }, []);
+    function handleAddGoal() {
+      return _handleAddGoal.apply(this, arguments);
+    }
+    function _handleAddGoal() {
+      _handleAddGoal = (0, _asyncToGenerator2.default)(function* () {
+        var text = newGoalText.trim();
+        if (!text) return;
+        var now = Date.now();
+        yield _GoalsService.default.saveGoal({
+          text,
+          startAt: now,
+          targetAt: null,
+          progress: 0,
+          status: 'active',
+          createdAt: now,
+          updatedAt: now
+        });
+        setNewGoalText('');
+        setAddingGoal(false);
+        yield loadGoals();
+      });
+      return _handleAddGoal.apply(this, arguments);
+    }
     function handleSave() {
       return _handleSave.apply(this, arguments);
     }
@@ -110010,7 +110063,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       _handleSave = (0, _asyncToGenerator2.default)(function* () {
         var currentBlocks = blocks;
         if (rawInput.trim().length > 0) {
-          var autoParsed = (0, _$$_REQUIRE(_dependencyMap[10], "../utils/parseDayPlan").parseDayPlan)(rawInput);
+          var autoParsed = (0, _$$_REQUIRE(_dependencyMap[11], "../utils/parseDayPlan").parseDayPlan)(rawInput);
           if (autoParsed.length > 0) {
             currentBlocks = [...currentBlocks, ...autoParsed.map(parsedToEdit)];
             setBlocks(currentBlocks);
@@ -110122,7 +110175,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
             multiline: true,
             textAlignVertical: "top"
           }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_DictateBar.default, {
-            onResult: raw => setRawInput(prev => (0, _$$_REQUIRE(_dependencyMap[13], "../utils/parseTranscript").applyTranscription)(prev, raw))
+            onResult: raw => setRawInput(prev => (0, _$$_REQUIRE(_dependencyMap[14], "../utils/parseTranscript").applyTranscription)(prev, raw))
           }), rawInput.trim().length > 0 && /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
             style: styles.parseBtn,
             onPress: handleParse,
@@ -110224,7 +110277,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
             style: styles.blockTimes,
             children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
               style: styles.calendarBlockTime,
-              children: [(0, _$$_REQUIRE(_dependencyMap[10], "../utils/parseDayPlan").formatMin)(block.startMin), " \u2013 ", (0, _$$_REQUIRE(_dependencyMap[10], "../utils/parseDayPlan").formatMin)(block.endMin)]
+              children: [(0, _$$_REQUIRE(_dependencyMap[11], "../utils/parseDayPlan").formatMin)(block.startMin), " \u2013 ", (0, _$$_REQUIRE(_dependencyMap[11], "../utils/parseDayPlan").formatMin)(block.endMin)]
             }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
               style: styles.calendarBadge,
               children: "\uD83D\uDDD3 G"
@@ -110249,6 +110302,71 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
             style: styles.addBtnText,
             children: "+ Add block manually"
           })
+        }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+          style: styles.goalsSectionCard,
+          children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+            style: styles.goalsSectionHeader,
+            children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+              style: styles.goalsSectionTitle,
+              children: "ACTIVE GOALS"
+            }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
+              onPress: () => setAddingGoal(v => !v),
+              children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                style: styles.goalsSectionAdd,
+                children: addingGoal ? '✕' : '+ New goal'
+              })
+            })]
+          }), goals.length === 0 && !addingGoal && /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+            style: styles.goalsEmpty,
+            children: "No active goals"
+          }), goals.map(goal => /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+            style: styles.goalRow,
+            children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+              style: styles.goalRowTop,
+              children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                style: styles.goalText,
+                numberOfLines: 2,
+                children: goal.text
+              }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
+                style: styles.goalPct,
+                children: [goal.progress, "%"]
+              })]
+            }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
+              style: styles.goalProgressBg,
+              children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
+                style: [styles.goalProgressFill, {
+                  width: `${goal.progress}%`
+                }]
+              })
+            }), goal.targetAt !== null && /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
+              style: styles.goalTarget,
+              children: ["\uD83D\uDCC5 ", new Date(goal.targetAt).toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric'
+              })]
+            })]
+          }, goal.id)), addingGoal && /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+            style: styles.addGoalRow,
+            children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TextInput, {
+              style: styles.addGoalInput,
+              value: newGoalText,
+              onChangeText: setNewGoalText,
+              placeholder: "Describe your goal\u2026",
+              placeholderTextColor: colors.placeholder,
+              multiline: true,
+              textAlignVertical: "top",
+              autoFocus: true
+            }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
+              style: [styles.addGoalBtn, !newGoalText.trim() && styles.addGoalBtnDisabled],
+              onPress: handleAddGoal,
+              disabled: !newGoalText.trim(),
+              children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                style: styles.addGoalBtnText,
+                children: "Add"
+              })
+            })]
+          })]
         })]
       })]
     });
@@ -110459,10 +110577,102 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         fontSize: 11,
         color: colors.textSecondary,
         fontFamily: 'monospace'
+      },
+      goalsSectionCard: {
+        backgroundColor: colors.surface,
+        borderRadius: 12,
+        padding: 14,
+        gap: 10,
+        marginTop: 4
+      },
+      goalsSectionHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between'
+      },
+      goalsSectionTitle: {
+        fontSize: 11,
+        fontWeight: '600',
+        color: colors.textSecondary,
+        letterSpacing: 0.5
+      },
+      goalsSectionAdd: {
+        fontSize: 13,
+        color: colors.accent,
+        fontWeight: '500'
+      },
+      goalsEmpty: {
+        fontSize: 14,
+        color: colors.placeholder,
+        fontStyle: 'italic'
+      },
+      goalRow: {
+        gap: 4
+      },
+      goalRowTop: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center'
+      },
+      goalText: {
+        fontSize: 14,
+        color: colors.text,
+        flex: 1,
+        lineHeight: 20
+      },
+      goalPct: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: colors.accent,
+        marginLeft: 8
+      },
+      goalProgressBg: {
+        height: 4,
+        backgroundColor: colors.border,
+        borderRadius: 2,
+        overflow: 'hidden'
+      },
+      goalProgressFill: {
+        height: 4,
+        backgroundColor: colors.accent,
+        borderRadius: 2
+      },
+      goalTarget: {
+        fontSize: 11,
+        color: colors.textSecondary
+      },
+      addGoalRow: {
+        gap: 8
+      },
+      addGoalInput: {
+        fontSize: 15,
+        color: colors.text,
+        backgroundColor: colors.background,
+        borderRadius: 8,
+        padding: 10,
+        minHeight: 64,
+        lineHeight: 22,
+        borderWidth: 1,
+        borderColor: colors.accent
+      },
+      addGoalBtn: {
+        alignSelf: 'flex-end',
+        paddingHorizontal: 20,
+        paddingVertical: 8,
+        backgroundColor: colors.accent,
+        borderRadius: 8
+      },
+      addGoalBtnDisabled: {
+        backgroundColor: colors.placeholder
+      },
+      addGoalBtnText: {
+        fontSize: 14,
+        color: '#fff',
+        fontWeight: '600'
       }
     });
   }
-},687,[1,178,14,71,2,688,681,640,639,182,685,668,677,686],"src/screens/DayPlanScreen.tsx");
+},687,[1,178,14,71,2,688,681,640,679,639,182,685,668,677,686],"src/screens/DayPlanScreen.tsx");
 __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
   var _interopRequireDefault = _$$_REQUIRE(_dependencyMap[0], "@babel/runtime/helpers/interopRequireDefault");
   Object.defineProperty(exports, "__esModule", {

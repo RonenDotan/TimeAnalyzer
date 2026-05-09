@@ -12,8 +12,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import DictateBar from '../components/DictateBar';
 import TranscriptionService from '../services/TranscriptionService';
 import StorageService from '../services/StorageService';
+import GoalsService from '../services/GoalsService';
 import CalendarSyncService from '../services/CalendarSyncService';
 import { ParsedBlock, PlanBlock } from '../types/DayPlan';
+import { Goal } from '../types/Goal';
 import { applyTranscription } from '../utils/parseTranscript';
 import { formatMin, parseDayPlan } from '../utils/parseDayPlan';
 import { ColorPalette, useTheme } from '../contexts/ThemeContext';
@@ -95,9 +97,17 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false,
   const [deletedBlockIds, setDeletedBlockIds] = useState<number[]>([]);
   const [saving, setSaving] = useState(false);
   const [recording, setRecording] = useState<RecordingState>(null);
+  const [goals, setGoals] = useState<Goal[]>([]);
+  const [newGoalText, setNewGoalText] = useState('');
+  const [addingGoal, setAddingGoal] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const dateStr = toDateString(currentDate);
+
+  async function loadGoals() {
+    const active = await GoalsService.getActiveGoals(Date.now());
+    setGoals(active);
+  }
 
   useEffect(() => {
     async function load() {
@@ -119,6 +129,7 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false,
       }
     }
     load();
+    loadGoals();
   }, [dateStr]);
 
   function goToPrevDay() {
@@ -190,6 +201,24 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false,
       TranscriptionService.stop().catch(() => {});
     };
   }, []);
+
+  async function handleAddGoal() {
+    const text = newGoalText.trim();
+    if (!text) return;
+    const now = Date.now();
+    await GoalsService.saveGoal({
+      text,
+      startAt: now,
+      targetAt: null,
+      progress: 0,
+      status: 'active',
+      createdAt: now,
+      updatedAt: now,
+    });
+    setNewGoalText('');
+    setAddingGoal(false);
+    await loadGoals();
+  }
 
   async function handleSave() {
     let currentBlocks = blocks;
@@ -399,6 +428,58 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false,
         <TouchableOpacity style={styles.addBtn} onPress={addBlock}>
           <Text style={styles.addBtnText}>+ Add block manually</Text>
         </TouchableOpacity>
+
+        {/* Active goals — read-only overview, add new */}
+        <View style={styles.goalsSectionCard}>
+          <View style={styles.goalsSectionHeader}>
+            <Text style={styles.goalsSectionTitle}>ACTIVE GOALS</Text>
+            <TouchableOpacity onPress={() => setAddingGoal(v => !v)}>
+              <Text style={styles.goalsSectionAdd}>{addingGoal ? '✕' : '+ New goal'}</Text>
+            </TouchableOpacity>
+          </View>
+
+          {goals.length === 0 && !addingGoal && (
+            <Text style={styles.goalsEmpty}>No active goals</Text>
+          )}
+
+          {goals.map(goal => (
+            <View key={goal.id} style={styles.goalRow}>
+              <View style={styles.goalRowTop}>
+                <Text style={styles.goalText} numberOfLines={2}>{goal.text}</Text>
+                <Text style={styles.goalPct}>{goal.progress}%</Text>
+              </View>
+              <View style={styles.goalProgressBg}>
+                <View style={[styles.goalProgressFill, { width: `${goal.progress}%` as any }]} />
+              </View>
+              {goal.targetAt !== null && (
+                <Text style={styles.goalTarget}>
+                  📅 {new Date(goal.targetAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                </Text>
+              )}
+            </View>
+          ))}
+
+          {addingGoal && (
+            <View style={styles.addGoalRow}>
+              <TextInput
+                style={styles.addGoalInput}
+                value={newGoalText}
+                onChangeText={setNewGoalText}
+                placeholder="Describe your goal…"
+                placeholderTextColor={colors.placeholder}
+                multiline
+                textAlignVertical="top"
+                autoFocus
+              />
+              <TouchableOpacity
+                style={[styles.addGoalBtn, !newGoalText.trim() && styles.addGoalBtnDisabled]}
+                onPress={handleAddGoal}
+                disabled={!newGoalText.trim()}>
+                <Text style={styles.addGoalBtnText}>Add</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
       </ScrollView>
     </View>
   );
@@ -547,5 +628,65 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
       borderTopColor: colors.border,
     },
     debugText: { fontSize: 11, color: colors.textSecondary, fontFamily: 'monospace' },
+    goalsSectionCard: {
+      backgroundColor: colors.surface,
+      borderRadius: 12,
+      padding: 14,
+      gap: 10,
+      marginTop: 4,
+    },
+    goalsSectionHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    goalsSectionTitle: {
+      fontSize: 11,
+      fontWeight: '600',
+      color: colors.textSecondary,
+      letterSpacing: 0.5,
+    },
+    goalsSectionAdd: {
+      fontSize: 13,
+      color: colors.accent,
+      fontWeight: '500',
+    },
+    goalsEmpty: {
+      fontSize: 14,
+      color: colors.placeholder,
+      fontStyle: 'italic',
+    },
+    goalRow: { gap: 4 },
+    goalRowTop: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    goalText: { fontSize: 14, color: colors.text, flex: 1, lineHeight: 20 },
+    goalPct: { fontSize: 13, fontWeight: '600', color: colors.accent, marginLeft: 8 },
+    goalProgressBg: { height: 4, backgroundColor: colors.border, borderRadius: 2, overflow: 'hidden' },
+    goalProgressFill: { height: 4, backgroundColor: colors.accent, borderRadius: 2 },
+    goalTarget: { fontSize: 11, color: colors.textSecondary },
+    addGoalRow: { gap: 8 },
+    addGoalInput: {
+      fontSize: 15,
+      color: colors.text,
+      backgroundColor: colors.background,
+      borderRadius: 8,
+      padding: 10,
+      minHeight: 64,
+      lineHeight: 22,
+      borderWidth: 1,
+      borderColor: colors.accent,
+    },
+    addGoalBtn: {
+      alignSelf: 'flex-end',
+      paddingHorizontal: 20,
+      paddingVertical: 8,
+      backgroundColor: colors.accent,
+      borderRadius: 8,
+    },
+    addGoalBtnDisabled: { backgroundColor: colors.placeholder },
+    addGoalBtnText: { fontSize: 14, color: '#fff', fontWeight: '600' },
   });
 }
