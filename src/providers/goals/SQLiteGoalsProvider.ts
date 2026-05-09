@@ -1,49 +1,8 @@
-import { open } from '@op-engineering/op-sqlite';
 import { Goal, GoalContribution, GoalStatus } from '../../types/Goal';
 import { GoalsProvider } from './GoalsProvider';
+import { getDb } from '../storage/SQLiteStorageProvider';
 
-type DB = ReturnType<typeof open>;
-let db: DB | null = null;
-
-function getDb(): DB {
-  if (!db) {
-    db = open({ name: 'time-analyzer.sqlite' });
-
-    db.executeSync(`
-      CREATE TABLE IF NOT EXISTS goals (
-        id          INTEGER PRIMARY KEY AUTOINCREMENT,
-        text        TEXT    NOT NULL,
-        start_at    INTEGER NOT NULL,
-        target_at   INTEGER,
-        progress    INTEGER NOT NULL DEFAULT 0,
-        status      TEXT    NOT NULL DEFAULT 'active',
-        created_at  INTEGER NOT NULL,
-        updated_at  INTEGER NOT NULL DEFAULT 0
-      )
-    `);
-
-    db.executeSync(`
-      CREATE TABLE IF NOT EXISTS goal_contributions (
-        id               INTEGER PRIMARY KEY AUTOINCREMENT,
-        goal_id          INTEGER NOT NULL,
-        entry_id         INTEGER,
-        contribution_pct INTEGER NOT NULL,
-        created_at       INTEGER NOT NULL
-      )
-    `);
-
-    db.executeSync(`
-      CREATE INDEX IF NOT EXISTS idx_goals_status    ON goals (status)
-    `);
-    db.executeSync(`
-      CREATE INDEX IF NOT EXISTS idx_goals_start_at  ON goals (start_at)
-    `);
-    db.executeSync(`
-      CREATE INDEX IF NOT EXISTS idx_contributions_goal ON goal_contributions (goal_id)
-    `);
-  }
-  return db;
-}
+// Uses the shared DB connection from SQLiteStorageProvider (same file, same instance)
 
 function rowToGoal(row: Record<string, unknown>): Goal {
   return {
