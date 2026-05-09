@@ -14,7 +14,7 @@ import GoalsService from '../services/GoalsService';
 import { LogEntry } from '../types/LogEntry';
 import { Goal, GoalEntryContribution } from '../types/Goal';
 
-const GOAL_COLOR = '#E53935';
+const GOAL_COLOR = '#F97316';
 import { ColorPalette, useTheme } from '../contexts/ThemeContext';
 import { DayPlan, PlanBlock } from '../types/DayPlan';
 import { allMatchingBlocks, isCovered } from '../utils/planMatching';

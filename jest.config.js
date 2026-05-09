@@ -11,6 +11,8 @@ module.exports = {
       '<rootDir>/__mocks__/@op-engineering/op-sqlite.ts',
     '@react-native-google-signin/google-signin':
       '<rootDir>/__mocks__/@react-native-google-signin/google-signin.ts',
+    '@react-native-community/datetimepicker':
+      '<rootDir>/__mocks__/@react-native-community/datetimepicker.tsx',
   },
   transformIgnorePatterns: [
     'node_modules/(?!(react-native|@react-native|react-native-safe-area-context)/)',

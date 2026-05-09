@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import DictateBar from '../components/DictateBar';
 import TranscriptionService from '../services/TranscriptionService';
@@ -21,38 +22,50 @@ interface Props {
 }
 
 type RecordingTarget = { type: 'new' } | { type: 'edit'; id: number } | null;
+type DateFieldKey = 'newStart' | 'newTarget' | 'editStart' | 'editTarget';
+type ActiveDatePicker = { field: DateFieldKey; mode: 'date' | 'time' } | null;
 
-/** Parse "YYYY-MM-DD" or "YYYY-MM-DD HH:MM" into epoch ms. Returns null if invalid. */
-function parseDateInput(s: string): number | null {
-  const trimmed = s.trim();
-  const dateOnly = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (dateOnly) {
-    const d = new Date(Number(dateOnly[1]), Number(dateOnly[2]) - 1, Number(dateOnly[3]));
-    return isNaN(d.getTime()) ? null : d.getTime();
-  }
-  const withTime = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})\s+(\d{1,2}):(\d{2})$/);
-  if (withTime) {
-    const d = new Date(
-      Number(withTime[1]), Number(withTime[2]) - 1, Number(withTime[3]),
-      Number(withTime[4]), Number(withTime[5]),
-    );
-    return isNaN(d.getTime()) ? null : d.getTime();
-  }
-  return null;
+function currentHourTs(): number {
+  const d = new Date();
+  d.setMinutes(0, 0, 0);
+  return d.getTime();
 }
 
-function formatTs(ts: number | null): string {
-  if (ts === null) return '';
+function setTodayKeepingTime(ts: number): number {
+  const current = new Date();
+  const d = new Date(ts);
+  d.setFullYear(current.getFullYear(), current.getMonth(), current.getDate());
+  return d.getTime();
+}
+
+function replaceDatePart(ts: number, picked: Date): number {
+  const d = new Date(ts);
+  d.setFullYear(picked.getFullYear(), picked.getMonth(), picked.getDate());
+  return d.getTime();
+}
+
+function replaceTimePart(ts: number, picked: Date): number {
+  const d = new Date(ts);
+  d.setHours(picked.getHours(), picked.getMinutes(), 0, 0);
+  return d.getTime();
+}
+
+function formatGoalDateTime(ts: number | null): string {
+  if (ts === null) return 'not set';
   const d = new Date(ts);
   const date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-  const hasTime = d.getHours() !== 0 || d.getMinutes() !== 0;
-  if (!hasTime) return date;
-  return `${date} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  const time = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  return `${date} ${time}`;
 }
 
-function todayString(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+function formatDateLabel(ts: number): string {
+  const d = new Date(ts);
+  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+}
+
+function formatTimeLabel(ts: number): string {
+  const d = new Date(ts);
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
 
 function ProgressBar({ progress, color }: { progress: number; color: string }) {
@@ -63,7 +76,86 @@ function ProgressBar({ progress, color }: { progress: number; color: string }) {
   );
 }
 
-const GOAL_COLOR = '#E53935';
+function DateTimeField({
+  label,
+  value,
+  onPressDate,
+  onPressTime,
+  onToday,
+  styles,
+}: {
+  label: string;
+  value: number;
+  onPressDate: () => void;
+  onPressTime: () => void;
+  onToday: () => void;
+  styles: ReturnType<typeof makeStyles>;
+}) {
+  return (
+    <View style={styles.dateField}>
+      <View style={styles.dateFieldTop}>
+        <Text style={styles.dateFieldLabel}>{label}</Text>
+        <TouchableOpacity onPress={onToday}>
+          <Text style={styles.dateFieldToday}>Today</Text>
+        </TouchableOpacity>
+      </View>
+      <View style={styles.dateFieldActions}>
+        <TouchableOpacity style={styles.dateValueBtn} onPress={onPressDate}>
+          <Text style={styles.dateValueText}>{formatDateLabel(value)}</Text>
+          <Text style={styles.dateChevron}>›</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.timeValueBtn} onPress={onPressTime}>
+          <Text style={styles.timeValueText}>{formatTimeLabel(value)}</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}
+
+function DateRangeFields({
+  startValue,
+  targetValue,
+  onStartDate,
+  onStartTime,
+  onStartToday,
+  onTargetDate,
+  onTargetTime,
+  onTargetToday,
+  styles,
+}: {
+  startValue: number;
+  targetValue: number;
+  onStartDate: () => void;
+  onStartTime: () => void;
+  onStartToday: () => void;
+  onTargetDate: () => void;
+  onTargetTime: () => void;
+  onTargetToday: () => void;
+  styles: ReturnType<typeof makeStyles>;
+}) {
+  return (
+    <View style={styles.dateRangeRow}>
+      <DateTimeField
+        label="Start"
+        value={startValue}
+        onPressDate={onStartDate}
+        onPressTime={onStartTime}
+        onToday={onStartToday}
+        styles={styles}
+      />
+      <DateTimeField
+        label="Finish"
+        value={targetValue}
+        onPressDate={onTargetDate}
+        onPressTime={onTargetTime}
+        onToday={onTargetToday}
+        styles={styles}
+      />
+    </View>
+  );
+}
+
+const GOAL_COLOR = '#F97316';
 
 const STATUS_COLORS: Record<GoalStatus, string> = {
   active:   GOAL_COLOR,
@@ -83,13 +175,15 @@ export default function GoalsScreen({ onClose }: Props) {
   const [goals, setGoals] = useState<Goal[]>([]);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editText, setEditText] = useState('');
-  const [editStartAt, setEditStartAt] = useState('');
-  const [editTargetAt, setEditTargetAt] = useState('');
+  const [editStartAt, setEditStartAt] = useState(currentHourTs);
+  const [editTargetAt, setEditTargetAt] = useState(currentHourTs);
   const [editProgress, setEditProgress] = useState('');
   const [newText, setNewText] = useState('');
-  const [newTargetAt, setNewTargetAt] = useState('');
+  const [newStartAt, setNewStartAt] = useState(currentHourTs);
+  const [newTargetAt, setNewTargetAt] = useState(currentHourTs);
   const [recording, setRecording] = useState<RecordingTarget>(null);
   const [recordingMs, setRecordingMs] = useState(0);
+  const [activeDatePicker, setActiveDatePicker] = useState<ActiveDatePicker>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [filter, setFilter] = useState<GoalStatus | 'all'>('active');
 
@@ -113,20 +207,21 @@ export default function GoalsScreen({ onClose }: Props) {
   async function addGoal() {
     const text = newText.trim();
     if (!text) return;
-    const now = Date.now();
-    const targetAt = newTargetAt.trim() ? parseDateInput(newTargetAt) : null;
-    if (newTargetAt.trim() && targetAt === null) {
-      Alert.alert('Invalid date', 'Use format YYYY-MM-DD or YYYY-MM-DD HH:MM');
+    if (newTargetAt < newStartAt) {
+      Alert.alert('Invalid dates', 'Finish must be the same as or later than Start.');
       return;
     }
+    const now = Date.now();
     try {
       const saved = await GoalsService.saveGoal({
-        text, startAt: now, targetAt, progress: 0,
+        text, startAt: newStartAt, targetAt: newTargetAt, progress: 0,
         status: 'active', createdAt: now, updatedAt: now,
       });
       setGoals(prev => [saved, ...prev]);
       setNewText('');
-      setNewTargetAt('');
+      const nextDefault = currentHourTs();
+      setNewStartAt(nextDefault);
+      setNewTargetAt(nextDefault);
     } catch (e: any) {
       Alert.alert('Failed to add goal', String(e?.message ?? e));
     }
@@ -137,19 +232,21 @@ export default function GoalsScreen({ onClose }: Props) {
   function startEdit(goal: Goal) {
     setEditingId(goal.id);
     setEditText(goal.text);
-    setEditStartAt(formatTs(goal.startAt));
-    setEditTargetAt(formatTs(goal.targetAt));
+    setEditStartAt(goal.startAt);
+    setEditTargetAt(goal.targetAt ?? currentHourTs());
     setEditProgress(String(goal.progress));
   }
 
   async function commitEdit(goal: Goal) {
     const text = editText.trim();
     if (!text) { setEditingId(null); return; }
-    const startAt = parseDateInput(editStartAt) ?? goal.startAt;
-    const targetAt = editTargetAt.trim() ? (parseDateInput(editTargetAt) ?? goal.targetAt) : null;
+    if (editTargetAt < editStartAt) {
+      Alert.alert('Invalid dates', 'Finish must be the same as or later than Start.');
+      return;
+    }
     const progress = Math.max(0, Math.min(100, parseInt(editProgress, 10) || goal.progress));
     const status: GoalStatus = progress >= 100 ? 'done' : goal.status === 'done' && progress < 100 ? 'active' : goal.status;
-    const updated: Goal = { ...goal, text, startAt, targetAt, progress, status, updatedAt: Date.now() };
+    const updated: Goal = { ...goal, text, startAt: editStartAt, targetAt: editTargetAt, progress, status, updatedAt: Date.now() };
     try {
       await GoalsService.updateGoal(updated);
       setGoals(prev => prev.map(g => g.id === updated.id ? updated : g));
@@ -169,6 +266,36 @@ export default function GoalsScreen({ onClose }: Props) {
     } catch (e: any) {
       Alert.alert('Failed to update', String(e?.message ?? e));
     }
+  }
+
+  function getPickerValue(field: DateFieldKey): number {
+    switch (field) {
+      case 'newStart': return newStartAt;
+      case 'newTarget': return newTargetAt;
+      case 'editStart': return editStartAt;
+      case 'editTarget': return editTargetAt;
+    }
+  }
+
+  function updatePickerValue(field: DateFieldKey, value: number) {
+    switch (field) {
+      case 'newStart': setNewStartAt(value); break;
+      case 'newTarget': setNewTargetAt(value); break;
+      case 'editStart': setEditStartAt(value); break;
+      case 'editTarget': setEditTargetAt(value); break;
+    }
+  }
+
+  function handleDateTimeChange(event: DateTimePickerEvent, picked?: Date) {
+    if (!activeDatePicker) return;
+    const picker = activeDatePicker;
+    setActiveDatePicker(null);
+    if (event.type === 'dismissed' || !picked) return;
+    const current = getPickerValue(picker.field);
+    updatePickerValue(
+      picker.field,
+      picker.mode === 'date' ? replaceDatePart(current, picked) : replaceTimePart(current, picked),
+    );
   }
 
   // ─── Delete ───────────────────────────────────────────────────────────────
@@ -261,9 +388,20 @@ export default function GoalsScreen({ onClose }: Props) {
           const color = STATUS_COLORS[goal.status];
           const recEdit = recording?.type === 'edit' && (recording as any).id === goal.id;
           return (
-            <View key={goal.id} style={[styles.goalCard, { borderLeftColor: color }]}>
+            <View key={goal.id} style={[styles.goalCard, { borderLeftColor: GOAL_COLOR }]}>
               {isEditing ? (
                 <>
+                  <DateRangeFields
+                    startValue={editStartAt}
+                    targetValue={editTargetAt}
+                    onStartDate={() => setActiveDatePicker({ field: 'editStart', mode: 'date' })}
+                    onStartTime={() => setActiveDatePicker({ field: 'editStart', mode: 'time' })}
+                    onStartToday={() => setEditStartAt(setTodayKeepingTime(editStartAt))}
+                    onTargetDate={() => setActiveDatePicker({ field: 'editTarget', mode: 'date' })}
+                    onTargetTime={() => setActiveDatePicker({ field: 'editTarget', mode: 'time' })}
+                    onTargetToday={() => setEditTargetAt(setTodayKeepingTime(editTargetAt))}
+                    styles={styles}
+                  />
                   <TextInput
                     style={styles.editInput}
                     value={editText}
@@ -273,26 +411,6 @@ export default function GoalsScreen({ onClose }: Props) {
                     editable={!recEdit}
                     autoFocus
                   />
-                  <View style={styles.editFieldRow}>
-                    <Text style={styles.editFieldLabel}>Start</Text>
-                    <TextInput
-                      style={styles.editFieldInput}
-                      value={editStartAt}
-                      onChangeText={setEditStartAt}
-                      placeholder="YYYY-MM-DD"
-                      placeholderTextColor={colors.placeholder}
-                    />
-                  </View>
-                  <View style={styles.editFieldRow}>
-                    <Text style={styles.editFieldLabel}>Target</Text>
-                    <TextInput
-                      style={styles.editFieldInput}
-                      value={editTargetAt}
-                      onChangeText={setEditTargetAt}
-                      placeholder="YYYY-MM-DD HH:MM (optional)"
-                      placeholderTextColor={colors.placeholder}
-                    />
-                  </View>
                   <View style={styles.editFieldRow}>
                     <Text style={styles.editFieldLabel}>Progress</Text>
                     <TextInput
@@ -333,11 +451,12 @@ export default function GoalsScreen({ onClose }: Props) {
                   <TouchableOpacity onPress={() => startEdit(goal)} style={styles.goalMain}>
                     <Text style={styles.goalText}>{goal.text}</Text>
                     <ProgressBar progress={goal.progress} color={color} />
+                    <View style={styles.goalDates}>
+                      <Text style={styles.goalDateText}>Start {formatGoalDateTime(goal.startAt)}</Text>
+                      <Text style={styles.goalDateText}>Finish {formatGoalDateTime(goal.targetAt)}</Text>
+                    </View>
                     <View style={styles.goalMeta}>
                       <Text style={[styles.goalStatus, { color }]}>{STATUS_LABELS[goal.status]} · {goal.progress}%</Text>
-                      {goal.targetAt !== null && (
-                        <Text style={styles.goalTarget}>📅 {formatTs(goal.targetAt)}</Text>
-                      )}
                     </View>
                   </TouchableOpacity>
                   {/* Status quick-actions */}
@@ -371,6 +490,17 @@ export default function GoalsScreen({ onClose }: Props) {
         {/* Add new goal */}
         <View style={styles.addCard}>
           <Text style={styles.addCardLabel}>NEW GOAL</Text>
+          <DateRangeFields
+            startValue={newStartAt}
+            targetValue={newTargetAt}
+            onStartDate={() => setActiveDatePicker({ field: 'newStart', mode: 'date' })}
+            onStartTime={() => setActiveDatePicker({ field: 'newStart', mode: 'time' })}
+            onStartToday={() => setNewStartAt(setTodayKeepingTime(newStartAt))}
+            onTargetDate={() => setActiveDatePicker({ field: 'newTarget', mode: 'date' })}
+            onTargetTime={() => setActiveDatePicker({ field: 'newTarget', mode: 'time' })}
+            onTargetToday={() => setNewTargetAt(setTodayKeepingTime(newTargetAt))}
+            styles={styles}
+          />
           <TextInput
             style={styles.addInput}
             value={newText}
@@ -380,16 +510,6 @@ export default function GoalsScreen({ onClose }: Props) {
             multiline
             textAlignVertical="top"
           />
-          <View style={styles.addFieldRow}>
-            <Text style={styles.editFieldLabel}>Target date</Text>
-            <TextInput
-              style={styles.editFieldInput}
-              value={newTargetAt}
-              onChangeText={setNewTargetAt}
-              placeholder={`${todayString()} (optional)`}
-              placeholderTextColor={colors.placeholder}
-            />
-          </View>
           <View style={styles.addActions}>
             <DictateBar onResult={raw => setNewText(prev => applyTranscription(prev, raw))} />
             {newText.trim().length > 0 && (
@@ -401,6 +521,15 @@ export default function GoalsScreen({ onClose }: Props) {
         </View>
 
       </ScrollView>
+
+      {activeDatePicker && (
+        <DateTimePicker
+          value={new Date(getPickerValue(activeDatePicker.field))}
+          mode={activeDatePicker.mode}
+          display="default"
+          onChange={handleDateTimeChange}
+        />
+      )}
     </View>
   );
 }
@@ -427,14 +556,17 @@ function makeStyles(colors: ColorPalette) {
     filterTabTextActive: { color: GOAL_COLOR, fontWeight: '600' },
     body:           { padding: 16, gap: 10, paddingBottom: 40 },
     goalCard: {
-      backgroundColor: colors.surface, borderRadius: 12, padding: 14, gap: 8,
+      backgroundColor: GOAL_COLOR + '0c', borderRadius: 12, padding: 14, gap: 8,
       borderLeftWidth: 4,
+      borderWidth: 1,
+      borderColor: GOAL_COLOR + '60',
     },
     goalMain:       { gap: 6 },
     goalText:       { fontSize: 15, color: colors.text, lineHeight: 22 },
     goalMeta:       { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
     goalStatus:     { fontSize: 12, fontWeight: '600' },
-    goalTarget:     { fontSize: 12, color: colors.textSecondary },
+    goalDates:      { gap: 2 },
+    goalDateText:   { fontSize: 11, color: colors.textSecondary },
     quickActions:   { flexDirection: 'row', gap: 8 },
     quickBtn: {
       paddingHorizontal: 10, paddingVertical: 5,
@@ -474,11 +606,60 @@ function makeStyles(colors: ColorPalette) {
       fontSize: 11, fontWeight: '700', color: GOAL_COLOR, letterSpacing: 0.5,
     },
     addInput: { fontSize: 15, color: colors.text, minHeight: 60, lineHeight: 22 },
-    addFieldRow:    { flexDirection: 'row', alignItems: 'center', gap: 8 },
     addActions:     { flexDirection: 'row', alignItems: 'center', gap: 8 },
     addBtn: {
       paddingHorizontal: 14, paddingVertical: 6, backgroundColor: GOAL_COLOR, borderRadius: 8,
     },
     addBtnText:     { fontSize: 14, color: '#fff', fontWeight: '600' },
+    dateRangeRow: {
+      flexDirection: 'row',
+      gap: 8,
+      alignItems: 'stretch',
+    },
+    dateField: {
+      flex: 1,
+      backgroundColor: colors.surfaceSecondary,
+      borderRadius: 8,
+      padding: 8,
+      gap: 6,
+    },
+    dateFieldTop: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    dateFieldLabel: { fontSize: 11, color: colors.textSecondary, fontWeight: '600' },
+    dateFieldToday: { fontSize: 11, color: GOAL_COLOR, fontWeight: '600' },
+    dateFieldActions: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+    dateValueBtn: {
+      flex: 1,
+      minHeight: 30,
+      borderRadius: 7,
+      paddingHorizontal: 7,
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    dateValueText: {
+      flex: 1,
+      fontSize: 12,
+      color: colors.text,
+      fontWeight: '500',
+    },
+    dateChevron: { fontSize: 16, color: colors.textSecondary, marginLeft: 3 },
+    timeValueBtn: {
+      minHeight: 30,
+      minWidth: 52,
+      borderRadius: 7,
+      paddingHorizontal: 7,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: GOAL_COLOR + '14',
+      borderWidth: 1,
+      borderColor: GOAL_COLOR + '50',
+    },
+    timeValueText: { fontSize: 12, color: GOAL_COLOR, fontWeight: '700' },
   });
 }

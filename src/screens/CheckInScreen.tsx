@@ -24,7 +24,7 @@ import { ColorPalette, useTheme } from '../contexts/ThemeContext';
 import PlanHintBar from '../components/PlanHintBar';
 import { Goal } from '../types/Goal';
 
-const GOAL_COLOR = '#E53935';
+const GOAL_COLOR = '#F97316';
 
 type Phase = 'idle' | 'recording' | 'transcribing' | 'confirming' | 'summary';
 
