@@ -17,10 +17,12 @@ import SchedulerService from '../services/SchedulerService';
 import SettingsService from '../services/SettingsService';
 import StorageService from '../services/StorageService';
 import CalendarSyncService from '../services/CalendarSyncService';
+import GoalsService from '../services/GoalsService';
 import TranscriptionService from '../services/TranscriptionService';
 import { parseTranscriptAndNotes } from '../utils/parseTranscript';
 import { ColorPalette, useTheme } from '../contexts/ThemeContext';
 import PlanHintBar from '../components/PlanHintBar';
+import { Goal } from '../types/Goal';
 
 type Phase = 'idle' | 'recording' | 'transcribing' | 'confirming';
 
@@ -52,6 +54,8 @@ export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel
   const [transcript, setTranscript] = useState('');
   const [notes, setNotes] = useState<string[]>([]);
   const [noteKeyword, setNoteKeyword] = useState('note');
+  const [activeGoals, setActiveGoals] = useState<Goal[]>([]);
+  const [contributions, setContributions] = useState<Record<number, string>>({}); // goalId → input string
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
@@ -110,6 +114,9 @@ export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel
       const { transcript: parsed, notes: detectedNotes } = parseTranscriptAndNotes(finalText || partialTranscript, noteKeyword);
       setTranscript(parsed);
       if (detectedNotes.length > 0) setNotes(detectedNotes);
+      const goals = await GoalsService.getActiveGoals(periodEnd);
+      setActiveGoals(goals);
+      setContributions({});
       setPhase('confirming');
     } catch (e: any) {
       Alert.alert('Transcription failed', String(e?.message ?? e));
@@ -151,6 +158,15 @@ export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel
         .filter(n => n.trim().length > 0)
         .map(text => StorageService.saveNote({ entryId: entry.id, text: text.trim(), createdAt: now })),
     );
+    // Apply goal contributions
+    for (const goal of activeGoals) {
+      const pctStr = contributions[goal.id];
+      if (!pctStr) continue;
+      const pct = parseInt(pctStr, 10);
+      if (!isNaN(pct) && pct > 0) {
+        await GoalsService.applyContribution(goal, pct, entry.id);
+      }
+    }
     const moreToday = await SchedulerService.hasMoreCheckInsToday();
     if (!moreToday) {
       await SchedulerService.fireEndOfDayReport();
@@ -161,10 +177,13 @@ export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel
 
   const canSubmitTyped = transcript.trim().length > 0;
 
-  function handleTypedSubmit() {
+  async function handleTypedSubmit() {
     const { transcript: parsed, notes: detectedNotes } = parseTranscriptAndNotes(transcript, noteKeyword);
     setTranscript(parsed);
     if (detectedNotes.length > 0) setNotes(prev => [...prev, ...detectedNotes]);
+    const goals = await GoalsService.getActiveGoals(periodEnd);
+    setActiveGoals(goals);
+    setContributions({});
     setPhase('confirming');
   }
 
@@ -279,6 +298,36 @@ export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel
             <TouchableOpacity style={styles.addNoteBtn} onPress={addNote}>
               <Text style={styles.addNoteBtnText}>+ Add note</Text>
             </TouchableOpacity>
+
+            {/* Active goals — contribution input */}
+            {activeGoals.length > 0 && (
+              <View style={styles.goalsSection}>
+                <Text style={styles.goalsSectionLabel}>GOALS — how much did you advance?</Text>
+                {activeGoals.map(goal => (
+                  <View key={goal.id} style={styles.goalContribRow}>
+                    <View style={styles.goalContribInfo}>
+                      <Text style={styles.goalContribText} numberOfLines={2}>{goal.text}</Text>
+                      <View style={styles.progressBarBg}>
+                        <View style={[styles.progressBarFill, { width: `${goal.progress}%` as any }]} />
+                      </View>
+                      <Text style={styles.goalProgressLabel}>{goal.progress}% done</Text>
+                    </View>
+                    <View style={styles.goalContribInput}>
+                      <TextInput
+                        style={styles.pctInput}
+                        value={contributions[goal.id] ?? ''}
+                        onChangeText={v => setContributions(prev => ({ ...prev, [goal.id]: v }))}
+                        placeholder="0"
+                        placeholderTextColor={colors.placeholder}
+                        keyboardType="numeric"
+                        maxLength={3}
+                      />
+                      <Text style={styles.pctLabel}>%</Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            )}
 
             <View style={styles.confirmRow}>
               <TouchableOpacity style={styles.rerecordBtn} onPress={handleReRecord}>
@@ -400,6 +449,30 @@ function makeStyles(colors: ColorPalette) {
     noteRemoveText: { fontSize: 16, color: colors.placeholder },
     addNoteBtn: { alignSelf: 'flex-start' },
     addNoteBtnText: { fontSize: 15, color: colors.accent, fontWeight: '500' },
+    goalsSection: { width: '100%', gap: 8 },
+    goalsSectionLabel: {
+      fontSize: 11, fontWeight: '600', color: colors.textSecondary, letterSpacing: 0.5,
+    },
+    goalContribRow: {
+      flexDirection: 'row', alignItems: 'center', gap: 12,
+      backgroundColor: colors.surface, borderRadius: 10, padding: 12,
+    },
+    goalContribInfo: { flex: 1, gap: 4 },
+    goalContribText: { fontSize: 14, color: colors.text, lineHeight: 20 },
+    progressBarBg: {
+      height: 4, backgroundColor: colors.border, borderRadius: 2, overflow: 'hidden',
+    },
+    progressBarFill: {
+      height: 4, backgroundColor: colors.accent, borderRadius: 2,
+    },
+    goalProgressLabel: { fontSize: 11, color: colors.textSecondary },
+    goalContribInput: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+    pctInput: {
+      width: 48, textAlign: 'center', fontSize: 16, fontWeight: '600',
+      color: colors.text, borderBottomWidth: 1.5, borderBottomColor: colors.accent,
+      paddingVertical: 2,
+    },
+    pctLabel: { fontSize: 14, color: colors.textSecondary },
     confirmRow: { flexDirection: 'row', gap: 12, width: '100%' },
     rerecordBtn: {
       flex: 1,

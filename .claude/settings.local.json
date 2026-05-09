@@ -11,7 +11,9 @@
       "PowerShell(cd C:\\Users\\ronen\\TimeAnalyzer*)",
       "PowerShell(.\\scripts\\build-and-install.ps1 *)",
       "Skill(update-config)",
-      "Skill(update-config:*)"
+      "Skill(update-config:*)",
+      "PowerShell(cd C:\\\\Users\\\\ronen\\\\TimeAnalyzer\\\\android; $env:JAVA_HOME=\"C:\\\\Program Files\\\\Android\\\\Android Studio\\\\jbr\"; $env:ANDROID_HOME=\"C:\\\\Users\\\\ronen\\\\AppData\\\\Local\\\\Android\\\\Sdk\"; .\\\\gradlew.bat app:installDebug 2>&1 | Select-Object -Last 8)",
+      "PowerShell($v = Get-Content C:\\\\Users\\\\ronen\\\\TimeAnalyzer\\\\version.json | ConvertFrom-Json; $name = \"TimeAnalyzer_v$\\($v.major\\).$\\($v.minor\\).$\\($v.ticket_id\\).$\\($v.sequence\\)_$\\(Get-Date -Format 'yyyy-MM-dd_HH-mm'\\).apk\"; Copy-Item \"C:\\\\Users\\\\ronen\\\\TimeAnalyzer\\\\android\\\\app\\\\build\\\\outputs\\\\apk\\\\debug\\\\app-arm64-v8a-debug.apk\" \"C:\\\\Users\\\\ronen\\\\Desktop\\\\TimeAnalyzer\\\\apk\\\\$name\"; Write-Output $name)"
     ],
     "defaultMode": "acceptEdits"
   }

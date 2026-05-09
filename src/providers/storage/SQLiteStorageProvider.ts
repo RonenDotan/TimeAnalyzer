@@ -7,9 +7,9 @@ import { StorageProvider } from './StorageProvider';
 type DB = ReturnType<typeof open>;
 let db: DB | null = null;
 
-const SCHEMA_VERSION = 3;
+const SCHEMA_VERSION = 4;
 
-function getDb(): DB {
+export function getDb(): DB {
   if (!db) {
     db = open({ name: 'time-analyzer.sqlite' });
 
@@ -61,6 +61,65 @@ function getDb(): DB {
         version INTEGER NOT NULL
       )
     `);
+    db.executeSync(`
+      CREATE TABLE IF NOT EXISTS goals (
+        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        text        TEXT    NOT NULL,
+        start_at    INTEGER NOT NULL,
+        target_at   INTEGER,
+        progress    INTEGER NOT NULL DEFAULT 0,
+        status      TEXT    NOT NULL DEFAULT 'active',
+        created_at  INTEGER NOT NULL,
+        updated_at  INTEGER NOT NULL DEFAULT 0
+      )
+    `);
+    db.executeSync(`
+      CREATE TABLE IF NOT EXISTS goal_contributions (
+        id               INTEGER PRIMARY KEY AUTOINCREMENT,
+        goal_id          INTEGER NOT NULL,
+        entry_id         INTEGER,
+        contribution_pct INTEGER NOT NULL,
+        created_at       INTEGER NOT NULL
+      )
+    `);
+    db.executeSync(`CREATE INDEX IF NOT EXISTS idx_goals_status    ON goals (status)`);
+    db.executeSync(`CREATE INDEX IF NOT EXISTS idx_goals_start_at  ON goals (start_at)`);
+    db.executeSync(`CREATE INDEX IF NOT EXISTS idx_contributions_goal ON goal_contributions (goal_id)`);
+
+    // Defensive fix: if goals table exists but has old schema (pre-v0.0.23.11),
+    // drop and recreate regardless of schema_version state.
+    {
+      const pragma = db.executeSync("PRAGMA table_info(goals)");
+      const cols = (pragma.rows ?? []).map((r: any) => String(r.name));
+      if (cols.length > 0 && !cols.includes('status')) {
+        db.executeSync('DROP TABLE IF EXISTS goals');
+        db.executeSync('DROP TABLE IF EXISTS goal_contributions');
+        db.executeSync(`
+          CREATE TABLE goals (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            text        TEXT    NOT NULL,
+            start_at    INTEGER NOT NULL,
+            target_at   INTEGER,
+            progress    INTEGER NOT NULL DEFAULT 0,
+            status      TEXT    NOT NULL DEFAULT 'active',
+            created_at  INTEGER NOT NULL,
+            updated_at  INTEGER NOT NULL DEFAULT 0
+          )
+        `);
+        db.executeSync(`
+          CREATE TABLE goal_contributions (
+            id               INTEGER PRIMARY KEY AUTOINCREMENT,
+            goal_id          INTEGER NOT NULL,
+            entry_id         INTEGER,
+            contribution_pct INTEGER NOT NULL,
+            created_at       INTEGER NOT NULL
+          )
+        `);
+        try { db.executeSync('CREATE INDEX IF NOT EXISTS idx_goals_status       ON goals (status)'); } catch {}
+        try { db.executeSync('CREATE INDEX IF NOT EXISTS idx_goals_start_at     ON goals (start_at)'); } catch {}
+        try { db.executeSync('CREATE INDEX IF NOT EXISTS idx_contributions_goal ON goal_contributions (goal_id)'); } catch {}
+      }
+    }
 
     // Triggers: auto-update updated_at when content fields change.
     // Excludes calendar_event_id, synced_at, status so those updates
@@ -120,6 +179,38 @@ function runMigrations(d: DB): void {
     try { d.executeSync('ALTER TABLE plan_blocks ADD COLUMN updated_at INTEGER NOT NULL DEFAULT 0'); } catch {}
     try { d.executeSync('ALTER TABLE plan_blocks ADD COLUMN synced_at INTEGER'); } catch {}
     setVersion(d, 3);
+  }
+
+  // Migration 3→4: replace old goals table (date/done/sort_order) with new schema
+  //   (start_at, target_at, progress, status) + goal_contributions table
+  if (current < 4) {
+    try { d.executeSync('DROP TABLE IF EXISTS goals'); } catch {}
+    try { d.executeSync('DROP TABLE IF EXISTS goal_contributions'); } catch {}
+    d.executeSync(`
+      CREATE TABLE IF NOT EXISTS goals (
+        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        text        TEXT    NOT NULL,
+        start_at    INTEGER NOT NULL,
+        target_at   INTEGER,
+        progress    INTEGER NOT NULL DEFAULT 0,
+        status      TEXT    NOT NULL DEFAULT 'active',
+        created_at  INTEGER NOT NULL,
+        updated_at  INTEGER NOT NULL DEFAULT 0
+      )
+    `);
+    d.executeSync(`
+      CREATE TABLE IF NOT EXISTS goal_contributions (
+        id               INTEGER PRIMARY KEY AUTOINCREMENT,
+        goal_id          INTEGER NOT NULL,
+        entry_id         INTEGER,
+        contribution_pct INTEGER NOT NULL,
+        created_at       INTEGER NOT NULL
+      )
+    `);
+    try { d.executeSync('CREATE INDEX IF NOT EXISTS idx_goals_status       ON goals (status)'); } catch {}
+    try { d.executeSync('CREATE INDEX IF NOT EXISTS idx_goals_start_at     ON goals (start_at)'); } catch {}
+    try { d.executeSync('CREATE INDEX IF NOT EXISTS idx_contributions_goal ON goal_contributions (goal_id)'); } catch {}
+    setVersion(d, 4);
   }
 }
 
@@ -417,6 +508,54 @@ const SQLiteStorageProvider: StorageProvider = {
         [planId, startMin, endMin, activity, calendarEventId, now, now],
       );
     }
+  },
+
+  async entryExistsByCalendarId(calendarEventId) {
+    const r = getDb().executeSync(
+      'SELECT 1 FROM log_entries WHERE calendar_event_id = ? AND status = 1 LIMIT 1',
+      [calendarEventId],
+    );
+    return (r.rows ?? []).length > 0;
+  },
+
+  async planBlockExistsByCalendarId(calendarEventId) {
+    const r = getDb().executeSync(
+      'SELECT 1 FROM plan_blocks WHERE calendar_event_id = ? AND status = 1 LIMIT 1',
+      [calendarEventId],
+    );
+    return (r.rows ?? []).length > 0;
+  },
+
+  async restoreEntryFromCalendar({ timestampStart, timestampEnd, transcript, calendarEventId }) {
+    const now = Date.now();
+    getDb().executeSync(
+      `INSERT INTO log_entries
+       (timestamp_start, timestamp_end, transcript, calendar_event_id, source, status, updated_at, synced_at)
+       VALUES (?, ?, ?, ?, 'app', 1, ?, ?)`,
+      [timestampStart, timestampEnd, transcript, calendarEventId, now, now],
+    );
+  },
+
+  async restorePlanBlockFromCalendar(dateStr, calendarEventId, startMin, endMin, activity) {
+    const database = getDb();
+    const now = Date.now();
+    database.executeSync(
+      'INSERT OR IGNORE INTO day_plans (date, created_at) VALUES (?, ?)',
+      [dateStr, now],
+    );
+    const planRow = database.executeSync('SELECT id FROM day_plans WHERE date = ?', [dateStr]);
+    const planId = (planRow.rows?.[0] as any)?.id as number;
+    database.executeSync(
+      `INSERT INTO plan_blocks
+       (plan_id, start_min, end_min, activity, calendar_event_id, source, status, updated_at, synced_at)
+       VALUES (?, ?, ?, ?, ?, 'app', 1, ?, ?)`,
+      [planId, startMin, endMin, activity, calendarEventId, now, now],
+    );
+  },
+
+  async getEntryCount() {
+    const r = getDb().executeSync('SELECT COUNT(*) as cnt FROM log_entries WHERE status = 1');
+    return ((r.rows?.[0] as any)?.cnt as number) ?? 0;
   },
 
   async softDeleteCalendarBlocksNotIn(dateStr, calendarEventIds) {
