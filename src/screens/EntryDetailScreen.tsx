@@ -10,9 +10,11 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import StorageService from '../services/StorageService';
+import GoalsService from '../services/GoalsService';
 import CalendarSyncService from '../services/CalendarSyncService';
 import { LogEntry } from '../types/LogEntry';
 import { Note } from '../types/Note';
+import { GoalEntryContribution } from '../types/Goal';
 import DictateBar from '../components/DictateBar';
 import SettingsService from '../services/SettingsService';
 import NoteDetailScreen from './NoteDetailScreen';
@@ -49,6 +51,7 @@ export default function EntryDetailScreen({ entry, onSave, onClose }: Props) {
   const [startTime, setStartTime] = useState(tsToTimeString(entry.timestampStart));
   const [endTime, setEndTime] = useState(tsToTimeString(entry.timestampEnd));
   const [notes, setNotes] = useState<Note[]>([]);
+  const [goalContributions, setGoalContributions] = useState<GoalEntryContribution[]>([]);
   const [editingNotes, setEditingNotes] = useState<Record<number, string>>({});
   const [newNoteText, setNewNoteText] = useState('');
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
@@ -56,6 +59,7 @@ export default function EntryDetailScreen({ entry, onSave, onClose }: Props) {
 
   useEffect(() => {
     StorageService.getNotesByEntryId(entry.id).then(setNotes);
+    GoalsService.getContributionsByEntryId(entry.id).then(setGoalContributions);
     SettingsService.load().then(s => setAppendKeyword(s.appendKeyword));
   }, [entry.id]);
 
@@ -255,6 +259,21 @@ export default function EntryDetailScreen({ entry, onSave, onClose }: Props) {
           </TouchableOpacity>
         ))}
 
+        {/* Goal contributions */}
+        {goalContributions.length > 0 && (
+          <>
+            <Text style={styles.notesGroupLabel}>GOAL CONTRIBUTIONS</Text>
+            {goalContributions.map((c, i) => (
+              <View key={i} style={styles.goalContribCard}>
+                <View style={styles.goalContribRow}>
+                  <Text style={styles.goalContribText} numberOfLines={2}>{c.goalText}</Text>
+                  <Text style={styles.goalContribDelta}>+{c.contributionPct}%</Text>
+                </View>
+              </View>
+            ))}
+          </>
+        )}
+
         {/* Add new note — always available */}
         <View style={styles.addNoteCard}>
           <TextInput
@@ -403,5 +422,20 @@ function makeStyles(colors: ColorPalette) {
     },
     addNoteBtnDisabled: { backgroundColor: colors.placeholder },
     addNoteBtnText: { fontSize: 15, color: '#fff', fontWeight: '600' },
+    goalContribCard: {
+      backgroundColor: '#33B679' + '12',
+      borderRadius: 10,
+      padding: 12,
+      borderLeftWidth: 3,
+      borderLeftColor: '#33B679',
+    },
+    goalContribRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      gap: 8,
+    },
+    goalContribText: { flex: 1, fontSize: 14, color: colors.text, lineHeight: 20 },
+    goalContribDelta: { fontSize: 15, fontWeight: '700', color: '#33B679' },
   });
 }

@@ -12,7 +12,7 @@ import EntryDetailScreen from './EntryDetailScreen';
 import StorageService from '../services/StorageService';
 import GoalsService from '../services/GoalsService';
 import { LogEntry } from '../types/LogEntry';
-import { Goal } from '../types/Goal';
+import { Goal, GoalEntryContribution } from '../types/Goal';
 import { ColorPalette, useTheme } from '../contexts/ThemeContext';
 import { DayPlan, PlanBlock } from '../types/DayPlan';
 import { allMatchingBlocks, isCovered } from '../utils/planMatching';
@@ -67,6 +67,7 @@ export default function ReportScreen({ onStartCheckIn, onOpenMenu, onEditPlan, i
   const [dayPlan, setDayPlan] = useState<DayPlan | null>(null);
   const [planBlocks, setPlanBlocks] = useState<PlanBlock[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
+  const [entryContributions, setEntryContributions] = useState<Record<number, GoalEntryContribution[]>>({});
 
   const loadEntries = useCallback(async (date: Date) => {
     setLoading(true);
@@ -77,9 +78,17 @@ export default function ReportScreen({ onStartCheckIn, onOpenMenu, onEditPlan, i
       StorageService.getCalendarPlanBlocksByDate(dateStr),
       GoalsService.getActiveGoals(startOfDay(date).getTime()),
     ]);
-    setEntries(results.sort((a, b) => a.timestampStart - b.timestampStart));
+    const sorted = results.sort((a, b) => a.timestampStart - b.timestampStart);
+    setEntries(sorted);
     setDayPlan(plan);
     setGoals(loadedGoals);
+    // Load goal contributions for each entry (to show 🎯 tag)
+    const contribMap: Record<number, GoalEntryContribution[]> = {};
+    await Promise.all(sorted.map(async e => {
+      const c = await GoalsService.getContributionsByEntryId(e.id);
+      if (c.length > 0) contribMap[e.id] = c;
+    }));
+    setEntryContributions(contribMap);
     if (plan) {
       const appBlocks = await StorageService.getPlanBlocks(plan.id);
       setPlanBlocks([...appBlocks, ...calBlocks].sort((a, b) => a.startMin - b.startMin));
@@ -230,6 +239,15 @@ export default function ReportScreen({ onStartCheckIn, onOpenMenu, onEditPlan, i
                   <Text style={styles.transcript}>{entry.transcript}</Text>
                   {matched.length > 0 && (
                     <Text style={styles.planTag}>→ {matched.map(b => b.activity).join(', ')}</Text>
+                  )}
+                  {entryContributions[entry.id] && entryContributions[entry.id].length > 0 && (
+                    <View style={styles.goalTagRow}>
+                      {entryContributions[entry.id].map((c, i) => (
+                        <View key={i} style={styles.goalTag}>
+                          <Text style={styles.goalTagText}>🎯 +{c.contributionPct}%</Text>
+                        </View>
+                      ))}
+                    </View>
                   )}
                   {debugMode && (
                     <View style={styles.debugRow}>
@@ -384,6 +402,16 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
       paddingTop: 8,
     },
     planTag: { fontSize: 12, color: '#039BE5', marginTop: 6, fontWeight: '500' },
+    goalTagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 6 },
+    goalTag: {
+      backgroundColor: '#33B679' + '20',
+      borderRadius: 6,
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      borderWidth: 1,
+      borderColor: '#33B679' + '50',
+    },
+    goalTagText: { fontSize: 11, color: '#33B679', fontWeight: '600' },
     debugRow: {
       flexDirection: 'row',
       gap: 12,

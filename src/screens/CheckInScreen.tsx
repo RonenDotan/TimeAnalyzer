@@ -24,7 +24,15 @@ import { ColorPalette, useTheme } from '../contexts/ThemeContext';
 import PlanHintBar from '../components/PlanHintBar';
 import { Goal } from '../types/Goal';
 
-type Phase = 'idle' | 'recording' | 'transcribing' | 'confirming';
+type Phase = 'idle' | 'recording' | 'transcribing' | 'confirming' | 'summary';
+
+interface GoalMove {
+  goalText: string;
+  before: number;
+  after: number;
+  delta: number;
+  status: 'active' | 'done' | 'canceled';
+}
 
 interface Props {
   periodStart: number;
@@ -56,6 +64,7 @@ export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel
   const [noteKeyword, setNoteKeyword] = useState('note');
   const [activeGoals, setActiveGoals] = useState<Goal[]>([]);
   const [contributions, setContributions] = useState<Record<number, string>>({}); // goalId → input string
+  const [goalMoves, setGoalMoves] = useState<GoalMove[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
@@ -158,21 +167,31 @@ export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel
         .filter(n => n.trim().length > 0)
         .map(text => StorageService.saveNote({ entryId: entry.id, text: text.trim(), createdAt: now })),
     );
-    // Apply goal contributions
+    // Apply goal contributions and collect move summary
+    const moves: GoalMove[] = [];
     for (const goal of activeGoals) {
       const pctStr = contributions[goal.id];
       if (!pctStr) continue;
       const pct = parseInt(pctStr, 10);
       if (!isNaN(pct) && pct > 0) {
-        await GoalsService.applyContribution(goal, pct, entry.id);
+        const before = goal.progress;
+        const updated = await GoalsService.applyContribution(goal, pct, entry.id);
+        moves.push({
+          goalText: goal.text,
+          before,
+          after: updated.progress,
+          delta: pct,
+          status: updated.status,
+        });
       }
     }
+    setGoalMoves(moves);
     const moreToday = await SchedulerService.hasMoreCheckInsToday();
     if (!moreToday) {
       await SchedulerService.fireEndOfDayReport();
     }
     CalendarSyncService.syncChanged().catch(() => {});
-    onDone(transcript);
+    setPhase('summary');
   }
 
   const canSubmitTyped = transcript.trim().length > 0;
@@ -342,6 +361,47 @@ export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel
             </View>
           </>
         )}
+
+        {phase === 'summary' && (
+          <>
+            <View style={styles.summaryHeader}>
+              <Text style={styles.summaryCheck}>✓</Text>
+              <Text style={styles.summaryTitle}>Check-in saved</Text>
+            </View>
+
+            {goalMoves.length > 0 ? (
+              <View style={styles.summaryGoals}>
+                <Text style={styles.summaryGoalsLabel}>GOAL PROGRESS THIS SESSION</Text>
+                {goalMoves.map((move, i) => (
+                  <View key={i} style={styles.summaryGoalCard}>
+                    <View style={styles.summaryGoalTop}>
+                      <Text style={styles.summaryGoalText} numberOfLines={2}>{move.goalText}</Text>
+                      <Text style={[
+                        styles.summaryDelta,
+                        move.status === 'done' && styles.summaryDeltaDone,
+                      ]}>
+                        +{move.delta}%
+                      </Text>
+                    </View>
+                    <View style={styles.summaryBarBg}>
+                      <View style={[styles.summaryBarFill, { width: `${move.after}%` as any }]} />
+                    </View>
+                    <Text style={styles.summaryBarLabel}>
+                      {move.before}% → {move.after}%
+                      {move.status === 'done' ? '  🎉 Complete!' : ''}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            ) : (
+              <Text style={styles.summaryNoMoves}>No goal contributions this session.</Text>
+            )}
+
+            <TouchableOpacity style={styles.doneBtn} onPress={() => onDone(transcript)}>
+              <Text style={styles.doneBtnText}>Done</Text>
+            </TouchableOpacity>
+          </>
+        )}
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -497,5 +557,34 @@ function makeStyles(colors: ColorPalette) {
       alignItems: 'center',
     },
     confirmText: { fontSize: 16, color: '#fff', fontWeight: '600' },
+    // Summary phase
+    summaryHeader: { alignItems: 'center', gap: 8, marginTop: 20 },
+    summaryCheck: { fontSize: 56, color: colors.accent },
+    summaryTitle: { fontSize: 22, fontWeight: '700', color: colors.text },
+    summaryGoals: { width: '100%', gap: 8 },
+    summaryGoalsLabel: {
+      fontSize: 11, fontWeight: '600', color: colors.textSecondary, letterSpacing: 0.5,
+    },
+    summaryGoalCard: {
+      backgroundColor: colors.surface, borderRadius: 12, padding: 14, gap: 6,
+      borderLeftWidth: 3, borderLeftColor: colors.accent,
+    },
+    summaryGoalTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 },
+    summaryGoalText: { flex: 1, fontSize: 14, color: colors.text, lineHeight: 20 },
+    summaryDelta: { fontSize: 16, fontWeight: '700', color: colors.accent },
+    summaryDeltaDone: { color: '#4CAF50' },
+    summaryBarBg: { height: 6, backgroundColor: colors.border, borderRadius: 3, overflow: 'hidden' },
+    summaryBarFill: { height: 6, backgroundColor: colors.accent, borderRadius: 3 },
+    summaryBarLabel: { fontSize: 12, color: colors.textSecondary },
+    summaryNoMoves: { fontSize: 15, color: colors.textSecondary, textAlign: 'center', marginVertical: 16 },
+    doneBtn: {
+      width: '100%',
+      paddingVertical: 14,
+      borderRadius: 10,
+      backgroundColor: colors.accent,
+      alignItems: 'center',
+      marginTop: 8,
+    },
+    doneBtnText: { fontSize: 16, color: '#fff', fontWeight: '600' },
   });
 }

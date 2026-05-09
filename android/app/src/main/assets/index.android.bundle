@@ -104076,7 +104076,7 @@ __d(function(global, require, _importDefaultUnused, _importAllUnused, module, ex
     "major":  0,
     "minor":  0,
     "ticket_id":  24,
-    "sequence":  15
+    "sequence":  16
 }
 ;
 },638,[],"version.json");
@@ -108353,6 +108353,10 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       _useState14 = (0, _slicedToArray2.default)(_useState13, 2),
       contributions = _useState14[0],
       setContributions = _useState14[1]; // goalId → input string
+    var _useState15 = (0, _react.useState)([]),
+      _useState16 = (0, _slicedToArray2.default)(_useState15, 2),
+      goalMoves = _useState16[0],
+      setGoalMoves = _useState16[1];
     var timerRef = (0, _react.useRef)(null);
     (0, _react.useEffect)(() => {
       _SettingsService.default.load().then(s => setNoteKeyword(s.noteKeyword));
@@ -108466,21 +108470,31 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
           text: text.trim(),
           createdAt: now
         })));
-        // Apply goal contributions
+        // Apply goal contributions and collect move summary
+        var moves = [];
         for (var goal of activeGoals) {
           var pctStr = contributions[goal.id];
           if (!pctStr) continue;
           var pct = parseInt(pctStr, 10);
           if (!isNaN(pct) && pct > 0) {
-            yield _GoalsService.default.applyContribution(goal, pct, entry.id);
+            var before = goal.progress;
+            var updated = yield _GoalsService.default.applyContribution(goal, pct, entry.id);
+            moves.push({
+              goalText: goal.text,
+              before,
+              after: updated.progress,
+              delta: pct,
+              status: updated.status
+            });
           }
         }
+        setGoalMoves(moves);
         var moreToday = yield _SchedulerService.default.hasMoreCheckInsToday();
         if (!moreToday) {
           yield _SchedulerService.default.fireEndOfDayReport();
         }
         _CalendarSyncService.default.syncChanged().catch(() => {});
-        onDone(transcript);
+        setPhase('summary');
       });
       return _handleConfirm.apply(this, arguments);
     }
@@ -108705,6 +108719,56 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
                 children: "Confirm"
               })
             })]
+          })]
+        }), phase === 'summary' && /*#__PURE__*/(0, _jsxRuntime.jsxs)(_jsxRuntime.Fragment, {
+          children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+            style: styles.summaryHeader,
+            children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+              style: styles.summaryCheck,
+              children: "\u2713"
+            }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+              style: styles.summaryTitle,
+              children: "Check-in saved"
+            })]
+          }), goalMoves.length > 0 ? /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+            style: styles.summaryGoals,
+            children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+              style: styles.summaryGoalsLabel,
+              children: "GOAL PROGRESS THIS SESSION"
+            }), goalMoves.map((move, i) => /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+              style: styles.summaryGoalCard,
+              children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+                style: styles.summaryGoalTop,
+                children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                  style: styles.summaryGoalText,
+                  numberOfLines: 2,
+                  children: move.goalText
+                }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
+                  style: [styles.summaryDelta, move.status === 'done' && styles.summaryDeltaDone],
+                  children: ["+", move.delta, "%"]
+                })]
+              }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
+                style: styles.summaryBarBg,
+                children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
+                  style: [styles.summaryBarFill, {
+                    width: `${move.after}%`
+                  }]
+                })
+              }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
+                style: styles.summaryBarLabel,
+                children: [move.before, "% \u2192 ", move.after, "%", move.status === 'done' ? '  🎉 Complete!' : '']
+              })]
+            }, i))]
+          }) : /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+            style: styles.summaryNoMoves,
+            children: "No goal contributions this session."
+          }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
+            style: styles.doneBtn,
+            onPress: () => onDone(transcript),
+            children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+              style: styles.doneBtnText,
+              children: "Done"
+            })
           })]
         })]
       })]
@@ -109001,6 +109065,93 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         fontSize: 16,
         color: '#fff',
         fontWeight: '600'
+      },
+      // Summary phase
+      summaryHeader: {
+        alignItems: 'center',
+        gap: 8,
+        marginTop: 20
+      },
+      summaryCheck: {
+        fontSize: 56,
+        color: colors.accent
+      },
+      summaryTitle: {
+        fontSize: 22,
+        fontWeight: '700',
+        color: colors.text
+      },
+      summaryGoals: {
+        width: '100%',
+        gap: 8
+      },
+      summaryGoalsLabel: {
+        fontSize: 11,
+        fontWeight: '600',
+        color: colors.textSecondary,
+        letterSpacing: 0.5
+      },
+      summaryGoalCard: {
+        backgroundColor: colors.surface,
+        borderRadius: 12,
+        padding: 14,
+        gap: 6,
+        borderLeftWidth: 3,
+        borderLeftColor: colors.accent
+      },
+      summaryGoalTop: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+        gap: 8
+      },
+      summaryGoalText: {
+        flex: 1,
+        fontSize: 14,
+        color: colors.text,
+        lineHeight: 20
+      },
+      summaryDelta: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: colors.accent
+      },
+      summaryDeltaDone: {
+        color: '#4CAF50'
+      },
+      summaryBarBg: {
+        height: 6,
+        backgroundColor: colors.border,
+        borderRadius: 3,
+        overflow: 'hidden'
+      },
+      summaryBarFill: {
+        height: 6,
+        backgroundColor: colors.accent,
+        borderRadius: 3
+      },
+      summaryBarLabel: {
+        fontSize: 12,
+        color: colors.textSecondary
+      },
+      summaryNoMoves: {
+        fontSize: 15,
+        color: colors.textSecondary,
+        textAlign: 'center',
+        marginVertical: 16
+      },
+      doneBtn: {
+        width: '100%',
+        paddingVertical: 14,
+        borderRadius: 10,
+        backgroundColor: colors.accent,
+        alignItems: 'center',
+        marginTop: 8
+      },
+      doneBtnText: {
+        fontSize: 16,
+        color: '#fff',
+        fontWeight: '600'
       }
     });
   }
@@ -109065,6 +109216,15 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
   function getContributions(_x5) {
     return _getContributions.apply(this, arguments);
   }
+  function _getContributions() {
+    _getContributions = (0, _asyncToGenerator2.default)(function* (goalId) {
+      return activeProvider.getContributions(goalId);
+    });
+    return _getContributions.apply(this, arguments);
+  }
+  function getContributionsByEntryId(_x6) {
+    return _getContributionsByEntryId.apply(this, arguments);
+  }
   /**
    * Apply a session contribution to a goal:
    * - Adds contributionPct to goal.progress (capped at 100)
@@ -109072,13 +109232,13 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
    * - Saves a goal_contributions record linked to the entry
    * - Returns the updated goal
    */
-  function _getContributions() {
-    _getContributions = (0, _asyncToGenerator2.default)(function* (goalId) {
-      return activeProvider.getContributions(goalId);
+  function _getContributionsByEntryId() {
+    _getContributionsByEntryId = (0, _asyncToGenerator2.default)(function* (entryId) {
+      return activeProvider.getContributionsByEntryId(entryId);
     });
-    return _getContributions.apply(this, arguments);
+    return _getContributionsByEntryId.apply(this, arguments);
   }
-  function applyContribution(_x6, _x7, _x8) {
+  function applyContribution(_x7, _x8, _x9) {
     return _applyContribution.apply(this, arguments);
   }
   /**
@@ -109106,7 +109266,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
     });
     return _applyContribution.apply(this, arguments);
   }
-  function setProgress(_x9, _x0) {
+  function setProgress(_x0, _x1) {
     return _setProgress.apply(this, arguments);
   }
   function _setProgress() {
@@ -109141,6 +109301,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
     updateGoal,
     deleteGoal,
     getContributions,
+    getContributionsByEntryId,
     applyContribution,
     setProgress
   };
@@ -109235,6 +109396,20 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       return (0, _asyncToGenerator2.default)(function* () {
         var result = (0, _$$_REQUIRE(_dependencyMap[2], "../storage/SQLiteStorageProvider").getDb)().executeSync('SELECT * FROM goal_contributions WHERE goal_id = ? ORDER BY created_at DESC', [goalId]);
         return (result.rows ?? []).map(rowToContribution);
+      })();
+    },
+    getContributionsByEntryId(entryId) {
+      return (0, _asyncToGenerator2.default)(function* () {
+        var result = (0, _$$_REQUIRE(_dependencyMap[2], "../storage/SQLiteStorageProvider").getDb)().executeSync(`SELECT gc.goal_id, g.text AS goal_text, gc.contribution_pct
+       FROM goal_contributions gc
+       JOIN goals g ON g.id = gc.goal_id
+       WHERE gc.entry_id = ?
+       ORDER BY gc.created_at ASC`, [entryId]);
+        return (result.rows ?? []).map(row => ({
+          goalId: row.goal_id,
+          goalText: row.goal_text,
+          contributionPct: row.contribution_pct
+        }));
       })();
     }
   };
@@ -111694,6 +111869,10 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       _useState12 = (0, _slicedToArray2.default)(_useState11, 2),
       goals = _useState12[0],
       setGoals = _useState12[1];
+    var _useState13 = (0, _react.useState)({}),
+      _useState14 = (0, _slicedToArray2.default)(_useState13, 2),
+      entryContributions = _useState14[0],
+      setEntryContributions = _useState14[1];
     var loadEntries = (0, _react.useCallback)(/*#__PURE__*/function () {
       var _ref = (0, _asyncToGenerator2.default)(function* (date) {
         setLoading(true);
@@ -111704,9 +111883,22 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
           plan = _yield$Promise$all2[1],
           calBlocks = _yield$Promise$all2[2],
           loadedGoals = _yield$Promise$all2[3];
-        setEntries(results.sort((a, b) => a.timestampStart - b.timestampStart));
+        var sorted = results.sort((a, b) => a.timestampStart - b.timestampStart);
+        setEntries(sorted);
         setDayPlan(plan);
         setGoals(loadedGoals);
+        // Load goal contributions for each entry (to show 🎯 tag)
+        var contribMap = {};
+        yield Promise.all(sorted.map(/*#__PURE__*/function () {
+          var _ref2 = (0, _asyncToGenerator2.default)(function* (e) {
+            var c = yield _GoalsService.default.getContributionsByEntryId(e.id);
+            if (c.length > 0) contribMap[e.id] = c;
+          });
+          return function (_x2) {
+            return _ref2.apply(this, arguments);
+          };
+        }()));
+        setEntryContributions(contribMap);
         if (plan) {
           var appBlocks = yield _StorageService.default.getPlanBlocks(plan.id);
           setPlanBlocks([...appBlocks, ...calBlocks].sort((a, b) => a.startMin - b.startMin));
@@ -111881,6 +112073,15 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
             }), matched.length > 0 && /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
               style: styles.planTag,
               children: ["\u2192 ", matched.map(b => b.activity).join(', ')]
+            }), entryContributions[entry.id] && entryContributions[entry.id].length > 0 && /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
+              style: styles.goalTagRow,
+              children: entryContributions[entry.id].map((c, i) => /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
+                style: styles.goalTag,
+                children: /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
+                  style: styles.goalTagText,
+                  children: ["\uD83C\uDFAF +", c.contributionPct, "%"]
+                })
+              }, i))
             }), debugMode && /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
               style: styles.debugRow,
               children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
@@ -112157,6 +112358,25 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         marginTop: 6,
         fontWeight: '500'
       },
+      goalTagRow: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 6,
+        marginTop: 6
+      },
+      goalTag: {
+        backgroundColor: '#33B679' + '20',
+        borderRadius: 6,
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        borderWidth: 1,
+        borderColor: '#33B679' + '50'
+      },
+      goalTagText: {
+        fontSize: 11,
+        color: '#33B679',
+        fontWeight: '600'
+      },
       debugRow: {
         flexDirection: 'row',
         gap: 12,
@@ -112184,11 +112404,12 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
   var _react = _interopRequireWildcard(_$$_REQUIRE(_dependencyMap[3], "react"));
   var _reactNative = _$$_REQUIRE(_dependencyMap[4], "react-native");
   var _StorageService = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[5], "../services/StorageService"));
-  var _CalendarSyncService = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[6], "../services/CalendarSyncService"));
-  var _DictateBar = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[7], "../components/DictateBar"));
-  var _SettingsService = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[8], "../services/SettingsService"));
-  var _NoteDetailScreen = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[9], "./NoteDetailScreen"));
-  var _jsxRuntime = _$$_REQUIRE(_dependencyMap[10], "react/jsx-runtime");
+  var _GoalsService = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[6], "../services/GoalsService"));
+  var _CalendarSyncService = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[7], "../services/CalendarSyncService"));
+  var _DictateBar = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[8], "../components/DictateBar"));
+  var _SettingsService = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[9], "../services/SettingsService"));
+  var _NoteDetailScreen = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[10], "./NoteDetailScreen"));
+  var _jsxRuntime = _$$_REQUIRE(_dependencyMap[11], "react/jsx-runtime");
   var _jsxFileName = "C:\\Users\\ronen\\TimeAnalyzer\\src\\screens\\EntryDetailScreen.tsx";
   function _interopRequireWildcard(e, t) { if ("function" == typeof WeakMap) var r = new WeakMap(), n = new WeakMap(); return (_interopRequireWildcard = function (e, t) { if (!t && e && e.__esModule) return e; var o, i, f = { __proto__: null, default: e }; if (null === e || "object" != typeof e && "function" != typeof e) return f; if (o = t ? n : r) { if (o.has(e)) return o.get(e); o.set(e, f); } for (var _t in e) "default" !== _t && {}.hasOwnProperty.call(e, _t) && ((i = (o = Object.defineProperty) && Object.getOwnPropertyDescriptor(e, _t)) && (i.get || i.set) ? o(f, _t, i) : f[_t] = e[_t]); return f; })(e, t); }
   function tsToTimeString(ts) {
@@ -112210,8 +112431,8 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
     onSave,
     onClose
   }) {
-    var insets = (0, _$$_REQUIRE(_dependencyMap[11], "react-native-safe-area-context").useSafeAreaInsets)();
-    var _useTheme = (0, _$$_REQUIRE(_dependencyMap[12], "../contexts/ThemeContext").useTheme)(),
+    var insets = (0, _$$_REQUIRE(_dependencyMap[12], "react-native-safe-area-context").useSafeAreaInsets)();
+    var _useTheme = (0, _$$_REQUIRE(_dependencyMap[13], "../contexts/ThemeContext").useTheme)(),
       colors = _useTheme.colors;
     var _useState = (0, _react.useState)(false),
       _useState2 = (0, _slicedToArray2.default)(_useState, 2),
@@ -112233,24 +112454,29 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       _useState0 = (0, _slicedToArray2.default)(_useState9, 2),
       notes = _useState0[0],
       setNotes = _useState0[1];
-    var _useState1 = (0, _react.useState)({}),
+    var _useState1 = (0, _react.useState)([]),
       _useState10 = (0, _slicedToArray2.default)(_useState1, 2),
-      editingNotes = _useState10[0],
-      setEditingNotes = _useState10[1];
-    var _useState11 = (0, _react.useState)(''),
+      goalContributions = _useState10[0],
+      setGoalContributions = _useState10[1];
+    var _useState11 = (0, _react.useState)({}),
       _useState12 = (0, _slicedToArray2.default)(_useState11, 2),
-      newNoteText = _useState12[0],
-      setNewNoteText = _useState12[1];
-    var _useState13 = (0, _react.useState)(null),
+      editingNotes = _useState12[0],
+      setEditingNotes = _useState12[1];
+    var _useState13 = (0, _react.useState)(''),
       _useState14 = (0, _slicedToArray2.default)(_useState13, 2),
-      selectedNote = _useState14[0],
-      setSelectedNote = _useState14[1];
-    var _useState15 = (0, _react.useState)('append'),
+      newNoteText = _useState14[0],
+      setNewNoteText = _useState14[1];
+    var _useState15 = (0, _react.useState)(null),
       _useState16 = (0, _slicedToArray2.default)(_useState15, 2),
-      appendKeyword = _useState16[0],
-      setAppendKeyword = _useState16[1];
+      selectedNote = _useState16[0],
+      setSelectedNote = _useState16[1];
+    var _useState17 = (0, _react.useState)('append'),
+      _useState18 = (0, _slicedToArray2.default)(_useState17, 2),
+      appendKeyword = _useState18[0],
+      setAppendKeyword = _useState18[1];
     (0, _react.useEffect)(() => {
       _StorageService.default.getNotesByEntryId(entry.id).then(setNotes);
+      _GoalsService.default.getContributionsByEntryId(entry.id).then(setGoalContributions);
       _SettingsService.default.load().then(s => setAppendKeyword(s.appendKeyword));
     }, [entry.id]);
     function handleCancel() {
@@ -112426,7 +112652,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
               autoFocus: true,
               textAlignVertical: "top"
             }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_DictateBar.default, {
-              onResult: raw => setTranscript(prev => (0, _$$_REQUIRE(_dependencyMap[13], "../utils/parseTranscript").applyTranscription)(prev, raw, appendKeyword))
+              onResult: raw => setTranscript(prev => (0, _$$_REQUIRE(_dependencyMap[14], "../utils/parseTranscript").applyTranscription)(prev, raw, appendKeyword))
             })]
           }) : /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
             style: styles.transcriptText,
@@ -112470,7 +112696,25 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
             style: styles.noteText,
             children: note.text
           })]
-        }, note.id)), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+        }, note.id)), goalContributions.length > 0 && /*#__PURE__*/(0, _jsxRuntime.jsxs)(_jsxRuntime.Fragment, {
+          children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+            style: styles.notesGroupLabel,
+            children: "GOAL CONTRIBUTIONS"
+          }), goalContributions.map((c, i) => /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
+            style: styles.goalContribCard,
+            children: /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+              style: styles.goalContribRow,
+              children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                style: styles.goalContribText,
+                numberOfLines: 2,
+                children: c.goalText
+              }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
+                style: styles.goalContribDelta,
+                children: ["+", c.contributionPct, "%"]
+              })]
+            })
+          }, i))]
+        }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
           style: styles.addNoteCard,
           children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TextInput, {
             style: styles.addNoteInput,
@@ -112676,10 +112920,34 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         fontSize: 15,
         color: '#fff',
         fontWeight: '600'
+      },
+      goalContribCard: {
+        backgroundColor: '#33B679' + '12',
+        borderRadius: 10,
+        padding: 12,
+        borderLeftWidth: 3,
+        borderLeftColor: '#33B679'
+      },
+      goalContribRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        gap: 8
+      },
+      goalContribText: {
+        flex: 1,
+        fontSize: 14,
+        color: colors.text,
+        lineHeight: 20
+      },
+      goalContribDelta: {
+        fontSize: 15,
+        fontWeight: '700',
+        color: '#33B679'
       }
     });
   }
-},691,[1,178,14,71,2,640,639,688,645,692,182,668,677,686],"src/screens/EntryDetailScreen.tsx");
+},691,[1,178,14,71,2,640,679,639,688,645,692,182,668,677,686],"src/screens/EntryDetailScreen.tsx");
 __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, exports, _dependencyMap) {
   var _interopRequireDefault = _$$_REQUIRE(_dependencyMap[0], "@babel/runtime/helpers/interopRequireDefault");
   Object.defineProperty(exports, "__esModule", {
