@@ -510,6 +510,54 @@ const SQLiteStorageProvider: StorageProvider = {
     }
   },
 
+  async entryExistsByCalendarId(calendarEventId) {
+    const r = getDb().executeSync(
+      'SELECT 1 FROM log_entries WHERE calendar_event_id = ? AND status = 1 LIMIT 1',
+      [calendarEventId],
+    );
+    return (r.rows ?? []).length > 0;
+  },
+
+  async planBlockExistsByCalendarId(calendarEventId) {
+    const r = getDb().executeSync(
+      'SELECT 1 FROM plan_blocks WHERE calendar_event_id = ? AND status = 1 LIMIT 1',
+      [calendarEventId],
+    );
+    return (r.rows ?? []).length > 0;
+  },
+
+  async restoreEntryFromCalendar({ timestampStart, timestampEnd, transcript, calendarEventId }) {
+    const now = Date.now();
+    getDb().executeSync(
+      `INSERT INTO log_entries
+       (timestamp_start, timestamp_end, transcript, calendar_event_id, source, status, updated_at, synced_at)
+       VALUES (?, ?, ?, ?, 'app', 1, ?, ?)`,
+      [timestampStart, timestampEnd, transcript, calendarEventId, now, now],
+    );
+  },
+
+  async restorePlanBlockFromCalendar(dateStr, calendarEventId, startMin, endMin, activity) {
+    const database = getDb();
+    const now = Date.now();
+    database.executeSync(
+      'INSERT OR IGNORE INTO day_plans (date, created_at) VALUES (?, ?)',
+      [dateStr, now],
+    );
+    const planRow = database.executeSync('SELECT id FROM day_plans WHERE date = ?', [dateStr]);
+    const planId = (planRow.rows?.[0] as any)?.id as number;
+    database.executeSync(
+      `INSERT INTO plan_blocks
+       (plan_id, start_min, end_min, activity, calendar_event_id, source, status, updated_at, synced_at)
+       VALUES (?, ?, ?, ?, ?, 'app', 1, ?, ?)`,
+      [planId, startMin, endMin, activity, calendarEventId, now, now],
+    );
+  },
+
+  async getEntryCount() {
+    const r = getDb().executeSync('SELECT COUNT(*) as cnt FROM log_entries WHERE status = 1');
+    return ((r.rows?.[0] as any)?.cnt as number) ?? 0;
+  },
+
   async softDeleteCalendarBlocksNotIn(dateStr, calendarEventIds) {
     const planRow = getDb().executeSync('SELECT id FROM day_plans WHERE date = ?', [dateStr]);
     const planId = (planRow.rows?.[0] as any)?.id as number | undefined;

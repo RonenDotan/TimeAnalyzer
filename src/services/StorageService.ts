@@ -128,6 +128,37 @@ async function softDeleteCalendarBlocksNotIn(dateStr: string, calendarEventIds: 
   return activeProvider.softDeleteCalendarBlocksNotIn(dateStr, calendarEventIds);
 }
 
+async function entryExistsByCalendarId(calendarEventId: string): Promise<boolean> {
+  return activeProvider.entryExistsByCalendarId(calendarEventId);
+}
+
+async function planBlockExistsByCalendarId(calendarEventId: string): Promise<boolean> {
+  return activeProvider.planBlockExistsByCalendarId(calendarEventId);
+}
+
+async function restoreEntryFromCalendar(data: {
+  timestampStart: number;
+  timestampEnd: number;
+  transcript: string;
+  calendarEventId: string;
+}): Promise<void> {
+  return activeProvider.restoreEntryFromCalendar(data);
+}
+
+async function restorePlanBlockFromCalendar(
+  dateStr: string,
+  calendarEventId: string,
+  startMin: number,
+  endMin: number,
+  activity: string,
+): Promise<void> {
+  return activeProvider.restorePlanBlockFromCalendar(dateStr, calendarEventId, startMin, endMin, activity);
+}
+
+async function getEntryCount(): Promise<number> {
+  return activeProvider.getEntryCount();
+}
+
 const StorageService = {
   save, update, getAll, getByDateRange, deleteEntry, hardDeleteEntry,
   saveNote, updateNote, getNotesByEntryId, deleteNote,
@@ -137,6 +168,9 @@ const StorageService = {
   updateEntryCalendarEventId, updatePlanBlockCalendarEventId,
   updateEntrySyncedAt, updatePlanBlockSyncedAt, hardResetSyncedAt,
   getCalendarPlanBlocksByDate, upsertCalendarPlanBlock, softDeleteCalendarBlocksNotIn,
+  entryExistsByCalendarId, planBlockExistsByCalendarId,
+  restoreEntryFromCalendar, restorePlanBlockFromCalendar,
+  getEntryCount,
   setProvider,
 };
 export default StorageService;

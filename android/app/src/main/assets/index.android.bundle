@@ -104075,8 +104075,8 @@ __d(function(global, require, _importDefaultUnused, _importAllUnused, module, ex
   module.exports = {
     "major":  0,
     "minor":  0,
-    "ticket_id":  23,
-    "sequence":  12
+    "ticket_id":  26,
+    "sequence":  1
 }
 ;
 },638,[],"version.json");
@@ -104098,6 +104098,10 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
   // Rolling pull window: yesterday through +7 days
   var PULL_DAYS_BACK = 1;
   var PULL_DAYS_FORWARD = 7;
+
+  // Restore window: 1 year back through 30 days forward
+  var RESTORE_DAYS_BACK = 365;
+  var RESTORE_DAYS_FORWARD = 30;
   var isSyncing = false;
 
   // Minutes-from-midnight + a date string → ISO 8601 datetime with local offset
@@ -104245,10 +104249,84 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
   }
 
   /**
+   * Scan Google Calendar for events we pushed (source='timeanalyzer') and restore
+   * any that are missing from the local DB. Covers 1 year back so a reinstall
+   * recovers historical data. Uses pagination to handle large calendars.
+   */
+  function restoreFromCalendar() {
+    return _restoreFromCalendar.apply(this, arguments);
+  }
+  /**
    * Pull Google Calendar events for a rolling window and upsert into plan_blocks
    * with source='calendar'. Events already pushed by TimeAnalyzer are excluded.
    * Events deleted from Google Calendar are soft-deleted locally.
    */
+  function _restoreFromCalendar() {
+    _restoreFromCalendar = (0, _asyncToGenerator2.default)(function* () {
+      var now = new Date();
+      var windowStart = new Date(now);
+      windowStart.setDate(windowStart.getDate() - RESTORE_DAYS_BACK);
+      windowStart.setHours(0, 0, 0, 0);
+      var windowEnd = new Date(now);
+      windowEnd.setDate(windowEnd.getDate() + RESTORE_DAYS_FORWARD);
+      windowEnd.setHours(23, 59, 59, 999);
+      var pageToken;
+      var restoredEntries = 0;
+      var restoredBlocks = 0;
+      do {
+        var params = new URLSearchParams({
+          timeMin: windowStart.toISOString(),
+          timeMax: windowEnd.toISOString(),
+          singleEvents: 'true',
+          orderBy: 'startTime',
+          maxResults: '250',
+          privateExtendedProperty: 'source=timeanalyzer',
+          ...(pageToken ? {
+            pageToken
+          } : {})
+        });
+        var data = yield apiRequest('GET', `/calendars/primary/events?${params.toString()}`);
+        var items = data?.items ?? [];
+        pageToken = data?.nextPageToken;
+        for (var item of items) {
+          if (item.extendedProperties?.private?.source !== 'timeanalyzer') continue;
+          if (!item.start?.dateTime || !item.end?.dateTime) continue;
+          if (item.status === 'cancelled') continue;
+          var type = item.extendedProperties?.private?.type;
+          var calendarEventId = item.id;
+          if (type === 'actual') {
+            var exists = yield _StorageService.default.entryExistsByCalendarId(calendarEventId);
+            if (!exists) {
+              yield _StorageService.default.restoreEntryFromCalendar({
+                timestampStart: new Date(item.start.dateTime).getTime(),
+                timestampEnd: new Date(item.end.dateTime).getTime(),
+                transcript: item.description ?? '',
+                calendarEventId
+              });
+              restoredEntries++;
+            }
+          } else if (type === 'plan') {
+            var _exists = yield _StorageService.default.planBlockExistsByCalendarId(calendarEventId);
+            if (!_exists) {
+              var startDate = new Date(item.start.dateTime);
+              var endDate = new Date(item.end.dateTime);
+              var dateStr = toDateStr(startDate);
+              var startMin = isoToMinutes(item.start.dateTime);
+              var endMin = endDate.toDateString() !== startDate.toDateString() ? 23 * 60 + 59 : isoToMinutes(item.end.dateTime);
+              // Strip the "📅 " prefix we add when pushing plan blocks
+              var activity = (item.summary ?? '').replace(/^📅\s*/, '') || '(No title)';
+              yield _StorageService.default.restorePlanBlockFromCalendar(dateStr, calendarEventId, startMin, endMin, activity);
+              restoredBlocks++;
+            }
+          }
+        }
+      } while (pageToken);
+      if (restoredEntries > 0 || restoredBlocks > 0) {
+        console.log(`[CalendarSync] Restored ${restoredEntries} check-in entries, ${restoredBlocks} plan blocks from calendar`);
+      }
+    });
+    return _restoreFromCalendar.apply(this, arguments);
+  }
   function pullCalendarEvents() {
     return _pullCalendarEvents.apply(this, arguments);
   }
@@ -104321,7 +104399,8 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
   }
   /**
    * Reset synced_at on all active rows then run syncChanged().
-   * Use this after first sign-in or when calendar events are stale.
+   * Also restores any entries/plan blocks missing from local DB that exist in calendar.
+   * Use this after first sign-in, reinstall, or when calendar events are stale.
    */
   function _syncChanged() {
     _syncChanged = (0, _asyncToGenerator2.default)(function* () {
@@ -104334,6 +104413,16 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         var currentColor = yield _SettingsService.default.getCalendarColor();
         if (currentColor === _SettingsService.DEFAULT_CALENDAR_COLOR) {
           yield fetchAndStoreCalendarColor();
+        }
+
+        // 0b. On fresh install (empty DB), restore from calendar before pushing
+        try {
+          var count = yield _StorageService.default.getEntryCount();
+          if (count === 0) {
+            yield restoreFromCalendar();
+          }
+        } catch {
+          // Non-fatal
         }
 
         // 1. Push / update unsynced check-in entries
@@ -104403,6 +104492,12 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
     _hardSync = (0, _asyncToGenerator2.default)(function* () {
       yield _StorageService.default.hardResetSyncedAt();
       yield fetchAndStoreCalendarColor(); // Always refresh color on hard sync
+      // Restore missing entries/blocks from calendar (covers reinstall scenario)
+      try {
+        yield restoreFromCalendar();
+      } catch {
+        // Non-fatal — proceed with normal sync
+      }
       isSyncing = false; // Clear any stuck lock before re-running
       yield syncChanged();
     });
@@ -104696,6 +104791,51 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
     });
     return _softDeleteCalendarBlocksNotIn.apply(this, arguments);
   }
+  function entryExistsByCalendarId(_x32) {
+    return _entryExistsByCalendarId.apply(this, arguments);
+  }
+  function _entryExistsByCalendarId() {
+    _entryExistsByCalendarId = (0, _asyncToGenerator2.default)(function* (calendarEventId) {
+      return activeProvider.entryExistsByCalendarId(calendarEventId);
+    });
+    return _entryExistsByCalendarId.apply(this, arguments);
+  }
+  function planBlockExistsByCalendarId(_x33) {
+    return _planBlockExistsByCalendarId.apply(this, arguments);
+  }
+  function _planBlockExistsByCalendarId() {
+    _planBlockExistsByCalendarId = (0, _asyncToGenerator2.default)(function* (calendarEventId) {
+      return activeProvider.planBlockExistsByCalendarId(calendarEventId);
+    });
+    return _planBlockExistsByCalendarId.apply(this, arguments);
+  }
+  function restoreEntryFromCalendar(_x34) {
+    return _restoreEntryFromCalendar.apply(this, arguments);
+  }
+  function _restoreEntryFromCalendar() {
+    _restoreEntryFromCalendar = (0, _asyncToGenerator2.default)(function* (data) {
+      return activeProvider.restoreEntryFromCalendar(data);
+    });
+    return _restoreEntryFromCalendar.apply(this, arguments);
+  }
+  function restorePlanBlockFromCalendar(_x35, _x36, _x37, _x38, _x39) {
+    return _restorePlanBlockFromCalendar.apply(this, arguments);
+  }
+  function _restorePlanBlockFromCalendar() {
+    _restorePlanBlockFromCalendar = (0, _asyncToGenerator2.default)(function* (dateStr, calendarEventId, startMin, endMin, activity) {
+      return activeProvider.restorePlanBlockFromCalendar(dateStr, calendarEventId, startMin, endMin, activity);
+    });
+    return _restorePlanBlockFromCalendar.apply(this, arguments);
+  }
+  function getEntryCount() {
+    return _getEntryCount.apply(this, arguments);
+  }
+  function _getEntryCount() {
+    _getEntryCount = (0, _asyncToGenerator2.default)(function* () {
+      return activeProvider.getEntryCount();
+    });
+    return _getEntryCount.apply(this, arguments);
+  }
   var StorageService = {
     save,
     update,
@@ -104724,6 +104864,11 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
     getCalendarPlanBlocksByDate,
     upsertCalendarPlanBlock,
     softDeleteCalendarBlocksNotIn,
+    entryExistsByCalendarId,
+    planBlockExistsByCalendarId,
+    restoreEntryFromCalendar,
+    restorePlanBlockFromCalendar,
+    getEntryCount,
     setProvider
   };
   var _default = exports.default = StorageService;
@@ -105249,6 +105394,49 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
           // Insert new
           db.executeSync("INSERT INTO plan_blocks (plan_id, start_min, end_min, activity, calendar_event_id, source, status, updated_at, synced_at) VALUES (?, ?, ?, ?, ?, 'calendar', 1, ?, ?)", [planId, startMin, endMin, activity, calendarEventId, now, now]);
         }
+      })();
+    },
+    entryExistsByCalendarId(calendarEventId) {
+      return (0, _asyncToGenerator2.default)(function* () {
+        var r = getDb().executeSync('SELECT 1 FROM log_entries WHERE calendar_event_id = ? AND status = 1 LIMIT 1', [calendarEventId]);
+        return (r.rows ?? []).length > 0;
+      })();
+    },
+    planBlockExistsByCalendarId(calendarEventId) {
+      return (0, _asyncToGenerator2.default)(function* () {
+        var r = getDb().executeSync('SELECT 1 FROM plan_blocks WHERE calendar_event_id = ? AND status = 1 LIMIT 1', [calendarEventId]);
+        return (r.rows ?? []).length > 0;
+      })();
+    },
+    restoreEntryFromCalendar(_x) {
+      return (0, _asyncToGenerator2.default)(function* ({
+        timestampStart,
+        timestampEnd,
+        transcript,
+        calendarEventId
+      }) {
+        var now = Date.now();
+        getDb().executeSync(`INSERT INTO log_entries
+       (timestamp_start, timestamp_end, transcript, calendar_event_id, source, status, updated_at, synced_at)
+       VALUES (?, ?, ?, ?, 'app', 1, ?, ?)`, [timestampStart, timestampEnd, transcript, calendarEventId, now, now]);
+      }).apply(this, arguments);
+    },
+    restorePlanBlockFromCalendar(dateStr, calendarEventId, startMin, endMin, activity) {
+      return (0, _asyncToGenerator2.default)(function* () {
+        var database = getDb();
+        var now = Date.now();
+        database.executeSync('INSERT OR IGNORE INTO day_plans (date, created_at) VALUES (?, ?)', [dateStr, now]);
+        var planRow = database.executeSync('SELECT id FROM day_plans WHERE date = ?', [dateStr]);
+        var planId = planRow.rows?.[0]?.id;
+        database.executeSync(`INSERT INTO plan_blocks
+       (plan_id, start_min, end_min, activity, calendar_event_id, source, status, updated_at, synced_at)
+       VALUES (?, ?, ?, ?, ?, 'app', 1, ?, ?)`, [planId, startMin, endMin, activity, calendarEventId, now, now]);
+      })();
+    },
+    getEntryCount() {
+      return (0, _asyncToGenerator2.default)(function* () {
+        var r = getDb().executeSync('SELECT COUNT(*) as cnt FROM log_entries WHERE status = 1');
+        return r.rows?.[0]?.cnt ?? 0;
       })();
     },
     softDeleteCalendarBlocksNotIn(dateStr, calendarEventIds) {

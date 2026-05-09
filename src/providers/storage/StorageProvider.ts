@@ -53,4 +53,22 @@ export interface StorageProvider {
   ): Promise<void>;
   softDeleteCalendarBlocksNotIn(dateStr: string, calendarEventIds: string[]): Promise<void>;
   getCalendarPlanBlocksByDate(dateStr: string): Promise<PlanBlock[]>;
+
+  // calendar restore — pull back TimeAnalyzer's own events on reinstall
+  entryExistsByCalendarId(calendarEventId: string): Promise<boolean>;
+  planBlockExistsByCalendarId(calendarEventId: string): Promise<boolean>;
+  restoreEntryFromCalendar(data: {
+    timestampStart: number;
+    timestampEnd: number;
+    transcript: string;
+    calendarEventId: string;
+  }): Promise<void>;
+  restorePlanBlockFromCalendar(
+    dateStr: string,
+    calendarEventId: string,
+    startMin: number,
+    endMin: number,
+    activity: string,
+  ): Promise<void>;
+  getEntryCount(): Promise<number>;
 }

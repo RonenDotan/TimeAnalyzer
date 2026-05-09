@@ -39,6 +39,11 @@ const planStubs = {
   getCalendarPlanBlocksByDate: jest.fn(),
   upsertCalendarPlanBlock: jest.fn(),
   softDeleteCalendarBlocksNotIn: jest.fn(),
+  entryExistsByCalendarId: jest.fn(),
+  planBlockExistsByCalendarId: jest.fn(),
+  restoreEntryFromCalendar: jest.fn(),
+  restorePlanBlockFromCalendar: jest.fn(),
+  getEntryCount: jest.fn(),
 };
 
 const mockProvider: StorageProvider = {
