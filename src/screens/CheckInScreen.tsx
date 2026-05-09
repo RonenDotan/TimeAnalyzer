@@ -24,6 +24,8 @@ import { ColorPalette, useTheme } from '../contexts/ThemeContext';
 import PlanHintBar from '../components/PlanHintBar';
 import { Goal } from '../types/Goal';
 
+const GOAL_COLOR = '#E53935';
+
 type Phase = 'idle' | 'recording' | 'transcribing' | 'confirming' | 'summary';
 
 interface GoalMove {
@@ -540,32 +542,32 @@ function makeStyles(colors: ColorPalette) {
     // Idle phase — goals reminder
     idleGoalsSection: {
       width: '100%',
-      backgroundColor: colors.accent + '12',
+      backgroundColor: GOAL_COLOR + '12',
       borderRadius: 12,
       padding: 12,
       gap: 8,
       borderLeftWidth: 3,
-      borderLeftColor: colors.accent,
+      borderLeftColor: GOAL_COLOR,
     },
-    idleGoalsLabel: { fontSize: 11, fontWeight: '700', color: colors.accent, letterSpacing: 0.5 },
+    idleGoalsLabel: { fontSize: 11, fontWeight: '700', color: GOAL_COLOR, letterSpacing: 0.5 },
     idleGoalRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
     idleGoalInfo: { flex: 1, gap: 3 },
     idleGoalText: { fontSize: 13, color: colors.text, fontWeight: '500' },
     idleBarBg: { height: 3, backgroundColor: colors.border, borderRadius: 2, overflow: 'hidden' },
-    idleBarFill: { height: 3, backgroundColor: colors.accent, borderRadius: 2 },
-    idleGoalPct: { fontSize: 13, fontWeight: '700', color: colors.accent, minWidth: 36, textAlign: 'right' },
+    idleBarFill: { height: 3, backgroundColor: GOAL_COLOR, borderRadius: 2 },
+    idleGoalPct: { fontSize: 13, fontWeight: '700', color: GOAL_COLOR, minWidth: 36, textAlign: 'right' },
     // Confirming phase — contribution cards
     goalsSection: { width: '100%', gap: 10 },
     goalsSectionLabel: {
-      fontSize: 11, fontWeight: '700', color: colors.accent, letterSpacing: 0.5,
+      fontSize: 11, fontWeight: '700', color: GOAL_COLOR, letterSpacing: 0.5,
     },
     goalContribCard: {
-      backgroundColor: colors.surface,
+      backgroundColor: GOAL_COLOR + '0e',
       borderRadius: 12,
       padding: 14,
       gap: 8,
       borderLeftWidth: 3,
-      borderLeftColor: colors.accent,
+      borderLeftColor: GOAL_COLOR,
     },
     goalContribName: {
       fontSize: 15, fontWeight: '600', color: colors.text, lineHeight: 22,
@@ -575,7 +577,7 @@ function makeStyles(colors: ColorPalette) {
       height: 5, backgroundColor: colors.border, borderRadius: 3, overflow: 'hidden',
     },
     progressBarFill: {
-      height: 5, backgroundColor: colors.accent, borderRadius: 3,
+      height: 5, backgroundColor: GOAL_COLOR, borderRadius: 3,
     },
     goalProgressLabel: { fontSize: 11, color: colors.textSecondary },
     goalContribInputRow: {
@@ -584,7 +586,7 @@ function makeStyles(colors: ColorPalette) {
     goalContribInputLabel: { fontSize: 14, color: colors.textSecondary, flex: 1 },
     pctInput: {
       width: 56, textAlign: 'center', fontSize: 18, fontWeight: '700',
-      color: colors.text, borderBottomWidth: 2, borderBottomColor: colors.accent,
+      color: colors.text, borderBottomWidth: 2, borderBottomColor: GOAL_COLOR,
       paddingVertical: 2,
     },
     pctLabel: { fontSize: 16, color: colors.textSecondary },
@@ -613,18 +615,18 @@ function makeStyles(colors: ColorPalette) {
     summaryTitle: { fontSize: 22, fontWeight: '700', color: colors.text },
     summaryGoals: { width: '100%', gap: 8 },
     summaryGoalsLabel: {
-      fontSize: 11, fontWeight: '600', color: colors.textSecondary, letterSpacing: 0.5,
+      fontSize: 11, fontWeight: '600', color: GOAL_COLOR, letterSpacing: 0.5,
     },
     summaryGoalCard: {
-      backgroundColor: colors.surface, borderRadius: 12, padding: 14, gap: 6,
-      borderLeftWidth: 3, borderLeftColor: colors.accent,
+      backgroundColor: GOAL_COLOR + '0e', borderRadius: 12, padding: 14, gap: 6,
+      borderLeftWidth: 3, borderLeftColor: GOAL_COLOR,
     },
     summaryGoalTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 },
     summaryGoalText: { flex: 1, fontSize: 14, color: colors.text, lineHeight: 20 },
-    summaryDelta: { fontSize: 16, fontWeight: '700', color: colors.accent },
+    summaryDelta: { fontSize: 16, fontWeight: '700', color: GOAL_COLOR },
     summaryDeltaDone: { color: '#4CAF50' },
     summaryBarBg: { height: 6, backgroundColor: colors.border, borderRadius: 3, overflow: 'hidden' },
-    summaryBarFill: { height: 6, backgroundColor: colors.accent, borderRadius: 3 },
+    summaryBarFill: { height: 6, backgroundColor: GOAL_COLOR, borderRadius: 3 },
     summaryBarLabel: { fontSize: 12, color: colors.textSecondary },
     summaryNoMoves: { fontSize: 15, color: colors.textSecondary, textAlign: 'center', marginVertical: 16 },
     doneBtn: {

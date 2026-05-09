@@ -63,8 +63,10 @@ function ProgressBar({ progress, color }: { progress: number; color: string }) {
   );
 }
 
+const GOAL_COLOR = '#E53935';
+
 const STATUS_COLORS: Record<GoalStatus, string> = {
-  active:   '#039BE5',
+  active:   GOAL_COLOR,
   done:     '#43A047',
   canceled: '#9E9E9E',
 };
@@ -420,9 +422,9 @@ function makeStyles(colors: ColorPalette) {
       borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border,
     },
     filterTab: { flex: 1, paddingVertical: 10, alignItems: 'center' },
-    filterTabActive: { borderBottomWidth: 2, borderBottomColor: colors.accent },
+    filterTabActive: { borderBottomWidth: 2, borderBottomColor: GOAL_COLOR },
     filterTabText: { fontSize: 13, color: colors.textSecondary },
-    filterTabTextActive: { color: colors.accent, fontWeight: '600' },
+    filterTabTextActive: { color: GOAL_COLOR, fontWeight: '600' },
     body:           { padding: 16, gap: 10, paddingBottom: 40 },
     goalCard: {
       backgroundColor: colors.surface, borderRadius: 12, padding: 14, gap: 8,
@@ -455,7 +457,7 @@ function makeStyles(colors: ColorPalette) {
     micBtnActive:   { backgroundColor: colors.recordBtn + '22' },
     micIcon:        { fontSize: 20 },
     saveEditBtn: {
-      paddingHorizontal: 14, paddingVertical: 6, backgroundColor: colors.accent, borderRadius: 8,
+      paddingHorizontal: 14, paddingVertical: 6, backgroundColor: GOAL_COLOR, borderRadius: 8,
     },
     saveEditText:   { fontSize: 14, color: '#fff', fontWeight: '600' },
     cancelEditBtn:  { paddingHorizontal: 8, paddingVertical: 6 },
@@ -465,17 +467,17 @@ function makeStyles(colors: ColorPalette) {
     recordingLabel: { fontSize: 12, color: colors.recordBtn, fontStyle: 'italic' },
     emptyHint:      { textAlign: 'center', color: colors.placeholder, fontSize: 14, marginTop: 24 },
     addCard: {
-      backgroundColor: colors.surface, borderRadius: 12, padding: 14, gap: 10,
-      borderStyle: 'dashed', borderWidth: 1, borderColor: colors.border,
+      backgroundColor: GOAL_COLOR + '0c', borderRadius: 12, padding: 14, gap: 10,
+      borderStyle: 'dashed', borderWidth: 1, borderColor: GOAL_COLOR + '60',
     },
     addCardLabel: {
-      fontSize: 11, fontWeight: '600', color: colors.textSecondary, letterSpacing: 0.5,
+      fontSize: 11, fontWeight: '700', color: GOAL_COLOR, letterSpacing: 0.5,
     },
     addInput: { fontSize: 15, color: colors.text, minHeight: 60, lineHeight: 22 },
     addFieldRow:    { flexDirection: 'row', alignItems: 'center', gap: 8 },
     addActions:     { flexDirection: 'row', alignItems: 'center', gap: 8 },
     addBtn: {
-      paddingHorizontal: 14, paddingVertical: 6, backgroundColor: colors.accent, borderRadius: 8,
+      paddingHorizontal: 14, paddingVertical: 6, backgroundColor: GOAL_COLOR, borderRadius: 8,
     },
     addBtnText:     { fontSize: 14, color: '#fff', fontWeight: '600' },
   });

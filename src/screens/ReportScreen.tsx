@@ -13,6 +13,8 @@ import StorageService from '../services/StorageService';
 import GoalsService from '../services/GoalsService';
 import { LogEntry } from '../types/LogEntry';
 import { Goal, GoalEntryContribution } from '../types/Goal';
+
+const GOAL_COLOR = '#E53935';
 import { ColorPalette, useTheme } from '../contexts/ThemeContext';
 import { DayPlan, PlanBlock } from '../types/DayPlan';
 import { allMatchingBlocks, isCovered } from '../utils/planMatching';
@@ -174,6 +176,7 @@ export default function ReportScreen({ onStartCheckIn, onOpenMenu, onEditPlan, i
         </View>
       )}
 
+
       {loading ? (
         <View style={styles.centeredFull}>
           <ActivityIndicator size="large" color={colors.accent} />
@@ -184,13 +187,11 @@ export default function ReportScreen({ onStartCheckIn, onOpenMenu, onEditPlan, i
           {planBlocks.length > 0 && (() => {
             const coveredCount = planBlocks.filter(b => isCovered(b, entries)).length;
             return (
-              <View style={styles.planSection}>
-                <TouchableOpacity
-                  onPress={() => onEditPlan?.(currentDate)}
-                  style={styles.planHeaderRow}>
-                  <Text style={styles.planHeader}>PLAN</Text>
-                  <Text style={styles.planEditHint}>Edit ›</Text>
-                </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.planSection}
+                onPress={() => onEditPlan?.(currentDate)}
+                activeOpacity={0.85}>
+                <Text style={styles.planHeader}>PLAN  ›</Text>
                 {planBlocks.map(block => {
                   const covered = isCovered(block, entries);
                   const isCalendar = block.source === 'calendar';
@@ -213,7 +214,7 @@ export default function ReportScreen({ onStartCheckIn, onOpenMenu, onEditPlan, i
                   {coveredCount}/{planBlocks.length} blocks covered
                   {coveredCount < planBlocks.length ? `  ·  ${planBlocks.length - coveredCount} missed` : '  ✓'}
                 </Text>
-              </View>
+              </TouchableOpacity>
             );
           })()}
 
@@ -357,9 +358,9 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
     fabIcon: { fontSize: 32, color: '#fff', lineHeight: 36 },
     // Pinned goals strip — sits between dayNav and scroll content
     pinnedGoals: {
-      backgroundColor: colors.accent + '14',
+      backgroundColor: GOAL_COLOR + '12',
       borderBottomWidth: 2,
-      borderBottomColor: colors.accent + '40',
+      borderBottomColor: GOAL_COLOR + '40',
       paddingHorizontal: 16,
       paddingVertical: 10,
       gap: 8,
@@ -367,7 +368,7 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
     pinnedGoalsHeader: {
       fontSize: 11,
       fontWeight: '700',
-      color: colors.accent,
+      color: GOAL_COLOR,
       letterSpacing: 0.8,
       marginBottom: 2,
     },
@@ -379,9 +380,9 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
     pinnedGoalInfo: { flex: 1, gap: 3 },
     pinnedGoalText: { fontSize: 13, color: colors.text, fontWeight: '500' },
     pinnedBarBg: { height: 4, backgroundColor: colors.border, borderRadius: 2, overflow: 'hidden' },
-    pinnedBarFill: { height: 4, backgroundColor: colors.accent, borderRadius: 2 },
+    pinnedBarFill: { height: 4, backgroundColor: GOAL_COLOR, borderRadius: 2 },
     pinnedGoalDeadline: { fontSize: 10, color: colors.textSecondary },
-    pinnedGoalPct: { fontSize: 14, fontWeight: '700', color: colors.accent, minWidth: 38, textAlign: 'right' },
+    pinnedGoalPct: { fontSize: 14, fontWeight: '700', color: GOAL_COLOR, minWidth: 38, textAlign: 'right' },
     planSection: {
       backgroundColor: '#039BE5' + '18',
       borderRadius: 12,
@@ -390,13 +391,9 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
       borderLeftWidth: 4,
       borderLeftColor: '#039BE5',
     },
-    planHeaderRow: {
-      flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2,
-    },
     planHeader: {
-      fontSize: 11, fontWeight: '700', color: '#039BE5', letterSpacing: 0.5,
+      fontSize: 11, fontWeight: '700', color: '#039BE5', letterSpacing: 0.5, marginBottom: 2,
     },
-    planEditHint: { fontSize: 12, color: '#039BE5' },
     planBlock: { flexDirection: 'row', alignItems: 'center', gap: 10 },
     planDot: { width: 10, height: 10, borderRadius: 5 },
     planDotCovered: { backgroundColor: '#039BE5' },
@@ -413,16 +410,16 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
     planTag: { fontSize: 12, color: '#039BE5', marginTop: 6, fontWeight: '500' },
     goalTagRow: { flexDirection: 'column', gap: 4, marginTop: 6 },
     goalTag: {
-      backgroundColor: '#33B679' + '20',
+      backgroundColor: GOAL_COLOR + '18',
       borderRadius: 6,
       paddingHorizontal: 8,
       paddingVertical: 4,
       borderWidth: 1,
-      borderColor: '#33B679' + '50',
+      borderColor: GOAL_COLOR + '50',
       alignSelf: 'flex-start',
       maxWidth: '100%',
     },
-    goalTagText: { fontSize: 12, color: '#33B679', fontWeight: '600' },
+    goalTagText: { fontSize: 12, color: GOAL_COLOR, fontWeight: '600' },
     debugRow: {
       flexDirection: 'row',
       gap: 12,

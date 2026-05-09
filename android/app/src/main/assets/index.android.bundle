@@ -104076,7 +104076,7 @@ __d(function(global, require, _importDefaultUnused, _importAllUnused, module, ex
     "major":  0,
     "minor":  0,
     "ticket_id":  24,
-    "sequence":  18
+    "sequence":  19
 }
 ;
 },638,[],"version.json");
@@ -108302,6 +108302,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
   var _jsxRuntime = _$$_REQUIRE(_dependencyMap[12], "react/jsx-runtime");
   var _jsxFileName = "C:\\Users\\ronen\\TimeAnalyzer\\src\\screens\\CheckInScreen.tsx";
   function _interopRequireWildcard(e, t) { if ("function" == typeof WeakMap) var r = new WeakMap(), n = new WeakMap(); return (_interopRequireWildcard = function (e, t) { if (!t && e && e.__esModule) return e; var o, i, f = { __proto__: null, default: e }; if (null === e || "object" != typeof e && "function" != typeof e) return f; if (o = t ? n : r) { if (o.has(e)) return o.get(e); o.set(e, f); } for (var _t in e) "default" !== _t && {}.hasOwnProperty.call(e, _t) && ((i = (o = Object.defineProperty) && Object.getOwnPropertyDescriptor(e, _t)) && (i.get || i.set) ? o(f, _t, i) : f[_t] = e[_t]); return f; })(e, t); }
+  var GOAL_COLOR = '#E53935';
   function formatDuration(ms) {
     var totalSeconds = Math.floor(ms / 1000);
     var m = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
@@ -109007,17 +109008,17 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       // Idle phase — goals reminder
       idleGoalsSection: {
         width: '100%',
-        backgroundColor: colors.accent + '12',
+        backgroundColor: GOAL_COLOR + '12',
         borderRadius: 12,
         padding: 12,
         gap: 8,
         borderLeftWidth: 3,
-        borderLeftColor: colors.accent
+        borderLeftColor: GOAL_COLOR
       },
       idleGoalsLabel: {
         fontSize: 11,
         fontWeight: '700',
-        color: colors.accent,
+        color: GOAL_COLOR,
         letterSpacing: 0.5
       },
       idleGoalRow: {
@@ -109042,13 +109043,13 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       },
       idleBarFill: {
         height: 3,
-        backgroundColor: colors.accent,
+        backgroundColor: GOAL_COLOR,
         borderRadius: 2
       },
       idleGoalPct: {
         fontSize: 13,
         fontWeight: '700',
-        color: colors.accent,
+        color: GOAL_COLOR,
         minWidth: 36,
         textAlign: 'right'
       },
@@ -109060,16 +109061,16 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       goalsSectionLabel: {
         fontSize: 11,
         fontWeight: '700',
-        color: colors.accent,
+        color: GOAL_COLOR,
         letterSpacing: 0.5
       },
       goalContribCard: {
-        backgroundColor: colors.surface,
+        backgroundColor: GOAL_COLOR + '0e',
         borderRadius: 12,
         padding: 14,
         gap: 8,
         borderLeftWidth: 3,
-        borderLeftColor: colors.accent
+        borderLeftColor: GOAL_COLOR
       },
       goalContribName: {
         fontSize: 15,
@@ -109088,7 +109089,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       },
       progressBarFill: {
         height: 5,
-        backgroundColor: colors.accent,
+        backgroundColor: GOAL_COLOR,
         borderRadius: 3
       },
       goalProgressLabel: {
@@ -109113,7 +109114,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         fontWeight: '700',
         color: colors.text,
         borderBottomWidth: 2,
-        borderBottomColor: colors.accent,
+        borderBottomColor: GOAL_COLOR,
         paddingVertical: 2
       },
       pctLabel: {
@@ -109173,16 +109174,16 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       summaryGoalsLabel: {
         fontSize: 11,
         fontWeight: '600',
-        color: colors.textSecondary,
+        color: GOAL_COLOR,
         letterSpacing: 0.5
       },
       summaryGoalCard: {
-        backgroundColor: colors.surface,
+        backgroundColor: GOAL_COLOR + '0e',
         borderRadius: 12,
         padding: 14,
         gap: 6,
         borderLeftWidth: 3,
-        borderLeftColor: colors.accent
+        borderLeftColor: GOAL_COLOR
       },
       summaryGoalTop: {
         flexDirection: 'row',
@@ -109199,7 +109200,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       summaryDelta: {
         fontSize: 16,
         fontWeight: '700',
-        color: colors.accent
+        color: GOAL_COLOR
       },
       summaryDeltaDone: {
         color: '#4CAF50'
@@ -109212,7 +109213,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       },
       summaryBarFill: {
         height: 6,
-        backgroundColor: colors.accent,
+        backgroundColor: GOAL_COLOR,
         borderRadius: 3
       },
       summaryBarLabel: {
@@ -110062,6 +110063,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
   var _jsxRuntime = _$$_REQUIRE(_dependencyMap[10], "react/jsx-runtime");
   var _jsxFileName = "C:\\Users\\ronen\\TimeAnalyzer\\src\\screens\\DayPlanScreen.tsx";
   function _interopRequireWildcard(e, t) { if ("function" == typeof WeakMap) var r = new WeakMap(), n = new WeakMap(); return (_interopRequireWildcard = function (e, t) { if (!t && e && e.__esModule) return e; var o, i, f = { __proto__: null, default: e }; if (null === e || "object" != typeof e && "function" != typeof e) return f; if (o = t ? n : r) { if (o.has(e)) return o.get(e); o.set(e, f); } for (var _t in e) "default" !== _t && {}.hasOwnProperty.call(e, _t) && ((i = (o = Object.defineProperty) && Object.getOwnPropertyDescriptor(e, _t)) && (i.get || i.set) ? o(f, _t, i) : f[_t] = e[_t]); return f; })(e, t); }
+  var GOAL_COLOR = '#E53935';
   function toDateString(d) {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   }
@@ -110425,6 +110427,71 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         contentContainerStyle: styles.body,
         keyboardShouldPersistTaps: "handled",
         children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+          style: styles.goalsSectionCard,
+          children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+            style: styles.goalsSectionHeader,
+            children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+              style: styles.goalsSectionTitle,
+              children: "\uD83C\uDFAF  ACTIVE GOALS"
+            }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
+              onPress: () => setAddingGoal(v => !v),
+              children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                style: styles.goalsSectionAdd,
+                children: addingGoal ? '✕' : '+ New goal'
+              })
+            })]
+          }), goals.length === 0 && !addingGoal && /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+            style: styles.goalsEmpty,
+            children: "No active goals"
+          }), goals.map(goal => /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+            style: styles.goalRow,
+            children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+              style: styles.goalRowTop,
+              children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                style: styles.goalText,
+                numberOfLines: 2,
+                children: goal.text
+              }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
+                style: styles.goalPct,
+                children: [goal.progress, "%"]
+              })]
+            }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
+              style: styles.goalProgressBg,
+              children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
+                style: [styles.goalProgressFill, {
+                  width: `${goal.progress}%`
+                }]
+              })
+            }), goal.targetAt !== null && /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
+              style: styles.goalTarget,
+              children: ["\uD83D\uDCC5 ", new Date(goal.targetAt).toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric'
+              })]
+            })]
+          }, goal.id)), addingGoal && /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+            style: styles.addGoalRow,
+            children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TextInput, {
+              style: styles.addGoalInput,
+              value: newGoalText,
+              onChangeText: setNewGoalText,
+              placeholder: "Describe your goal\u2026",
+              placeholderTextColor: colors.placeholder,
+              multiline: true,
+              textAlignVertical: "top",
+              autoFocus: true
+            }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
+              style: [styles.addGoalBtn, !newGoalText.trim() && styles.addGoalBtnDisabled],
+              onPress: handleAddGoal,
+              disabled: !newGoalText.trim(),
+              children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                style: styles.addGoalBtnText,
+                children: "Add"
+              })
+            })]
+          })]
+        }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
           style: styles.inputCard,
           children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TextInput, {
             style: styles.rawInput,
@@ -110562,71 +110629,6 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
             style: styles.addBtnText,
             children: "+ Add block manually"
           })
-        }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-          style: styles.goalsSectionCard,
-          children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-            style: styles.goalsSectionHeader,
-            children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-              style: styles.goalsSectionTitle,
-              children: "ACTIVE GOALS"
-            }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
-              onPress: () => setAddingGoal(v => !v),
-              children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                style: styles.goalsSectionAdd,
-                children: addingGoal ? '✕' : '+ New goal'
-              })
-            })]
-          }), goals.length === 0 && !addingGoal && /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-            style: styles.goalsEmpty,
-            children: "No active goals"
-          }), goals.map(goal => /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-            style: styles.goalRow,
-            children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-              style: styles.goalRowTop,
-              children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                style: styles.goalText,
-                numberOfLines: 2,
-                children: goal.text
-              }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
-                style: styles.goalPct,
-                children: [goal.progress, "%"]
-              })]
-            }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
-              style: styles.goalProgressBg,
-              children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
-                style: [styles.goalProgressFill, {
-                  width: `${goal.progress}%`
-                }]
-              })
-            }), goal.targetAt !== null && /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
-              style: styles.goalTarget,
-              children: ["\uD83D\uDCC5 ", new Date(goal.targetAt).toLocaleDateString('en-US', {
-                month: 'short',
-                day: 'numeric',
-                year: 'numeric'
-              })]
-            })]
-          }, goal.id)), addingGoal && /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-            style: styles.addGoalRow,
-            children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TextInput, {
-              style: styles.addGoalInput,
-              value: newGoalText,
-              onChangeText: setNewGoalText,
-              placeholder: "Describe your goal\u2026",
-              placeholderTextColor: colors.placeholder,
-              multiline: true,
-              textAlignVertical: "top",
-              autoFocus: true
-            }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
-              style: [styles.addGoalBtn, !newGoalText.trim() && styles.addGoalBtnDisabled],
-              onPress: handleAddGoal,
-              disabled: !newGoalText.trim(),
-              children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                style: styles.addGoalBtnText,
-                children: "Add"
-              })
-            })]
-          })]
         })]
       })]
     });
@@ -110839,11 +110841,12 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         fontFamily: 'monospace'
       },
       goalsSectionCard: {
-        backgroundColor: colors.surface,
+        backgroundColor: GOAL_COLOR + '10',
         borderRadius: 12,
         padding: 14,
         gap: 10,
-        marginTop: 4
+        borderLeftWidth: 4,
+        borderLeftColor: GOAL_COLOR
       },
       goalsSectionHeader: {
         flexDirection: 'row',
@@ -110852,13 +110855,13 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       },
       goalsSectionTitle: {
         fontSize: 11,
-        fontWeight: '600',
-        color: colors.textSecondary,
+        fontWeight: '700',
+        color: GOAL_COLOR,
         letterSpacing: 0.5
       },
       goalsSectionAdd: {
         fontSize: 13,
-        color: colors.accent,
+        color: GOAL_COLOR,
         fontWeight: '500'
       },
       goalsEmpty: {
@@ -110882,8 +110885,8 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       },
       goalPct: {
         fontSize: 13,
-        fontWeight: '600',
-        color: colors.accent,
+        fontWeight: '700',
+        color: GOAL_COLOR,
         marginLeft: 8
       },
       goalProgressBg: {
@@ -110894,7 +110897,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       },
       goalProgressFill: {
         height: 4,
-        backgroundColor: colors.accent,
+        backgroundColor: GOAL_COLOR,
         borderRadius: 2
       },
       goalTarget: {
@@ -110913,13 +110916,13 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         minHeight: 64,
         lineHeight: 22,
         borderWidth: 1,
-        borderColor: colors.accent
+        borderColor: GOAL_COLOR
       },
       addGoalBtn: {
         alignSelf: 'flex-end',
         paddingHorizontal: 20,
         paddingVertical: 8,
-        backgroundColor: colors.accent,
+        backgroundColor: GOAL_COLOR,
         borderRadius: 8
       },
       addGoalBtnDisabled: {
@@ -111176,8 +111179,9 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       })
     });
   }
+  var GOAL_COLOR = '#E53935';
   var STATUS_COLORS = {
-    active: '#039BE5',
+    active: GOAL_COLOR,
     done: '#43A047',
     canceled: '#9E9E9E'
   };
@@ -111693,14 +111697,14 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       },
       filterTabActive: {
         borderBottomWidth: 2,
-        borderBottomColor: colors.accent
+        borderBottomColor: GOAL_COLOR
       },
       filterTabText: {
         fontSize: 13,
         color: colors.textSecondary
       },
       filterTabTextActive: {
-        color: colors.accent,
+        color: GOAL_COLOR,
         fontWeight: '600'
       },
       body: {
@@ -111797,7 +111801,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       saveEditBtn: {
         paddingHorizontal: 14,
         paddingVertical: 6,
-        backgroundColor: colors.accent,
+        backgroundColor: GOAL_COLOR,
         borderRadius: 8
       },
       saveEditText: {
@@ -111834,18 +111838,18 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         marginTop: 24
       },
       addCard: {
-        backgroundColor: colors.surface,
+        backgroundColor: GOAL_COLOR + '0c',
         borderRadius: 12,
         padding: 14,
         gap: 10,
         borderStyle: 'dashed',
         borderWidth: 1,
-        borderColor: colors.border
+        borderColor: GOAL_COLOR + '60'
       },
       addCardLabel: {
         fontSize: 11,
-        fontWeight: '600',
-        color: colors.textSecondary,
+        fontWeight: '700',
+        color: GOAL_COLOR,
         letterSpacing: 0.5
       },
       addInput: {
@@ -111867,7 +111871,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       addBtn: {
         paddingHorizontal: 14,
         paddingVertical: 6,
-        backgroundColor: colors.accent,
+        backgroundColor: GOAL_COLOR,
         borderRadius: 8
       },
       addBtnText: {
@@ -111894,6 +111898,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
   var _jsxRuntime = _$$_REQUIRE(_dependencyMap[8], "react/jsx-runtime");
   var _jsxFileName = "C:\\Users\\ronen\\TimeAnalyzer\\src\\screens\\ReportScreen.tsx";
   function _interopRequireWildcard(e, t) { if ("function" == typeof WeakMap) var r = new WeakMap(), n = new WeakMap(); return (_interopRequireWildcard = function (e, t) { if (!t && e && e.__esModule) return e; var o, i, f = { __proto__: null, default: e }; if (null === e || "object" != typeof e && "function" != typeof e) return f; if (o = t ? n : r) { if (o.has(e)) return o.get(e); o.set(e, f); } for (var _t in e) "default" !== _t && {}.hasOwnProperty.call(e, _t) && ((i = (o = Object.defineProperty) && Object.getOwnPropertyDescriptor(e, _t)) && (i.get || i.set) ? o(f, _t, i) : f[_t] = e[_t]); return f; })(e, t); }
+  var GOAL_COLOR = '#E53935';
   function startOfDay(date) {
     return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
   }
@@ -112100,18 +112105,13 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         contentContainerStyle: styles.list,
         children: [planBlocks.length > 0 && (() => {
           var coveredCount = planBlocks.filter(b => (0, _$$_REQUIRE(_dependencyMap[11], "../utils/planMatching").isCovered)(b, entries)).length;
-          return /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+          return /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.TouchableOpacity, {
             style: styles.planSection,
-            children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.TouchableOpacity, {
-              onPress: () => onEditPlan?.(currentDate),
-              style: styles.planHeaderRow,
-              children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                style: styles.planHeader,
-                children: "PLAN"
-              }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                style: styles.planEditHint,
-                children: "Edit \u203A"
-              })]
+            onPress: () => onEditPlan?.(currentDate),
+            activeOpacity: 0.85,
+            children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+              style: styles.planHeader,
+              children: "PLAN  \u203A"
             }), planBlocks.map(block => {
               var covered = (0, _$$_REQUIRE(_dependencyMap[11], "../utils/planMatching").isCovered)(block, entries);
               var isCalendar = block.source === 'calendar';
@@ -112328,9 +112328,9 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       },
       // Pinned goals strip — sits between dayNav and scroll content
       pinnedGoals: {
-        backgroundColor: colors.accent + '14',
+        backgroundColor: GOAL_COLOR + '12',
         borderBottomWidth: 2,
-        borderBottomColor: colors.accent + '40',
+        borderBottomColor: GOAL_COLOR + '40',
         paddingHorizontal: 16,
         paddingVertical: 10,
         gap: 8
@@ -112338,7 +112338,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       pinnedGoalsHeader: {
         fontSize: 11,
         fontWeight: '700',
-        color: colors.accent,
+        color: GOAL_COLOR,
         letterSpacing: 0.8,
         marginBottom: 2
       },
@@ -112364,7 +112364,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       },
       pinnedBarFill: {
         height: 4,
-        backgroundColor: colors.accent,
+        backgroundColor: GOAL_COLOR,
         borderRadius: 2
       },
       pinnedGoalDeadline: {
@@ -112374,7 +112374,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       pinnedGoalPct: {
         fontSize: 14,
         fontWeight: '700',
-        color: colors.accent,
+        color: GOAL_COLOR,
         minWidth: 38,
         textAlign: 'right'
       },
@@ -112386,21 +112386,12 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         borderLeftWidth: 4,
         borderLeftColor: '#039BE5'
       },
-      planHeaderRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginBottom: 2
-      },
       planHeader: {
         fontSize: 11,
         fontWeight: '700',
         color: '#039BE5',
-        letterSpacing: 0.5
-      },
-      planEditHint: {
-        fontSize: 12,
-        color: '#039BE5'
+        letterSpacing: 0.5,
+        marginBottom: 2
       },
       planBlock: {
         flexDirection: 'row',
@@ -112455,18 +112446,18 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         marginTop: 6
       },
       goalTag: {
-        backgroundColor: '#33B679' + '20',
+        backgroundColor: GOAL_COLOR + '18',
         borderRadius: 6,
         paddingHorizontal: 8,
         paddingVertical: 4,
         borderWidth: 1,
-        borderColor: '#33B679' + '50',
+        borderColor: GOAL_COLOR + '50',
         alignSelf: 'flex-start',
         maxWidth: '100%'
       },
       goalTagText: {
         fontSize: 12,
-        color: '#33B679',
+        color: GOAL_COLOR,
         fontWeight: '600'
       },
       debugRow: {
@@ -112504,6 +112495,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
   var _jsxRuntime = _$$_REQUIRE(_dependencyMap[11], "react/jsx-runtime");
   var _jsxFileName = "C:\\Users\\ronen\\TimeAnalyzer\\src\\screens\\EntryDetailScreen.tsx";
   function _interopRequireWildcard(e, t) { if ("function" == typeof WeakMap) var r = new WeakMap(), n = new WeakMap(); return (_interopRequireWildcard = function (e, t) { if (!t && e && e.__esModule) return e; var o, i, f = { __proto__: null, default: e }; if (null === e || "object" != typeof e && "function" != typeof e) return f; if (o = t ? n : r) { if (o.has(e)) return o.get(e); o.set(e, f); } for (var _t in e) "default" !== _t && {}.hasOwnProperty.call(e, _t) && ((i = (o = Object.defineProperty) && Object.getOwnPropertyDescriptor(e, _t)) && (i.get || i.set) ? o(f, _t, i) : f[_t] = e[_t]); return f; })(e, t); }
+  var GOAL_COLOR = '#E53935';
   function tsToTimeString(ts) {
     var d = new Date(ts);
     return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
@@ -113014,11 +113006,11 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         fontWeight: '600'
       },
       goalContribCard: {
-        backgroundColor: '#33B679' + '12',
+        backgroundColor: GOAL_COLOR + '10',
         borderRadius: 10,
         padding: 12,
         borderLeftWidth: 3,
-        borderLeftColor: '#33B679'
+        borderLeftColor: GOAL_COLOR
       },
       goalContribRow: {
         flexDirection: 'row',
@@ -113035,7 +113027,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       goalContribDelta: {
         fontSize: 15,
         fontWeight: '700',
-        color: '#33B679'
+        color: GOAL_COLOR
       }
     });
   }

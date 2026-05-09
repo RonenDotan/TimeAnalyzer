@@ -20,6 +20,8 @@ import { applyTranscription } from '../utils/parseTranscript';
 import { formatMin, parseDayPlan } from '../utils/parseDayPlan';
 import { ColorPalette, useTheme } from '../contexts/ThemeContext';
 
+const GOAL_COLOR = '#E53935';
+
 interface Props {
   initialDate?: Date;
   onClose: () => void;
@@ -299,6 +301,58 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false,
 
       <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
 
+        {/* Active goals — at top, red */}
+        <View style={styles.goalsSectionCard}>
+          <View style={styles.goalsSectionHeader}>
+            <Text style={styles.goalsSectionTitle}>🎯  ACTIVE GOALS</Text>
+            <TouchableOpacity onPress={() => setAddingGoal(v => !v)}>
+              <Text style={styles.goalsSectionAdd}>{addingGoal ? '✕' : '+ New goal'}</Text>
+            </TouchableOpacity>
+          </View>
+
+          {goals.length === 0 && !addingGoal && (
+            <Text style={styles.goalsEmpty}>No active goals</Text>
+          )}
+
+          {goals.map(goal => (
+            <View key={goal.id} style={styles.goalRow}>
+              <View style={styles.goalRowTop}>
+                <Text style={styles.goalText} numberOfLines={2}>{goal.text}</Text>
+                <Text style={styles.goalPct}>{goal.progress}%</Text>
+              </View>
+              <View style={styles.goalProgressBg}>
+                <View style={[styles.goalProgressFill, { width: `${goal.progress}%` as any }]} />
+              </View>
+              {goal.targetAt !== null && (
+                <Text style={styles.goalTarget}>
+                  📅 {new Date(goal.targetAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                </Text>
+              )}
+            </View>
+          ))}
+
+          {addingGoal && (
+            <View style={styles.addGoalRow}>
+              <TextInput
+                style={styles.addGoalInput}
+                value={newGoalText}
+                onChangeText={setNewGoalText}
+                placeholder="Describe your goal…"
+                placeholderTextColor={colors.placeholder}
+                multiline
+                textAlignVertical="top"
+                autoFocus
+              />
+              <TouchableOpacity
+                style={[styles.addGoalBtn, !newGoalText.trim() && styles.addGoalBtnDisabled]}
+                onPress={handleAddGoal}
+                disabled={!newGoalText.trim()}>
+                <Text style={styles.addGoalBtnText}>Add</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+
         {/* Voice / text input area */}
         <View style={styles.inputCard}>
           <TextInput
@@ -429,57 +483,6 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false,
           <Text style={styles.addBtnText}>+ Add block manually</Text>
         </TouchableOpacity>
 
-        {/* Active goals — read-only overview, add new */}
-        <View style={styles.goalsSectionCard}>
-          <View style={styles.goalsSectionHeader}>
-            <Text style={styles.goalsSectionTitle}>ACTIVE GOALS</Text>
-            <TouchableOpacity onPress={() => setAddingGoal(v => !v)}>
-              <Text style={styles.goalsSectionAdd}>{addingGoal ? '✕' : '+ New goal'}</Text>
-            </TouchableOpacity>
-          </View>
-
-          {goals.length === 0 && !addingGoal && (
-            <Text style={styles.goalsEmpty}>No active goals</Text>
-          )}
-
-          {goals.map(goal => (
-            <View key={goal.id} style={styles.goalRow}>
-              <View style={styles.goalRowTop}>
-                <Text style={styles.goalText} numberOfLines={2}>{goal.text}</Text>
-                <Text style={styles.goalPct}>{goal.progress}%</Text>
-              </View>
-              <View style={styles.goalProgressBg}>
-                <View style={[styles.goalProgressFill, { width: `${goal.progress}%` as any }]} />
-              </View>
-              {goal.targetAt !== null && (
-                <Text style={styles.goalTarget}>
-                  📅 {new Date(goal.targetAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                </Text>
-              )}
-            </View>
-          ))}
-
-          {addingGoal && (
-            <View style={styles.addGoalRow}>
-              <TextInput
-                style={styles.addGoalInput}
-                value={newGoalText}
-                onChangeText={setNewGoalText}
-                placeholder="Describe your goal…"
-                placeholderTextColor={colors.placeholder}
-                multiline
-                textAlignVertical="top"
-                autoFocus
-              />
-              <TouchableOpacity
-                style={[styles.addGoalBtn, !newGoalText.trim() && styles.addGoalBtnDisabled]}
-                onPress={handleAddGoal}
-                disabled={!newGoalText.trim()}>
-                <Text style={styles.addGoalBtnText}>Add</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-        </View>
       </ScrollView>
     </View>
   );
@@ -629,11 +632,12 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
     },
     debugText: { fontSize: 11, color: colors.textSecondary, fontFamily: 'monospace' },
     goalsSectionCard: {
-      backgroundColor: colors.surface,
+      backgroundColor: GOAL_COLOR + '10',
       borderRadius: 12,
       padding: 14,
       gap: 10,
-      marginTop: 4,
+      borderLeftWidth: 4,
+      borderLeftColor: GOAL_COLOR,
     },
     goalsSectionHeader: {
       flexDirection: 'row',
@@ -642,13 +646,13 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
     },
     goalsSectionTitle: {
       fontSize: 11,
-      fontWeight: '600',
-      color: colors.textSecondary,
+      fontWeight: '700',
+      color: GOAL_COLOR,
       letterSpacing: 0.5,
     },
     goalsSectionAdd: {
       fontSize: 13,
-      color: colors.accent,
+      color: GOAL_COLOR,
       fontWeight: '500',
     },
     goalsEmpty: {
@@ -663,9 +667,9 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
       alignItems: 'center',
     },
     goalText: { fontSize: 14, color: colors.text, flex: 1, lineHeight: 20 },
-    goalPct: { fontSize: 13, fontWeight: '600', color: colors.accent, marginLeft: 8 },
+    goalPct: { fontSize: 13, fontWeight: '700', color: GOAL_COLOR, marginLeft: 8 },
     goalProgressBg: { height: 4, backgroundColor: colors.border, borderRadius: 2, overflow: 'hidden' },
-    goalProgressFill: { height: 4, backgroundColor: colors.accent, borderRadius: 2 },
+    goalProgressFill: { height: 4, backgroundColor: GOAL_COLOR, borderRadius: 2 },
     goalTarget: { fontSize: 11, color: colors.textSecondary },
     addGoalRow: { gap: 8 },
     addGoalInput: {
@@ -677,13 +681,13 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
       minHeight: 64,
       lineHeight: 22,
       borderWidth: 1,
-      borderColor: colors.accent,
+      borderColor: GOAL_COLOR,
     },
     addGoalBtn: {
       alignSelf: 'flex-end',
       paddingHorizontal: 20,
       paddingVertical: 8,
-      backgroundColor: colors.accent,
+      backgroundColor: GOAL_COLOR,
       borderRadius: 8,
     },
     addGoalBtnDisabled: { backgroundColor: colors.placeholder },

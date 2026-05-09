@@ -15,6 +15,8 @@ import CalendarSyncService from '../services/CalendarSyncService';
 import { LogEntry } from '../types/LogEntry';
 import { Note } from '../types/Note';
 import { GoalEntryContribution } from '../types/Goal';
+
+const GOAL_COLOR = '#E53935';
 import DictateBar from '../components/DictateBar';
 import SettingsService from '../services/SettingsService';
 import NoteDetailScreen from './NoteDetailScreen';
@@ -423,11 +425,11 @@ function makeStyles(colors: ColorPalette) {
     addNoteBtnDisabled: { backgroundColor: colors.placeholder },
     addNoteBtnText: { fontSize: 15, color: '#fff', fontWeight: '600' },
     goalContribCard: {
-      backgroundColor: '#33B679' + '12',
+      backgroundColor: GOAL_COLOR + '10',
       borderRadius: 10,
       padding: 12,
       borderLeftWidth: 3,
-      borderLeftColor: '#33B679',
+      borderLeftColor: GOAL_COLOR,
     },
     goalContribRow: {
       flexDirection: 'row',
@@ -436,6 +438,6 @@ function makeStyles(colors: ColorPalette) {
       gap: 8,
     },
     goalContribText: { flex: 1, fontSize: 14, color: colors.text, lineHeight: 20 },
-    goalContribDelta: { fontSize: 15, fontWeight: '700', color: '#33B679' },
+    goalContribDelta: { fontSize: 15, fontWeight: '700', color: GOAL_COLOR },
   });
 }
