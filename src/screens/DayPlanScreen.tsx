@@ -8,15 +8,20 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import DictateBar from '../components/DictateBar';
 import TranscriptionService from '../services/TranscriptionService';
 import StorageService from '../services/StorageService';
+import GoalsService from '../services/GoalsService';
 import CalendarSyncService from '../services/CalendarSyncService';
 import { ParsedBlock, PlanBlock } from '../types/DayPlan';
+import { Goal } from '../types/Goal';
 import { applyTranscription } from '../utils/parseTranscript';
 import { formatMin, parseDayPlan } from '../utils/parseDayPlan';
 import { ColorPalette, useTheme } from '../contexts/ThemeContext';
+
+const GOAL_COLOR = '#F97316';
 
 interface Props {
   initialDate?: Date;
@@ -36,6 +41,7 @@ interface EditBlock {
 }
 
 type RecordingState = { index: number; ms: number } | null;
+type ActiveTimePicker = { index: number; field: 'start' | 'end' } | null;
 
 function toDateString(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -72,6 +78,16 @@ function normalizeTimeText(text: string): string {
   return formatMin(min);
 }
 
+function minToDate(min: number): Date {
+  const d = new Date();
+  d.setHours(Math.floor(min / 60), min % 60, 0, 0);
+  return d;
+}
+
+function dateToMin(d: Date): number {
+  return d.getHours() * 60 + d.getMinutes();
+}
+
 function formatHeader(dateStr: string): string {
   const [y, mo, d] = dateStr.split('-').map(Number);
   const date = new Date(y, mo - 1, d);
@@ -95,9 +111,18 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false,
   const [deletedBlockIds, setDeletedBlockIds] = useState<number[]>([]);
   const [saving, setSaving] = useState(false);
   const [recording, setRecording] = useState<RecordingState>(null);
+  const [activeTimePicker, setActiveTimePicker] = useState<ActiveTimePicker>(null);
+  const [goals, setGoals] = useState<Goal[]>([]);
+  const [newGoalText, setNewGoalText] = useState('');
+  const [addingGoal, setAddingGoal] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const dateStr = toDateString(currentDate);
+
+  async function loadGoals() {
+    const active = await GoalsService.getActiveGoals(Date.now());
+    setGoals(active);
+  }
 
   useEffect(() => {
     async function load() {
@@ -119,6 +144,7 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false,
       }
     }
     load();
+    loadGoals();
   }, [dateStr]);
 
   function goToPrevDay() {
@@ -157,6 +183,21 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false,
     setBlocks(prev => [...prev, { startText: '', endText: '', activity: '' }]);
   }
 
+  function pickerDateFor(block: EditBlock, field: 'start' | 'end'): Date {
+    const raw = field === 'start' ? block.startText : block.endText;
+    return minToDate(parseTimeText(raw) ?? 9 * 60);
+  }
+
+  function handleTimePicked(event: DateTimePickerEvent, picked?: Date) {
+    if (!activeTimePicker) return;
+    const picker = activeTimePicker;
+    setActiveTimePicker(null);
+    if (event.type === 'dismissed' || !picked) return;
+    updateBlock(picker.index, {
+      [picker.field === 'start' ? 'startText' : 'endText']: formatMin(dateToMin(picked)),
+    });
+  }
+
   async function startBlockDictation(index: number) {
     try {
       await TranscriptionService.start(() => {});
@@ -190,6 +231,24 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false,
       TranscriptionService.stop().catch(() => {});
     };
   }, []);
+
+  async function handleAddGoal() {
+    const text = newGoalText.trim();
+    if (!text) return;
+    const now = Date.now();
+    await GoalsService.saveGoal({
+      text,
+      startAt: now,
+      targetAt: null,
+      progress: 0,
+      status: 'active',
+      createdAt: now,
+      updatedAt: now,
+    });
+    setNewGoalText('');
+    setAddingGoal(false);
+    await loadGoals();
+  }
 
   async function handleSave() {
     let currentBlocks = blocks;
@@ -268,8 +327,56 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false,
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+      {(goals.length > 0 || addingGoal) && (
+        <View style={styles.goalsSectionCard}>
+          <View style={styles.goalsSectionHeader}>
+            <Text style={styles.goalsSectionTitle}>{'\u{1F3AF}  ACTIVE GOALS'}</Text>
+            <TouchableOpacity onPress={() => setAddingGoal(v => !v)}>
+              <Text style={styles.goalsSectionAdd}>{addingGoal ? '\u{2715}' : '+ New goal'}</Text>
+            </TouchableOpacity>
+          </View>
 
+          {goals.map(goal => (
+            <View key={goal.id} style={styles.goalRow}>
+              <View style={styles.goalRowTop}>
+                <Text style={styles.goalText} numberOfLines={1}>{goal.text}</Text>
+                <Text style={styles.goalPct}>{goal.progress}%</Text>
+              </View>
+              <View style={styles.goalProgressBg}>
+                <View style={[styles.goalProgressFill, { width: `${goal.progress}%` as any }]} />
+              </View>
+              {goal.targetAt !== null && (
+                <Text style={styles.goalTarget}>
+                  {'\u{1F4C5} '}{new Date(goal.targetAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                </Text>
+              )}
+            </View>
+          ))}
+
+          {addingGoal && (
+            <View style={styles.addGoalRow}>
+              <TextInput
+                style={styles.addGoalInput}
+                value={newGoalText}
+                onChangeText={setNewGoalText}
+                placeholder="Describe your goal..."
+                placeholderTextColor={colors.placeholder}
+                multiline
+                textAlignVertical="top"
+                autoFocus
+              />
+              <TouchableOpacity
+                style={[styles.addGoalBtn, !newGoalText.trim() && styles.addGoalBtnDisabled]}
+                onPress={handleAddGoal}
+                disabled={!newGoalText.trim()}>
+                <Text style={styles.addGoalBtnText}>Add</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+      )}
+
+      <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
         {/* Voice / text input area */}
         <View style={styles.inputCard}>
           <TextInput
@@ -298,27 +405,13 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false,
           return (
             <View key={i} style={styles.blockCard}>
               <View style={styles.blockTimes}>
-                <TextInput
-                  style={styles.timeInput}
-                  value={block.startText}
-                  onChangeText={v => updateBlock(i, { startText: v })}
-                  onBlur={() => updateBlock(i, { startText: normalizeTimeText(block.startText) })}
-                  placeholder="14"
-                  placeholderTextColor={colors.placeholder}
-                  keyboardType="numeric"
-                  maxLength={5}
-                />
+                <TouchableOpacity style={styles.timeInput} onPress={() => setActiveTimePicker({ index: i, field: 'start' })}>
+                  <Text style={styles.timeInputText}>{normalizeTimeText(block.startText) || 'Start'}</Text>
+                </TouchableOpacity>
                 <Text style={styles.timeDash}>–</Text>
-                <TextInput
-                  style={styles.timeInput}
-                  value={block.endText}
-                  onChangeText={v => updateBlock(i, { endText: v })}
-                  onBlur={() => updateBlock(i, { endText: normalizeTimeText(block.endText) })}
-                  placeholder="16"
-                  placeholderTextColor={colors.placeholder}
-                  keyboardType="numeric"
-                  maxLength={5}
-                />
+                <TouchableOpacity style={styles.timeInput} onPress={() => setActiveTimePicker({ index: i, field: 'end' })}>
+                  <Text style={styles.timeInputText}>{normalizeTimeText(block.endText) || 'End'}</Text>
+                </TouchableOpacity>
                 <TouchableOpacity onPress={() => removeBlock(i)} style={styles.removeBtn}>
                   <Text style={styles.removeBtnText}>✕</Text>
                 </TouchableOpacity>
@@ -399,7 +492,17 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false,
         <TouchableOpacity style={styles.addBtn} onPress={addBlock}>
           <Text style={styles.addBtnText}>+ Add block manually</Text>
         </TouchableOpacity>
+
       </ScrollView>
+
+      {activeTimePicker && blocks[activeTimePicker.index] && (
+        <DateTimePicker
+          value={pickerDateFor(blocks[activeTimePicker.index], activeTimePicker.field)}
+          mode="time"
+          display="default"
+          onChange={handleTimePicked}
+        />
+      )}
     </View>
   );
 }
@@ -473,14 +576,16 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
     },
     blockTimes: { flexDirection: 'row', alignItems: 'center', gap: 8 },
     timeInput: {
+      borderBottomWidth: 1.5,
+      borderBottomColor: '#039BE5',
+      paddingVertical: 4,
+      minWidth: 60,
+      alignItems: 'center',
+    },
+    timeInputText: {
       fontSize: 16,
       fontWeight: '600',
       color: colors.text,
-      borderBottomWidth: 1.5,
-      borderBottomColor: '#039BE5',
-      paddingVertical: 2,
-      minWidth: 60,
-      textAlign: 'center',
     },
     timeDash: { fontSize: 16, color: colors.textSecondary },
     removeBtn: { marginLeft: 'auto', paddingHorizontal: 4 },
@@ -547,5 +652,66 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
       borderTopColor: colors.border,
     },
     debugText: { fontSize: 11, color: colors.textSecondary, fontFamily: 'monospace' },
+    goalsSectionCard: {
+      backgroundColor: GOAL_COLOR + '10',
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      gap: 10,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: GOAL_COLOR + '40',
+    },
+    goalsSectionHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    goalsSectionTitle: {
+      fontSize: 11,
+      fontWeight: '700',
+      color: GOAL_COLOR,
+      letterSpacing: 0.5,
+    },
+    goalsSectionAdd: {
+      fontSize: 13,
+      color: GOAL_COLOR,
+      fontWeight: '500',
+    },
+    goalsEmpty: {
+      fontSize: 14,
+      color: colors.placeholder,
+      fontStyle: 'italic',
+    },
+    goalRow: { gap: 4 },
+    goalRowTop: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    goalText: { fontSize: 14, color: colors.text, flex: 1, lineHeight: 20 },
+    goalPct: { fontSize: 13, fontWeight: '700', color: GOAL_COLOR, marginLeft: 8 },
+    goalProgressBg: { height: 4, backgroundColor: colors.border, borderRadius: 2, overflow: 'hidden' },
+    goalProgressFill: { height: 4, backgroundColor: GOAL_COLOR, borderRadius: 2 },
+    goalTarget: { fontSize: 11, color: colors.textSecondary },
+    addGoalRow: { gap: 8 },
+    addGoalInput: {
+      fontSize: 15,
+      color: colors.text,
+      backgroundColor: colors.background,
+      borderRadius: 8,
+      padding: 10,
+      minHeight: 64,
+      lineHeight: 22,
+      borderWidth: 1,
+      borderColor: GOAL_COLOR,
+    },
+    addGoalBtn: {
+      alignSelf: 'flex-end',
+      paddingHorizontal: 20,
+      paddingVertical: 8,
+      backgroundColor: GOAL_COLOR,
+      borderRadius: 8,
+    },
+    addGoalBtnDisabled: { backgroundColor: colors.placeholder },
+    addGoalBtnText: { fontSize: 14, color: '#fff', fontWeight: '600' },
   });
 }

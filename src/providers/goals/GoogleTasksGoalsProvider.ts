@@ -1,4 +1,4 @@
-import { Goal, GoalContribution } from '../../types/Goal';
+import { Goal, GoalContribution, GoalEntryContribution } from '../../types/Goal';
 import { GoalsProvider } from './GoalsProvider';
 
 /**
@@ -54,6 +54,11 @@ const GoogleTasksGoalsProvider: GoalsProvider = {
   async getContributions(_goalId: number): Promise<GoalContribution[]> {
     // TODO (issue #25): parse contributions from task.notes JSON
     throw new Error('GoogleTasksGoalsProvider.getContributions not implemented — see issue #25');
+  },
+
+  async getContributionsByEntryId(_entryId: number): Promise<GoalEntryContribution[]> {
+    // TODO (issue #25): parse contributions from task.notes JSON, join with goal text
+    throw new Error('GoogleTasksGoalsProvider.getContributionsByEntryId not implemented — see issue #25');
   },
 };
 

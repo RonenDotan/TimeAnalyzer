@@ -1,0 +1,148 @@
+# AGENTS.md
+
+This file provides guidance to Codex (Codex.ai/code) when working with code in this repository.
+
+## Project Purpose
+
+TimeAnalyzer is a voice-driven work journal that helps you understand where your time actually went during a work session. The user records short voice check-ins every ~2 hours describing what they've been doing. The app transcribes the audio, categorizes the work using AI, persists entries locally, and generates reports showing how time was actually spent.
+
+The core loop:
+**Scheduled notification → user records audio → transcribe → categorize → save → report**
+
+## Architecture
+
+**Fully mobile, no backend.** Everything runs on the device:
+- Direct API calls to Codex (categorization) and optionally Whisper (transcription)
+- SQLite for on-device storage
+- Local notifications for scheduling check-ins
+- No server, no sync, no auth system
+
+## Tech Stack
+
+- **Framework:** React Native + TypeScript
+- **Storage:** SQLite (on-device)
+- **Transcription:** On-device native speech-to-text (v1), Whisper API (v2)
+- **AI analysis:** Codex API via Anthropic SDK (called directly from app)
+- **Scheduling:** Local notifications (no background process needed)
+
+## Design Pattern — Provider / Strategy
+
+All external services are abstracted behind interfaces so providers can be swapped via config without touching app logic.
+
+**TranscriptionService**
+```
+interface TranscriptionProvider {
+  transcribe(audioFile: AudioFile): Promise<string>
+}
+
+Implementations:
+  NativeTranscriptionProvider   // on-device (v1)
+  WhisperTranscriptionProvider  // OpenAI Whisper API (v2)
+```
+
+**AnalysisService**
+```
+interface AnalysisProvider {
+  analyze(transcript: string): Promise<{ categories: string[], summary: string }>
+}
+
+Implementations:
+  ClaudeAnalysisProvider   // Anthropic API (v1)
+  OpenAIAnalysisProvider   // future
+```
+
+**StorageService** — abstracted similarly in case cloud sync is added later.
+
+The app never calls providers directly — always goes through the service interface.
+
+## Work Categories
+
+Canonical category list used by AnalysisService and the Reporter:
+- `Reading / Code Exploration`
+- `Debugging`
+- `Writing / Documentation`
+- `Research`
+- `Meetings / Communication`
+- `Setup / Configuration`
+- `Blocked / Waiting`
+
+## Data Model
+
+Each log entry:
+```json
+{
+  "id": "uuid",
+  "timestamp_start": "2026-04-30T10:00:00",
+  "timestamp_end": "2026-04-30T12:00:00",
+  "transcript": "...",
+  "categories": ["Debugging"],
+  "summary": "..."
+}
+```
+
+## Project Structure (planned)
+
+```
+src/
+  providers/
+    transcription/
+      TranscriptionProvider.ts       # interface
+      NativeTranscriptionProvider.ts
+      WhisperTranscriptionProvider.ts
+    analysis/
+      AnalysisProvider.ts            # interface
+      ClaudeAnalysisProvider.ts
+    storage/
+      StorageProvider.ts             # interface
+      SQLiteStorageProvider.ts
+  services/
+    TranscriptionService.ts          # wraps active provider
+    AnalysisService.ts
+    StorageService.ts
+    SchedulerService.ts              # local notifications
+  screens/
+    CheckInScreen.tsx
+    ReportScreen.tsx
+    SettingsScreen.tsx
+  components/
+```
+
+## Commands
+
+```bash
+# Install dependencies
+npm install
+
+# Run on Android (requires device/emulator connected)
+npx react-native run-android
+
+# Run Metro bundler
+npx react-native start
+
+# Run tests
+npm test
+
+# Type check
+npx tsc --noEmit
+```
+
+## Environment (this machine)
+
+- Java: C:\Program Files\Android\Android Studio\jbr (Java 21, Android Studio bundled JBR)
+- Android SDK: C:\Users\ronen\AppData\Local\Android\Sdk
+- JAVA_HOME and ANDROID_HOME are set in ~/.Codex/settings.json env section
+- gh CLI: C:\Program Files\GitHub CLI\gh.exe (also in settings.json PATH)
+
+## Current Status (2026-04-30)
+
+- React Native 0.85 + TypeScript scaffolded ✅
+- src/ folder structure created ✅
+- node_modules installed ✅
+- Issue #1 (project structure) complete ✅
+- Next: Issue #2 — periodic check-in scheduler (local notifications)
+- Still needed: verify java/adb work after Codex restart, run on device
+
+## Task Tracking
+
+Active tasks: https://github.com/users/RonenDotan/projects/1
+Issues: https://github.com/RonenDotan/TimeAnalyzer/issues

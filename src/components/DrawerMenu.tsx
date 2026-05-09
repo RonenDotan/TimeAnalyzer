@@ -19,14 +19,14 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { key: 'entries', label: 'Entries',  icon: '📋' },
-  { key: 'dayplan', label: 'Plans',    icon: '📅' },
-  { key: 'goals',   label: 'Goals',    icon: '🎯' },
+  { key: 'goals',   label: 'Goals',    icon: '\u{1F3AF}' },
+  { key: 'entries', label: 'Entries',  icon: '\u{1F4CB}' },
+  { key: 'dayplan', label: 'Plans',    icon: '\u{1F4C5}' },
+  { key: 'reports', label: 'Reports',  icon: '\u{1F4CA}' },
 ];
 
 const BOTTOM_ITEMS: NavItem[] = [
-  { key: 'reports',  label: 'Reports',  icon: '📊' },
-  { key: 'settings', label: 'Settings', icon: '⚙️' },
+  { key: 'settings', label: 'Settings', icon: '\u{2699}\u{FE0F}' },
 ];
 
 const DRAWER_WIDTH = 280;

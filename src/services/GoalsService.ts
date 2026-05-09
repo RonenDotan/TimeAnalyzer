@@ -1,4 +1,4 @@
-import { Goal, GoalContribution } from '../types/Goal';
+import { Goal, GoalContribution, GoalEntryContribution } from '../types/Goal';
 import { GoalsProvider } from '../providers/goals/GoalsProvider';
 import SQLiteGoalsProvider from '../providers/goals/SQLiteGoalsProvider';
 
@@ -30,6 +30,10 @@ async function deleteGoal(id: number): Promise<void> {
 
 async function getContributions(goalId: number): Promise<GoalContribution[]> {
   return activeProvider.getContributions(goalId);
+}
+
+async function getContributionsByEntryId(entryId: number): Promise<GoalEntryContribution[]> {
+  return activeProvider.getContributionsByEntryId(entryId);
 }
 
 /**
@@ -86,6 +90,7 @@ const GoalsService = {
   updateGoal,
   deleteGoal,
   getContributions,
+  getContributionsByEntryId,
   applyContribution,
   setProgress,
 };

@@ -1,4 +1,4 @@
-import { Goal, GoalContribution, GoalStatus } from '../../types/Goal';
+import { Goal, GoalContribution, GoalEntryContribution, GoalStatus } from '../../types/Goal';
 import { GoalsProvider } from './GoalsProvider';
 import { getDb } from '../storage/SQLiteStorageProvider';
 
@@ -87,6 +87,22 @@ const SQLiteGoalsProvider: GoalsProvider = {
       [goalId],
     );
     return (result.rows ?? []).map(rowToContribution);
+  },
+
+  async getContributionsByEntryId(entryId) {
+    const result = getDb().executeSync(
+      `SELECT gc.goal_id, g.text AS goal_text, gc.contribution_pct
+       FROM goal_contributions gc
+       JOIN goals g ON g.id = gc.goal_id
+       WHERE gc.entry_id = ?
+       ORDER BY gc.created_at ASC`,
+      [entryId],
+    );
+    return (result.rows ?? []).map(row => ({
+      goalId:         row.goal_id as number,
+      goalText:       row.goal_text as string,
+      contributionPct: row.contribution_pct as number,
+    })) as GoalEntryContribution[];
   },
 };
 

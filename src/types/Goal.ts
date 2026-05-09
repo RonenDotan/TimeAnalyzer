@@ -23,3 +23,10 @@ export interface GoalContribution {
   contributionPct: number; // delta added in this session (e.g. 15 = +15%)
   createdAt: number;       // epoch ms
 }
+
+/** Lightweight summary used when showing what a single entry contributed to each goal. */
+export interface GoalEntryContribution {
+  goalId: number;
+  goalText: string;
+  contributionPct: number; // delta (e.g. +15)
+}

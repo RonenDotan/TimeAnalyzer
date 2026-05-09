@@ -1,4 +1,4 @@
-import { Goal, GoalContribution } from '../../types/Goal';
+import { Goal, GoalContribution, GoalEntryContribution } from '../../types/Goal';
 
 /**
  * Interface for all goal persistence operations.
@@ -28,4 +28,7 @@ export interface GoalsProvider {
 
   /** All contributions for a goal, newest first. */
   getContributions(goalId: number): Promise<GoalContribution[]>;
+
+  /** All contributions for a specific entry, with goal text joined in. */
+  getContributionsByEntryId(entryId: number): Promise<GoalEntryContribution[]>;
 }

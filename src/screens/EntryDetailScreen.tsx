@@ -8,11 +8,16 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import StorageService from '../services/StorageService';
+import GoalsService from '../services/GoalsService';
 import CalendarSyncService from '../services/CalendarSyncService';
 import { LogEntry } from '../types/LogEntry';
 import { Note } from '../types/Note';
+import { GoalEntryContribution } from '../types/Goal';
+
+const GOAL_COLOR = '#F97316';
 import DictateBar from '../components/DictateBar';
 import SettingsService from '../services/SettingsService';
 import NoteDetailScreen from './NoteDetailScreen';
@@ -24,6 +29,8 @@ interface Props {
   onSave: (updated: LogEntry) => void;
   onClose: () => void;
 }
+
+type ActiveTimePicker = 'start' | 'end' | null;
 
 function tsToTimeString(ts: number): string {
   const d = new Date(ts);
@@ -41,6 +48,11 @@ function applyTimeString(originalTs: number, timeStr: string): number | null {
   return d.getTime();
 }
 
+function timeStringToDate(timeStr: string, fallbackTs: number): Date {
+  const ts = applyTimeString(fallbackTs, timeStr);
+  return new Date(ts ?? fallbackTs);
+}
+
 export default function EntryDetailScreen({ entry, onSave, onClose }: Props) {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
@@ -48,7 +60,9 @@ export default function EntryDetailScreen({ entry, onSave, onClose }: Props) {
   const [transcript, setTranscript] = useState(entry.transcript);
   const [startTime, setStartTime] = useState(tsToTimeString(entry.timestampStart));
   const [endTime, setEndTime] = useState(tsToTimeString(entry.timestampEnd));
+  const [activeTimePicker, setActiveTimePicker] = useState<ActiveTimePicker>(null);
   const [notes, setNotes] = useState<Note[]>([]);
+  const [goalContributions, setGoalContributions] = useState<GoalEntryContribution[]>([]);
   const [editingNotes, setEditingNotes] = useState<Record<number, string>>({});
   const [newNoteText, setNewNoteText] = useState('');
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
@@ -56,6 +70,7 @@ export default function EntryDetailScreen({ entry, onSave, onClose }: Props) {
 
   useEffect(() => {
     StorageService.getNotesByEntryId(entry.id).then(setNotes);
+    GoalsService.getContributionsByEntryId(entry.id).then(setGoalContributions);
     SettingsService.load().then(s => setAppendKeyword(s.appendKeyword));
   }, [entry.id]);
 
@@ -120,6 +135,15 @@ export default function EntryDetailScreen({ entry, onSave, onClose }: Props) {
     setNewNoteText('');
   }
 
+  function handleTimePicked(event: DateTimePickerEvent, picked?: Date) {
+    const picker = activeTimePicker;
+    setActiveTimePicker(null);
+    if (!picker || event.type === 'dismissed' || !picked) return;
+    const formatted = tsToTimeString(picked.getTime());
+    if (picker === 'start') setStartTime(formatted);
+    else setEndTime(formatted);
+  }
+
   async function handleDeleteNote(id: number) {
     await StorageService.deleteNote(id);
     setNotes(prev => prev.filter(n => n.id !== id));
@@ -172,23 +196,13 @@ export default function EntryDetailScreen({ entry, onSave, onClose }: Props) {
           <View style={styles.timeRow}>
             {editing ? (
               <>
-                <TextInput
-                  style={styles.timeInput}
-                  value={startTime}
-                  onChangeText={setStartTime}
-                  placeholder="HH:MM"
-                  keyboardType="numeric"
-                  maxLength={5}
-                />
+                <TouchableOpacity style={styles.timeInput} onPress={() => setActiveTimePicker('start')}>
+                  <Text style={styles.timeInputText}>{startTime}</Text>
+                </TouchableOpacity>
                 <Text style={styles.timeSep}>–</Text>
-                <TextInput
-                  style={styles.timeInput}
-                  value={endTime}
-                  onChangeText={setEndTime}
-                  placeholder="HH:MM"
-                  keyboardType="numeric"
-                  maxLength={5}
-                />
+                <TouchableOpacity style={styles.timeInput} onPress={() => setActiveTimePicker('end')}>
+                  <Text style={styles.timeInputText}>{endTime}</Text>
+                </TouchableOpacity>
               </>
             ) : (
               <Text style={styles.timeDisplay}>
@@ -255,6 +269,21 @@ export default function EntryDetailScreen({ entry, onSave, onClose }: Props) {
           </TouchableOpacity>
         ))}
 
+        {/* Goal contributions */}
+        {goalContributions.length > 0 && (
+          <>
+            <Text style={styles.notesGroupLabel}>GOAL CONTRIBUTIONS</Text>
+            {goalContributions.map((c, i) => (
+              <View key={i} style={styles.goalContribCard}>
+                <View style={styles.goalContribRow}>
+                  <Text style={styles.goalContribText} numberOfLines={2}>{c.goalText}</Text>
+                  <Text style={styles.goalContribDelta}>+{c.contributionPct}%</Text>
+                </View>
+              </View>
+            ))}
+          </>
+        )}
+
         {/* Add new note — always available */}
         <View style={styles.addNoteCard}>
           <TextInput
@@ -274,6 +303,18 @@ export default function EntryDetailScreen({ entry, onSave, onClose }: Props) {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      {activeTimePicker && (
+        <DateTimePicker
+          value={timeStringToDate(
+            activeTimePicker === 'start' ? startTime : endTime,
+            activeTimePicker === 'start' ? entry.timestampStart : entry.timestampEnd,
+          )}
+          mode="time"
+          display="default"
+          onChange={handleTimePicked}
+        />
+      )}
     </View>
   );
 }
@@ -314,14 +355,16 @@ function makeStyles(colors: ColorPalette) {
     timeRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
     timeDisplay: { fontSize: 18, fontWeight: '600', color: colors.text },
     timeInput: {
-      fontSize: 18,
-      fontWeight: '600',
-      color: colors.text,
       borderBottomWidth: 1.5,
       borderBottomColor: '#33B679',
       paddingVertical: 4,
       minWidth: 60,
-      textAlign: 'center',
+      alignItems: 'center',
+    },
+    timeInputText: {
+      fontSize: 18,
+      fontWeight: '600',
+      color: colors.text,
     },
     timeSep: { fontSize: 18, color: colors.text },
     transcriptText: { fontSize: 16, color: colors.text, lineHeight: 24 },
@@ -403,5 +446,20 @@ function makeStyles(colors: ColorPalette) {
     },
     addNoteBtnDisabled: { backgroundColor: colors.placeholder },
     addNoteBtnText: { fontSize: 15, color: '#fff', fontWeight: '600' },
+    goalContribCard: {
+      backgroundColor: GOAL_COLOR + '10',
+      borderRadius: 10,
+      padding: 12,
+      borderLeftWidth: 3,
+      borderLeftColor: GOAL_COLOR,
+    },
+    goalContribRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      gap: 8,
+    },
+    goalContribText: { flex: 1, fontSize: 14, color: colors.text, lineHeight: 20 },
+    goalContribDelta: { fontSize: 15, fontWeight: '700', color: GOAL_COLOR },
   });
 }

@@ -115,7 +115,7 @@ test('Re-record resets to idle phase', async () => {
 
 // ─── confirm ──────────────────────────────────────────────────────────────────
 
-test('Confirm saves to StorageService and calls onDone', async () => {
+test('Confirm saves to StorageService, then Done calls onDone', async () => {
   const onDone = jest.fn();
   const renderer = await renderScreen(onDone);
   await reachConfirmScreen(renderer);
@@ -128,5 +128,7 @@ test('Confirm saves to StorageService and calls onDone', async () => {
       transcript: FAKE_TRANSCRIPT,
     }),
   );
+  expect(onDone).not.toHaveBeenCalled();
+  await tapText(renderer, 'Done');
   expect(onDone).toHaveBeenCalledWith(FAKE_TRANSCRIPT);
 });
