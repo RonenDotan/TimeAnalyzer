@@ -33,7 +33,8 @@ const SQLiteGoalsProvider: GoalsProvider = {
       `SELECT * FROM goals
        WHERE status = 'active'
          AND start_at <= ?
-         AND (target_at IS NULL OR target_at >= ?)
+         AND (target_at IS NULL
+              OR date(target_at / 1000, 'unixepoch') >= date(? / 1000, 'unixepoch'))
        ORDER BY created_at ASC`,
       [asOf, asOf],
     );
