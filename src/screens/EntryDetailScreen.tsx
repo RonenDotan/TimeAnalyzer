@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import {
   Alert,
+  KeyboardAvoidingView,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -170,7 +172,9 @@ export default function EntryDetailScreen({ entry, onSave, onClose }: Props) {
   const styles = makeStyles(colors);
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+    <KeyboardAvoidingView
+      style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <View style={styles.header}>
         <TouchableOpacity onPress={editing ? handleCancel : onClose}>
           <Text style={styles.headerBtn}>{editing ? 'Cancel' : 'Back'}</Text>
@@ -315,7 +319,7 @@ export default function EntryDetailScreen({ entry, onSave, onClose }: Props) {
           onChange={handleTimePicked}
         />
       )}
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 

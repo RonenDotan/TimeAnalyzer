@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Alert,
+  KeyboardAvoidingView,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -355,7 +357,9 @@ export default function GoalsScreen({ onClose }: Props) {
   const styles = makeStyles(colors);
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+    <KeyboardAvoidingView
+      style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
 
       {/* Header */}
       <View style={styles.header}>
@@ -530,7 +534,7 @@ export default function GoalsScreen({ onClose }: Props) {
           onChange={handleDateTimeChange}
         />
       )}
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
