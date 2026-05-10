@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Alert,
+  KeyboardAvoidingView,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -306,7 +308,9 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false,
   const styles = makeStyles(colors, calendarColor);
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+    <KeyboardAvoidingView
+      style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <View style={styles.header}>
         <TouchableOpacity onPress={onClose}>
           <Text style={styles.cancel}>Cancel</Text>
@@ -503,7 +507,7 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false,
           onChange={handleTimePicked}
         />
       )}
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
