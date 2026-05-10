@@ -10,7 +10,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ColorPalette, useTheme } from '../contexts/ThemeContext';
 
-export type DrawerScreen = 'entries' | 'reports' | 'settings' | 'dayplan' | 'goals';
+export type DrawerScreen = 'entries' | 'reports' | 'settings' | 'dayplan' | 'goals' | 'aitest';
 
 interface NavItem {
   key: DrawerScreen;
@@ -26,6 +26,7 @@ const NAV_ITEMS: NavItem[] = [
 ];
 
 const BOTTOM_ITEMS: NavItem[] = [
+  { key: 'aitest',   label: 'AI Test',  icon: '\u{1F9EA}' },
   { key: 'settings', label: 'Settings', icon: '\u{2699}\u{FE0F}' },
 ];
 
