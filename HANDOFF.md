@@ -33,9 +33,9 @@ Branched from `main` after ticket #5 was merged. Issue #30 is on the GitHub proj
 
 ## Current version
 
-`v0.0.30.2`
+`v0.0.30.3`
 
-`version.json`: `major=0`, `minor=0`, `ticket_id=30`, `sequence=2`
+`version.json`: `major=0`, `minor=0`, `ticket_id=30`, `sequence=3`
 
 ---
 
@@ -61,6 +61,11 @@ Branched from `main` after ticket #5 was merged. Issue #30 is on the GitHub proj
 - Updated `AGENTS.md` file structure for the new analysis provider/service files.
 - Updated `version.json` to ticket #30 sequence 2.
 - Backed up prior handoff as `HANDOFF.md.backup-2026-05-11-codex`.
+- Added overdue-goal behavior:
+  - Active goals no longer disappear just because `targetAt` is in the past.
+  - `isGoalOverdue()` helper added in `src/types/Goal.ts`.
+  - Overdue active goals display with red background/accent and an `Overdue` label in Check-in, Reports, Goals, and Day Plan goal surfaces.
+  - `version.json` advanced to ticket #30 sequence 3 for the overdue build.
 
 ---
 
@@ -73,14 +78,17 @@ Branched from `main` after ticket #5 was merged. Issue #30 is on the GitHub proj
   - `$env:Path = 'C:\Program Files\nodejs;' + $env:Path; npm test -- --watchAll=false`
   - 10 suites passed, 107 tests passed.
   - Jest still prints the existing open-handle warning after completion.
+- Re-ran TypeScript and Jest after overdue-goal changes; both passed with the same Jest open-handle warning.
 - Android JS bundle regenerated:
   - `android/app/src/main/assets/index.android.bundle`
 - Build/install/sync completed:
   - `C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -ExecutionPolicy Bypass -File .\scripts\build-and-install.ps1`
   - `JAVA_HOME=C:\Program Files\Android\Android Studio\jbr`
   - `ANDROID_HOME=C:\Users\ronen\AppData\Local\Android\Sdk`
-- APK copied to:
-  - `C:\Users\ronen\Desktop\TimeAnalyzer\apk\TimeAnalyzer_v0.0.30.2_2026-05-11_11-05.apk`
+- Latest APK copied to:
+  - `C:\Users\ronen\Desktop\TimeAnalyzer\apk\TimeAnalyzer_v0.0.30.3_2026-05-11_11-24.apk`
+- Build script screenshot:
+  - `C:\Users\ronen\Desktop\TimeAnalyzer\tests\screenshots\home-screen_v0.0.30.3_2026-05-11_11-24.png`
 
 ---
 
@@ -93,8 +101,13 @@ Branched from `main` after ticket #5 was merged. Issue #30 is on the GitHub proj
   - `src/providers/analysis/AnalysisProvider.ts`
   - `src/providers/analysis/ClaudeAnalysisProvider.ts`
   - `src/providers/analysis/OpenAIAnalysisProvider.ts`
+  - `src/providers/goals/SQLiteGoalsProvider.ts`
   - `src/services/AnalysisService.ts`
   - `src/screens/CheckInScreen.tsx`
+  - `src/screens/DayPlanScreen.tsx`
+  - `src/screens/GoalsScreen.tsx`
+  - `src/screens/ReportScreen.tsx`
+  - `src/types/Goal.ts`
   - `version.json`
 - `.claude/settings.json` was already dirty before this ticket work. Do not commit it unless Ronen explicitly asks.
 
@@ -108,6 +121,5 @@ Claude's ticket #5 handoff was a museum exhibit for scope drift: first an analys
 
 ## How to continue
 
-1. Inspect `git diff` and ensure `.claude/settings.json` is excluded from the commit.
-2. Commit on `ticket-30-ai-goal-contributions`.
-3. User should test the button in-app with a real configured OpenAI/Claude key and active goal.
+1. User should test overdue goal cards in-app with a real overdue active goal.
+2. User should test the AI suggestion button in-app with a real configured OpenAI/Claude key and active goal.

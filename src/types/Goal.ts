@@ -30,3 +30,10 @@ export interface GoalEntryContribution {
   goalText: string;
   contributionPct: number; // delta (e.g. +15)
 }
+
+export function isGoalOverdue(goal: Goal, asOf: number = Date.now()): boolean {
+  return goal.status === 'active'
+    && goal.progress < 100
+    && goal.targetAt !== null
+    && goal.targetAt < asOf;
+}

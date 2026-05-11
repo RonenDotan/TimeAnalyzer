@@ -15,7 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import DictateBar from '../components/DictateBar';
 import TranscriptionService from '../services/TranscriptionService';
 import GoalsService from '../services/GoalsService';
-import { Goal, GoalStatus } from '../types/Goal';
+import { Goal, GoalStatus, isGoalOverdue } from '../types/Goal';
 import { applyTranscription } from '../utils/parseTranscript';
 import { ColorPalette, useTheme } from '../contexts/ThemeContext';
 
@@ -158,6 +158,7 @@ function DateRangeFields({
 }
 
 const GOAL_COLOR = '#F97316';
+const OVERDUE_COLOR = '#DC2626';
 
 const STATUS_COLORS: Record<GoalStatus, string> = {
   active:   GOAL_COLOR,
@@ -389,10 +390,17 @@ export default function GoalsScreen({ onClose }: Props) {
         {/* Goal rows */}
         {filtered.map(goal => {
           const isEditing = editingId === goal.id;
-          const color = STATUS_COLORS[goal.status];
+          const overdue = isGoalOverdue(goal);
+          const color = overdue ? OVERDUE_COLOR : STATUS_COLORS[goal.status];
           const recEdit = recording?.type === 'edit' && (recording as any).id === goal.id;
           return (
-            <View key={goal.id} style={[styles.goalCard, { borderLeftColor: GOAL_COLOR }]}>
+            <View
+              key={goal.id}
+              style={[
+                styles.goalCard,
+                { borderLeftColor: color },
+                overdue && styles.goalCardOverdue,
+              ]}>
               {isEditing ? (
                 <>
                   <DateRangeFields
@@ -457,10 +465,12 @@ export default function GoalsScreen({ onClose }: Props) {
                     <ProgressBar progress={goal.progress} color={color} />
                     <View style={styles.goalDates}>
                       <Text style={styles.goalDateText}>Start {formatGoalDateTime(goal.startAt)}</Text>
-                      <Text style={styles.goalDateText}>Finish {formatGoalDateTime(goal.targetAt)}</Text>
+                      <Text style={[styles.goalDateText, overdue && styles.goalOverdueText]}>Finish {formatGoalDateTime(goal.targetAt)}</Text>
                     </View>
                     <View style={styles.goalMeta}>
-                      <Text style={[styles.goalStatus, { color }]}>{STATUS_LABELS[goal.status]} · {goal.progress}%</Text>
+                      <Text style={[styles.goalStatus, { color }]}>
+                        {overdue ? 'Overdue' : STATUS_LABELS[goal.status]} · {goal.progress}%
+                      </Text>
                     </View>
                   </TouchableOpacity>
                   {/* Status quick-actions */}
@@ -565,12 +575,17 @@ function makeStyles(colors: ColorPalette) {
       borderWidth: 1,
       borderColor: GOAL_COLOR + '60',
     },
+    goalCardOverdue: {
+      backgroundColor: OVERDUE_COLOR + '16',
+      borderColor: OVERDUE_COLOR + '60',
+    },
     goalMain:       { gap: 6 },
     goalText:       { fontSize: 15, color: colors.text, lineHeight: 22 },
     goalMeta:       { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
     goalStatus:     { fontSize: 12, fontWeight: '600' },
     goalDates:      { gap: 2 },
     goalDateText:   { fontSize: 11, color: colors.textSecondary },
+    goalOverdueText: { color: OVERDUE_COLOR, fontWeight: '700' },
     quickActions:   { flexDirection: 'row', gap: 8 },
     quickBtn: {
       paddingHorizontal: 10, paddingVertical: 5,

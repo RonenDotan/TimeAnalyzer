@@ -23,9 +23,10 @@ import AnalysisService from '../services/AnalysisService';
 import { parseTranscriptAndNotes } from '../utils/parseTranscript';
 import { ColorPalette, useTheme } from '../contexts/ThemeContext';
 import PlanHintBar from '../components/PlanHintBar';
-import { Goal } from '../types/Goal';
+import { Goal, isGoalOverdue } from '../types/Goal';
 
 const GOAL_COLOR = '#F97316';
+const OVERDUE_COLOR = '#DC2626';
 
 type Phase = 'idle' | 'recording' | 'transcribing' | 'confirming' | 'summary';
 
@@ -291,17 +292,22 @@ export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel
             {activeGoals.length > 0 && (
               <View style={styles.idleGoalsSection}>
                 <Text style={styles.idleGoalsLabel}>🎯  Goals in scope</Text>
-                {activeGoals.map(goal => (
-                  <View key={goal.id} style={styles.idleGoalRow}>
+                {activeGoals.map(goal => {
+                  const overdue = isGoalOverdue(goal);
+                  const goalColor = overdue ? OVERDUE_COLOR : GOAL_COLOR;
+                  return (
+                  <View key={goal.id} style={[styles.idleGoalRow, overdue && styles.idleGoalRowOverdue]}>
                     <View style={styles.idleGoalInfo}>
                       <Text style={styles.idleGoalText} numberOfLines={1}>{goal.text}</Text>
                       <View style={styles.idleBarBg}>
-                        <View style={[styles.idleBarFill, { width: `${goal.progress}%` as any }]} />
+                        <View style={[styles.idleBarFill, { width: `${goal.progress}%` as any, backgroundColor: goalColor }]} />
                       </View>
+                      {overdue && <Text style={styles.overdueLabel}>Overdue</Text>}
                     </View>
-                    <Text style={styles.idleGoalPct}>{goal.progress}%</Text>
+                    <Text style={[styles.idleGoalPct, { color: goalColor }]}>{goal.progress}%</Text>
                   </View>
-                ))}
+                  );
+                })}
               </View>
             )}
             <TextInput
@@ -410,14 +416,18 @@ export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel
                     )}
                   </View>
                 )}
-                {activeGoals.map(goal => (
-                  <View key={goal.id} style={styles.goalContribCard}>
+                {activeGoals.map(goal => {
+                  const overdue = isGoalOverdue(goal);
+                  const goalColor = overdue ? OVERDUE_COLOR : GOAL_COLOR;
+                  return (
+                  <View key={goal.id} style={[styles.goalContribCard, overdue && styles.goalContribCardOverdue]}>
                     {/* Goal name — prominent, full width */}
                     <Text style={styles.goalContribName}>{goal.text}</Text>
+                    {overdue && <Text style={styles.overdueLabel}>Overdue</Text>}
                     {/* Progress bar + current % */}
                     <View style={styles.goalContribBarRow}>
                       <View style={styles.progressBarBg}>
-                        <View style={[styles.progressBarFill, { width: `${goal.progress}%` as any }]} />
+                        <View style={[styles.progressBarFill, { width: `${goal.progress}%` as any, backgroundColor: goalColor }]} />
                       </View>
                       <Text style={styles.goalProgressLabel}>{goal.progress}% done</Text>
                     </View>
@@ -436,10 +446,11 @@ export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel
                       <Text style={styles.pctLabel}>%</Text>
                     </View>
                     {!!aiSuggestionReasons[goal.id] && (
-                      <Text style={styles.aiReasonText}>{aiSuggestionReasons[goal.id]}</Text>
+                      <Text style={[styles.aiReasonText, overdue && styles.aiReasonTextOverdue]}>{aiSuggestionReasons[goal.id]}</Text>
                     )}
                   </View>
-                ))}
+                  );
+                })}
               </View>
             )}
 
@@ -617,12 +628,14 @@ function makeStyles(colors: ColorPalette) {
       borderLeftColor: GOAL_COLOR,
     },
     idleGoalsLabel: { fontSize: 11, fontWeight: '700', color: GOAL_COLOR, letterSpacing: 0.5 },
-    idleGoalRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+    idleGoalRow: { flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: 8, padding: 6 },
+    idleGoalRowOverdue: { backgroundColor: OVERDUE_COLOR + '16' },
     idleGoalInfo: { flex: 1, gap: 3 },
     idleGoalText: { fontSize: 13, color: colors.text, fontWeight: '500' },
     idleBarBg: { height: 3, backgroundColor: colors.border, borderRadius: 2, overflow: 'hidden' },
     idleBarFill: { height: 3, backgroundColor: GOAL_COLOR, borderRadius: 2 },
     idleGoalPct: { fontSize: 13, fontWeight: '700', color: GOAL_COLOR, minWidth: 36, textAlign: 'right' },
+    overdueLabel: { fontSize: 11, color: OVERDUE_COLOR, fontWeight: '700' },
     // Confirming phase — contribution cards
     goalsSection: { width: '100%', gap: 10 },
     goalsSectionLabel: {
@@ -650,6 +663,10 @@ function makeStyles(colors: ColorPalette) {
       borderLeftWidth: 3,
       borderLeftColor: GOAL_COLOR,
     },
+    goalContribCardOverdue: {
+      backgroundColor: OVERDUE_COLOR + '16',
+      borderLeftColor: OVERDUE_COLOR,
+    },
     goalContribName: {
       fontSize: 15, fontWeight: '600', color: colors.text, lineHeight: 22,
     },
@@ -672,6 +689,7 @@ function makeStyles(colors: ColorPalette) {
     },
     pctLabel: { fontSize: 16, color: colors.textSecondary },
     aiReasonText: { fontSize: 12, color: GOAL_COLOR, lineHeight: 17 },
+    aiReasonTextOverdue: { color: OVERDUE_COLOR },
     confirmRow: { flexDirection: 'row', gap: 12, width: '100%' },
     rerecordBtn: {
       flex: 1,
