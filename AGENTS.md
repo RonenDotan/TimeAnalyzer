@@ -29,7 +29,7 @@ Core loop: **Scheduled notification → user records audio → transcribe → sa
 - **Framework:** React Native 0.85 + TypeScript
 - **Storage:** SQLite on-device (`@op-engineering/op-sqlite`, `executeSync`)
 - **Transcription:** On-device native speech-to-text
-- **AI analysis:** Claude API via Anthropic SDK (called directly from app)
+- **AI analysis:** Claude/OpenAI APIs via direct REST calls from app
 - **Scheduling:** Local notifications (Notifee)
 - **Calendar:** Google Calendar API v3 (via fetch + `@react-native-google-signin/google-signin`)
 
@@ -67,9 +67,11 @@ src/
     analysis/
       AnalysisProvider.ts
       ClaudeAnalysisProvider.ts
+      OpenAIAnalysisProvider.ts
   services/
     StorageService.ts             # wraps StorageProvider
     GoalsService.ts               # applyContribution, setProgress, saveGoal, getActiveGoals
+    AnalysisService.ts            # wraps active analysis provider for AI suggestions
     CalendarSyncService.ts        # syncChanged, hardSync, restoreFromCalendar
     TranscriptionService.ts
     SettingsService.ts

@@ -7,181 +7,107 @@ See `AGENTS.md` for full architecture reference, `CLAUDE.md` for Claude-specific
 
 ## Last updated
 
-- **Date:** 2026-05-10
-- **Updated by:** Claude
-- **Switching to:** Codex
+- **Date:** 2026-05-11
+- **Updated by:** Codex
+- **Switching to:** Claude / next agent
 
 ---
 
 ## Current branch
 
-`ticket-5-analysis-service`
+`ticket-30-ai-goal-contributions`
 
-Branched from `main` at commit `1477249`. Branch is pushed to `origin/ticket-5-analysis-service`.
+Branched from `main` after ticket #5 was merged. Issue #30 is on the GitHub project board with status **In Progress**.
 
 ---
 
 ## Current ticket
 
-**#5 - Implement AnalysisService with provider pattern (AI Providers)**
+**#30 - AI: Auto-detect goal contributions from check-in transcripts**
 
-- GitHub: https://github.com/RonenDotan/TimeAnalyzer/issues/5
+- GitHub: https://github.com/RonenDotan/TimeAnalyzer/issues/30
 - Project status: **In Progress**
-- Code status: **Partially done — test screen only, core service not yet wired**
+- Scope adjustment recorded as an issue comment: suggestions are **button-triggered**, not automatic.
 
 ---
 
 ## Current version
 
-`v0.0.24.29`
+`v0.0.30.2`
 
-`version.json`: `major=0`, `minor=0`, `ticket_id=24`, `sequence=29`
-
-> **Note for Codex:** ticket_id is still 24 because we forgot to switch it when the branch was created. Update it to `ticket_id=5, sequence=1` when you start building (before the first build of your session).
+`version.json`: `major=0`, `minor=0`, `ticket_id=30`, `sequence=2`
 
 ---
 
-## What was done this session (Claude)
+## What changed this session
 
-### Bug fixes (committed to main before branching)
-- Fixed keyboard hiding text fields in `DayPlanScreen`, `EntryDetailScreen`, `GoalsScreen` — changed root `View` to `KeyboardAvoidingView` with `behavior={Platform.OS === 'ios' ? 'padding' : 'height'}`
-- Fixed active goals not showing in Entries screen — `getActiveGoals` SQL used exact timestamp comparison; switched to `date(ts / 1000, 'unixepoch')` date-only comparison
-
-### Ticket #5 work (on this branch)
-- Created `src/screens/AITestScreen.tsx` — a self-contained AI connectivity test screen
-  - On mount: reads `settings.analysisProvider` + matching API key from `SettingsService`
-  - Shows provider badge (✓ ready / ⚠ no key)
-  - Chat-style UI — user types, hits Send, sees raw AI response
-  - Calls Anthropic `https://api.anthropic.com/v1/messages` (model: `claude-haiku-4-5`) OR OpenAI `https://api.openai.com/v1/chat/completions` (model: `gpt-4o-mini`) directly via `fetch()`
-  - No connection to analysis system, DB, or any service other than SettingsService
-- Added `'aitest'` to `DrawerScreen` type in `DrawerMenu.tsx`
-- Added 🧪 **AI Test** entry in drawer bottom section (above Settings)
-- Wired in `App.tsx` — renders `<AITestScreen onClose={() => setScreen('entries')} />`
-
----
-
-## What still needs to be done for ticket #5
-
-This is the core work. The test screen confirms the API keys work. Now build the actual analysis pipeline.
-
-### 1. Create `src/providers/analysis/AnalysisProvider.ts`
-Interface only:
-```typescript
-export interface AnalysisResult {
-  categories: string[];
-  summary: string;
-}
-
-export interface AnalysisProvider {
-  analyze(transcript: string): Promise<AnalysisResult>;
-  isConfigured(): Promise<boolean>;
-}
-```
-
-### 2. Create `src/providers/analysis/ClaudeAnalysisProvider.ts`
-- REST call to `https://api.anthropic.com/v1/messages`
-- Model: `claude-haiku-4-5`
-- Gets API key via `SettingsService.getClaudeApiKey()`
-- System prompt: instruct Claude to categorize the transcript into one or more of the canonical categories and produce a short summary
-- Parse the response text as JSON `{ categories: string[], summary: string }`
-- Canonical categories (from `CLAUDE.md`):
-  - `Reading / Code Exploration`
-  - `Debugging`
-  - `Writing / Documentation`
-  - `Research`
-  - `Meetings / Communication`
-  - `Setup / Configuration`
-  - `Blocked / Waiting`
-
-### 3. Create `src/providers/analysis/OpenAIAnalysisProvider.ts`
-- REST call to `https://api.openai.com/v1/chat/completions`
-- Model: `gpt-4o-mini`
-- Gets API key via `SettingsService.getOpenAIApiKey()`
-- Same system prompt + JSON parse pattern as Claude provider
-
-### 4. Create `src/services/AnalysisService.ts`
-```typescript
-// Wraps active provider, initialized from settings
-async function init(): Promise<void>           // reads settings, sets activeProvider
-async function analyze(transcript: string): Promise<AnalysisResult | null>
-async function isConfigured(): Promise<boolean>
-```
-- Call `init()` once on app startup (in `App.tsx` `useEffect`)
-- Return `null` (not throw) if no key configured — analysis is optional
-
-### 5. Wire into CheckInScreen
-In `CheckInScreen.tsx`, after the user confirms and the entry is saved:
-- If `AnalysisService.isConfigured()` → call `AnalysisService.analyze(transcript)`
-- Store the result — **do not change the `LogEntry` schema** (no `categories`/`summary` columns)
-- For now: just log the result with `console.log` or display it briefly in the confirming phase UI
-- The full storage/display of analysis results is deferred to a future ticket
-
-### 6. Update `AGENTS.md` file structure
-The `analysis/` section currently shows stale content. Update it to reflect the actual files once you create them.
+- Added `src/providers/analysis/AnalysisProvider.ts`
+  - Defines `GoalContributionSuggestion`, provider interface, prompt builder, JSON extraction, and suggestion sanitization.
+- Added `src/providers/analysis/ClaudeAnalysisProvider.ts`
+  - Calls Anthropic Messages API with `claude-haiku-4-5`.
+  - Reads the user's key from `SettingsService.getClaudeApiKey()`.
+- Added `src/providers/analysis/OpenAIAnalysisProvider.ts`
+  - Calls OpenAI Chat Completions API with `gpt-4o-mini`.
+  - Uses JSON response format and reads the user's key from `SettingsService.getOpenAIApiKey()`.
+- Added `src/services/AnalysisService.ts`
+  - Selects active provider from `settings.analysisProvider`.
+  - Exposes `isConfigured()`, `getProviderLabel()`, and `suggestGoalContributions()`.
+- Updated `src/screens/CheckInScreen.tsx`
+  - In the confirming phase, shows `✨ Suggest with AI` only when the selected analysis provider has a configured key.
+  - Button calls AI on demand.
+  - Suggested contribution percentages pre-fill the existing manual inputs.
+  - Short AI reasons display below suggested goal cards.
+  - User can edit or clear values before confirming; saving still uses existing `GoalsService.applyContribution()`.
+- Updated `AGENTS.md` file structure for the new analysis provider/service files.
+- Updated `version.json` to ticket #30 sequence 2.
+- Backed up prior handoff as `HANDOFF.md.backup-2026-05-11-codex`.
 
 ---
 
-## Key files to read before starting
+## Verification
 
-| File | Why |
-|------|-----|
-| `src/screens/AITestScreen.tsx` | Reference for exact fetch call patterns to Claude and OpenAI |
-| `src/services/SettingsService.ts` | `getClaudeApiKey()`, `getOpenAIApiKey()`, `load()` |
-| `src/types/Settings.ts` | `AnalysisProvider = 'claude' \| 'openai'` |
-| `src/screens/CheckInScreen.tsx` | Where to wire in the analysis call |
-| `src/providers/goals/SQLiteGoalsProvider.ts` | Example of provider pattern to follow |
-| `src/services/GoalsService.ts` | Example of service wrapper pattern |
-
----
-
-## Build and verification
-
-Last successful build/sync:
-
-- Version: `v0.0.24.29`
-- APK: `C:\Users\ronen\Desktop\TimeAnalyzer\apk\TimeAnalyzer_v0.0.24.29_2026-05-10_19-36.apk`
-- Tests: 10 suites, 107 tests — all pass
+- `npx tsc --noEmit` could not run because `npx` is not on PATH in this shell.
+- Equivalent command passed after prepending Node path:
+  - `$env:Path = 'C:\Program Files\nodejs;' + $env:Path; .\node_modules\.bin\tsc.cmd --noEmit`
+- Tests passed:
+  - `$env:Path = 'C:\Program Files\nodejs;' + $env:Path; npm test -- --watchAll=false`
+  - 10 suites passed, 107 tests passed.
+  - Jest still prints the existing open-handle warning after completion.
+- Android JS bundle regenerated:
+  - `android/app/src/main/assets/index.android.bundle`
+- Build/install/sync completed:
+  - `C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -ExecutionPolicy Bypass -File .\scripts\build-and-install.ps1`
+  - `JAVA_HOME=C:\Program Files\Android\Android Studio\jbr`
+  - `ANDROID_HOME=C:\Users\ronen\AppData\Local\Android\Sdk`
+- APK copied to:
+  - `C:\Users\ronen\Desktop\TimeAnalyzer\apk\TimeAnalyzer_v0.0.30.2_2026-05-11_11-05.apk`
 
 ---
 
-## Git state
+## Git state notes
 
-- Branch: `ticket-5-analysis-service`
-- Working tree: clean
-- Latest commit: `fce5d4d feat: add minimal AI test screen for verifying API connectivity`
-- Pushed to: `origin/ticket-5-analysis-service`
-
----
-
-## 🤣 Peer Review
-
-Codex left a beautifully documented architecture for an AI provider system in `AGENTS.md` — listing `src/providers/analysis/AnalysisProvider.ts` and `ClaudeAnalysisProvider.ts` in the file structure, as if they already existed. They did not. Not even close.
-
-Claude found this, built the full system with migrations and schema changes, got four paragraphs into the implementation before the user interrupted: *"I don't understand what is the categories and all of this... can you explain."* Rebuilt it more carefully with service wiring and a proper interface — interrupted again. *"Just verify it's working. No connection to anything."*
-
-So the final deliverable for ticket #5 is a chat bubble screen and a drawer icon. 107 tests still pass. The architecture Codex documented remains aspirational.
-
-The handoff note from Codex said "Next likely action: User/Claude can review and close issue #24." Technically correct. The user's next action was to start ticket #5. So: also correct, just not in the way intended.
+- Expected committed changes for ticket #30:
+  - `AGENTS.md`
+  - `HANDOFF.md`
+  - `HANDOFF.md.backup-2026-05-11-codex`
+  - `src/providers/analysis/AnalysisProvider.ts`
+  - `src/providers/analysis/ClaudeAnalysisProvider.ts`
+  - `src/providers/analysis/OpenAIAnalysisProvider.ts`
+  - `src/services/AnalysisService.ts`
+  - `src/screens/CheckInScreen.tsx`
+  - `version.json`
+- `.claude/settings.json` was already dirty before this ticket work. Do not commit it unless Ronen explicitly asks.
 
 ---
 
-## How Codex should continue
+## Peer Review
 
-1. Read `AGENTS.md` for conventions
-2. Read this file for current state
-3. Fix `version.json`: set `ticket_id=5`, `sequence=1`
-4. Implement the four files listed in "What still needs to be done" above
-5. Wire AnalysisService into CheckInScreen (log result only — no schema changes)
-6. Update `AGENTS.md` file structure section
-7. Run `npx tsc --noEmit`, `npm test -- --watchAll=false`, build + install + sync APK
-8. Commit on `ticket-5-analysis-service`, do NOT merge to main yet
-9. Update `HANDOFF.md` and commit before switching back
+Claude's ticket #5 handoff was a museum exhibit for scope drift: first an analysis architecture, then schema migrations, then a user stop sign, and finally a chat bubble proving `fetch()` exists. Useful, yes. Surgical, no. The most stable artifact was the roast.
 
-Useful local command context:
+---
 
-- Git: `C:\Program Files\Git\cmd\git.exe`
-- GitHub CLI: `C:\Program Files\GitHub CLI\gh.exe`
-- Node: `C:\Program Files\nodejs`
-- APK sync folder: `C:\Users\ronen\Desktop\TimeAnalyzer\apk\`
-- JAVA_HOME: `C:\Program Files\Android\Android Studio\jbr`
-- ANDROID_HOME: `C:\Users\ronen\AppData\Local\Android\Sdk`
+## How to continue
+
+1. Inspect `git diff` and ensure `.claude/settings.json` is excluded from the commit.
+2. Commit on `ticket-30-ai-goal-contributions`.
+3. User should test the button in-app with a real configured OpenAI/Claude key and active goal.

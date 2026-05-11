@@ -19,6 +19,7 @@ import StorageService from '../services/StorageService';
 import CalendarSyncService from '../services/CalendarSyncService';
 import GoalsService from '../services/GoalsService';
 import TranscriptionService from '../services/TranscriptionService';
+import AnalysisService from '../services/AnalysisService';
 import { parseTranscriptAndNotes } from '../utils/parseTranscript';
 import { ColorPalette, useTheme } from '../contexts/ThemeContext';
 import PlanHintBar from '../components/PlanHintBar';
@@ -66,11 +67,18 @@ export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel
   const [noteKeyword, setNoteKeyword] = useState('note');
   const [activeGoals, setActiveGoals] = useState<Goal[]>([]);
   const [contributions, setContributions] = useState<Record<number, string>>({}); // goalId → input string
+  const [aiAvailable, setAiAvailable] = useState(false);
+  const [aiProviderLabel, setAiProviderLabel] = useState('AI');
+  const [aiSuggesting, setAiSuggesting] = useState(false);
+  const [aiSuggestionReasons, setAiSuggestionReasons] = useState<Record<number, string>>({});
+  const [aiSuggestionMessage, setAiSuggestionMessage] = useState('');
   const [goalMoves, setGoalMoves] = useState<GoalMove[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     SettingsService.load().then(s => setNoteKeyword(s.noteKeyword));
+    AnalysisService.getProviderLabel().then(setAiProviderLabel).catch(() => setAiProviderLabel('AI'));
+    AnalysisService.isConfigured().then(setAiAvailable).catch(() => setAiAvailable(false));
     // Pre-load goals so they're visible even before recording starts
     GoalsService.getActiveGoals(periodEnd).then(setActiveGoals);
     return () => {
@@ -130,6 +138,8 @@ export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel
       const goals = await GoalsService.getActiveGoals(periodEnd);
       setActiveGoals(goals);
       setContributions({});
+      setAiSuggestionReasons({});
+      setAiSuggestionMessage('');
       setPhase('confirming');
     } catch (e: any) {
       Alert.alert('Transcription failed', String(e?.message ?? e));
@@ -142,6 +152,8 @@ export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel
     setPartialTranscript('');
     setRecordingMs(0);
     setNotes([]);
+    setAiSuggestionReasons({});
+    setAiSuggestionMessage('');
     setPhase('idle');
   }
 
@@ -207,7 +219,42 @@ export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel
     const goals = await GoalsService.getActiveGoals(periodEnd);
     setActiveGoals(goals);
     setContributions({});
+    setAiSuggestionReasons({});
+    setAiSuggestionMessage('');
     setPhase('confirming');
+  }
+
+  async function handleSuggestWithAI() {
+    if (aiSuggesting || activeGoals.length === 0 || transcript.trim().length === 0) return;
+
+    setAiSuggesting(true);
+    setAiSuggestionReasons({});
+    setAiSuggestionMessage('');
+
+    try {
+      const result = await AnalysisService.suggestGoalContributions(transcript, activeGoals);
+      if (result.suggestions.length === 0) {
+        setAiSuggestionMessage('No clear goal progress found in this check-in.');
+        return;
+      }
+
+      const nextContributions: Record<number, string> = {};
+      const nextReasons: Record<number, string> = {};
+      for (const suggestion of result.suggestions) {
+        nextContributions[suggestion.goalId] = String(suggestion.contributionPct);
+        nextReasons[suggestion.goalId] = suggestion.reason;
+      }
+
+      setContributions(prev => ({ ...prev, ...nextContributions }));
+      setAiSuggestionReasons(nextReasons);
+      setAiSuggestionMessage(
+        `${aiProviderLabel} suggested ${result.suggestions.length} contribution${result.suggestions.length === 1 ? '' : 's'}.`,
+      );
+    } catch (e: any) {
+      setAiSuggestionMessage(String(e?.message ?? e));
+    } finally {
+      setAiSuggesting(false);
+    }
   }
 
   const styles = makeStyles(colors);
@@ -346,6 +393,23 @@ export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel
             {activeGoals.length > 0 && (
               <View style={styles.goalsSection}>
                 <Text style={styles.goalsSectionLabel}>🎯  HOW MUCH DID YOU ADVANCE EACH GOAL?</Text>
+                {aiAvailable && (
+                  <View style={styles.aiSuggestBox}>
+                    <TouchableOpacity
+                      style={[styles.aiSuggestBtn, aiSuggesting && styles.aiSuggestBtnDisabled]}
+                      onPress={handleSuggestWithAI}
+                      disabled={aiSuggesting}>
+                      {aiSuggesting ? (
+                        <ActivityIndicator size="small" color="#fff" />
+                      ) : (
+                        <Text style={styles.aiSuggestBtnText}>✨ Suggest with AI</Text>
+                      )}
+                    </TouchableOpacity>
+                    {!!aiSuggestionMessage && (
+                      <Text style={styles.aiSuggestMessage}>{aiSuggestionMessage}</Text>
+                    )}
+                  </View>
+                )}
                 {activeGoals.map(goal => (
                   <View key={goal.id} style={styles.goalContribCard}>
                     {/* Goal name — prominent, full width */}
@@ -371,6 +435,9 @@ export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel
                       />
                       <Text style={styles.pctLabel}>%</Text>
                     </View>
+                    {!!aiSuggestionReasons[goal.id] && (
+                      <Text style={styles.aiReasonText}>{aiSuggestionReasons[goal.id]}</Text>
+                    )}
                   </View>
                 ))}
               </View>
@@ -561,6 +628,20 @@ function makeStyles(colors: ColorPalette) {
     goalsSectionLabel: {
       fontSize: 11, fontWeight: '700', color: GOAL_COLOR, letterSpacing: 0.5,
     },
+    aiSuggestBox: { gap: 6 },
+    aiSuggestBtn: {
+      alignSelf: 'flex-start',
+      minHeight: 36,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      borderRadius: 8,
+      backgroundColor: GOAL_COLOR,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    aiSuggestBtnDisabled: { opacity: 0.65 },
+    aiSuggestBtnText: { fontSize: 14, color: '#fff', fontWeight: '700' },
+    aiSuggestMessage: { fontSize: 12, color: colors.textSecondary, lineHeight: 17 },
     goalContribCard: {
       backgroundColor: GOAL_COLOR + '0e',
       borderRadius: 12,
@@ -590,6 +671,7 @@ function makeStyles(colors: ColorPalette) {
       paddingVertical: 2,
     },
     pctLabel: { fontSize: 16, color: colors.textSecondary },
+    aiReasonText: { fontSize: 12, color: GOAL_COLOR, lineHeight: 17 },
     confirmRow: { flexDirection: 'row', gap: 12, width: '100%' },
     rerecordBtn: {
       flex: 1,
