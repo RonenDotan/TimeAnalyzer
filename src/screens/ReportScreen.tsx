@@ -12,9 +12,10 @@ import EntryDetailScreen from './EntryDetailScreen';
 import StorageService from '../services/StorageService';
 import GoalsService from '../services/GoalsService';
 import { LogEntry } from '../types/LogEntry';
-import { Goal, GoalEntryContribution } from '../types/Goal';
+import { Goal, GoalEntryContribution, isGoalOverdue } from '../types/Goal';
 
 const GOAL_COLOR = '#F97316';
+const OVERDUE_COLOR = '#DC2626';
 import { ColorPalette, useTheme } from '../contexts/ThemeContext';
 import { DayPlan, PlanBlock } from '../types/DayPlan';
 import { allMatchingBlocks, isCovered } from '../utils/planMatching';
@@ -157,22 +158,27 @@ export default function ReportScreen({ onStartCheckIn, onOpenMenu, onEditPlan, i
       {!loading && goals.length > 0 && (
         <View style={styles.pinnedGoals}>
           <Text style={styles.pinnedGoalsHeader}>🎯  ACTIVE GOALS</Text>
-          {goals.map(goal => (
-            <View key={goal.id} style={styles.pinnedGoalRow}>
+          {goals.map(goal => {
+            const overdue = isGoalOverdue(goal, endOfDay(currentDate).getTime());
+            const goalColor = overdue ? OVERDUE_COLOR : GOAL_COLOR;
+            return (
+            <View key={goal.id} style={[styles.pinnedGoalRow, overdue && styles.pinnedGoalRowOverdue]}>
               <View style={styles.pinnedGoalInfo}>
                 <Text style={styles.pinnedGoalText} numberOfLines={1}>{goal.text}</Text>
                 <View style={styles.pinnedBarBg}>
-                  <View style={[styles.pinnedBarFill, { width: `${goal.progress}%` as any }]} />
+                  <View style={[styles.pinnedBarFill, { width: `${goal.progress}%` as any, backgroundColor: goalColor }]} />
                 </View>
                 {goal.targetAt !== null && (
-                  <Text style={styles.pinnedGoalDeadline}>
+                  <Text style={[styles.pinnedGoalDeadline, overdue && styles.pinnedGoalOverdueText]}>
                     📅 {new Date(goal.targetAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                   </Text>
                 )}
+                {overdue && <Text style={styles.pinnedGoalOverdueText}>Overdue</Text>}
               </View>
-              <Text style={styles.pinnedGoalPct}>{goal.progress}%</Text>
+              <Text style={[styles.pinnedGoalPct, { color: goalColor }]}>{goal.progress}%</Text>
             </View>
-          ))}
+            );
+          })}
         </View>
       )}
 
@@ -376,12 +382,16 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 10,
+      borderRadius: 8,
+      padding: 6,
     },
+    pinnedGoalRowOverdue: { backgroundColor: OVERDUE_COLOR + '16' },
     pinnedGoalInfo: { flex: 1, gap: 3 },
     pinnedGoalText: { fontSize: 13, color: colors.text, fontWeight: '500' },
     pinnedBarBg: { height: 4, backgroundColor: colors.border, borderRadius: 2, overflow: 'hidden' },
     pinnedBarFill: { height: 4, backgroundColor: GOAL_COLOR, borderRadius: 2 },
     pinnedGoalDeadline: { fontSize: 10, color: colors.textSecondary },
+    pinnedGoalOverdueText: { fontSize: 10, color: OVERDUE_COLOR, fontWeight: '700' },
     pinnedGoalPct: { fontSize: 14, fontWeight: '700', color: GOAL_COLOR, minWidth: 38, textAlign: 'right' },
     planSection: {
       backgroundColor: '#039BE5' + '18',

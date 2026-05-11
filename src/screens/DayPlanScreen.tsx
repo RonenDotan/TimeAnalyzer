@@ -18,12 +18,13 @@ import StorageService from '../services/StorageService';
 import GoalsService from '../services/GoalsService';
 import CalendarSyncService from '../services/CalendarSyncService';
 import { ParsedBlock, PlanBlock } from '../types/DayPlan';
-import { Goal } from '../types/Goal';
+import { Goal, isGoalOverdue } from '../types/Goal';
 import { applyTranscription } from '../utils/parseTranscript';
 import { formatMin, parseDayPlan } from '../utils/parseDayPlan';
 import { ColorPalette, useTheme } from '../contexts/ThemeContext';
 
 const GOAL_COLOR = '#F97316';
+const OVERDUE_COLOR = '#DC2626';
 
 interface Props {
   initialDate?: Date;
@@ -340,22 +341,27 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false,
             </TouchableOpacity>
           </View>
 
-          {goals.map(goal => (
-            <View key={goal.id} style={styles.goalRow}>
+          {goals.map(goal => {
+            const overdue = isGoalOverdue(goal);
+            const goalColor = overdue ? OVERDUE_COLOR : GOAL_COLOR;
+            return (
+            <View key={goal.id} style={[styles.goalRow, overdue && styles.goalRowOverdue]}>
               <View style={styles.goalRowTop}>
                 <Text style={styles.goalText} numberOfLines={1}>{goal.text}</Text>
-                <Text style={styles.goalPct}>{goal.progress}%</Text>
+                <Text style={[styles.goalPct, { color: goalColor }]}>{goal.progress}%</Text>
               </View>
               <View style={styles.goalProgressBg}>
-                <View style={[styles.goalProgressFill, { width: `${goal.progress}%` as any }]} />
+                <View style={[styles.goalProgressFill, { width: `${goal.progress}%` as any, backgroundColor: goalColor }]} />
               </View>
               {goal.targetAt !== null && (
-                <Text style={styles.goalTarget}>
+                <Text style={[styles.goalTarget, overdue && styles.goalOverdueText]}>
                   {'\u{1F4C5} '}{new Date(goal.targetAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                 </Text>
               )}
+              {overdue && <Text style={styles.goalOverdueText}>Overdue</Text>}
             </View>
-          ))}
+            );
+          })}
 
           {addingGoal && (
             <View style={styles.addGoalRow}>
@@ -685,7 +691,8 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
       color: colors.placeholder,
       fontStyle: 'italic',
     },
-    goalRow: { gap: 4 },
+    goalRow: { gap: 4, borderRadius: 8, padding: 6 },
+    goalRowOverdue: { backgroundColor: OVERDUE_COLOR + '16' },
     goalRowTop: {
       flexDirection: 'row',
       justifyContent: 'space-between',
@@ -696,6 +703,7 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
     goalProgressBg: { height: 4, backgroundColor: colors.border, borderRadius: 2, overflow: 'hidden' },
     goalProgressFill: { height: 4, backgroundColor: GOAL_COLOR, borderRadius: 2 },
     goalTarget: { fontSize: 11, color: colors.textSecondary },
+    goalOverdueText: { fontSize: 11, color: OVERDUE_COLOR, fontWeight: '700' },
     addGoalRow: { gap: 8 },
     addGoalInput: {
       fontSize: 15,
