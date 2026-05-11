@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(*)"
+      "Bash(*)",
+      "mcp__codex__codex",
+      "mcp__codex__codex-reply"
     ],
     "ask": [
       "Bash(git merge * main)",
