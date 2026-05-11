@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   Platform,
@@ -15,9 +16,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import StorageService from '../services/StorageService';
 import GoalsService from '../services/GoalsService';
 import CalendarSyncService from '../services/CalendarSyncService';
+import AnalysisService from '../services/AnalysisService';
 import { LogEntry } from '../types/LogEntry';
 import { Note } from '../types/Note';
-import { GoalEntryContribution } from '../types/Goal';
+import { Goal, GoalEntryContribution } from '../types/Goal';
 
 const GOAL_COLOR = '#F97316';
 import DictateBar from '../components/DictateBar';
@@ -65,6 +67,13 @@ export default function EntryDetailScreen({ entry, onSave, onClose }: Props) {
   const [activeTimePicker, setActiveTimePicker] = useState<ActiveTimePicker>(null);
   const [notes, setNotes] = useState<Note[]>([]);
   const [goalContributions, setGoalContributions] = useState<GoalEntryContribution[]>([]);
+  const [activeGoals, setActiveGoals] = useState<Goal[]>([]);
+  const [aiAvailable, setAiAvailable] = useState(false);
+  const [aiSuggesting, setAiSuggesting] = useState(false);
+  const [aiApplying, setAiApplying] = useState(false);
+  const [aiSuggestionInputs, setAiSuggestionInputs] = useState<Record<number, string>>({});
+  const [aiSuggestionReasons, setAiSuggestionReasons] = useState<Record<number, string>>({});
+  const [aiSuggestionMessage, setAiSuggestionMessage] = useState('');
   const [editingNotes, setEditingNotes] = useState<Record<number, string>>({});
   const [newNoteText, setNewNoteText] = useState('');
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
@@ -73,8 +82,10 @@ export default function EntryDetailScreen({ entry, onSave, onClose }: Props) {
   useEffect(() => {
     StorageService.getNotesByEntryId(entry.id).then(setNotes);
     GoalsService.getContributionsByEntryId(entry.id).then(setGoalContributions);
+    GoalsService.getActiveGoals(entry.timestampEnd).then(setActiveGoals);
+    AnalysisService.isConfigured().then(setAiAvailable).catch(() => setAiAvailable(false));
     SettingsService.load().then(s => setAppendKeyword(s.appendKeyword));
-  }, [entry.id]);
+  }, [entry.id, entry.timestampEnd]);
 
   function handleCancel() {
     setTranscript(entry.transcript);
@@ -154,6 +165,64 @@ export default function EntryDetailScreen({ entry, onSave, onClose }: Props) {
       delete next[id];
       return next;
     });
+  }
+
+  async function handleSuggestWithAI() {
+    if (aiSuggesting || activeGoals.length === 0 || transcript.trim().length === 0) return;
+
+    setAiSuggesting(true);
+    setAiSuggestionInputs({});
+    setAiSuggestionReasons({});
+    setAiSuggestionMessage('');
+
+    try {
+      const result = await AnalysisService.suggestGoalContributions(transcript, activeGoals);
+      if (result.suggestions.length === 0) {
+        setAiSuggestionMessage('No clear goal progress found in this entry.');
+        return;
+      }
+
+      const nextInputs: Record<number, string> = {};
+      const nextReasons: Record<number, string> = {};
+      for (const suggestion of result.suggestions) {
+        nextInputs[suggestion.goalId] = String(suggestion.contributionPct);
+        nextReasons[suggestion.goalId] = suggestion.reason;
+      }
+
+      setAiSuggestionInputs(nextInputs);
+      setAiSuggestionReasons(nextReasons);
+      setAiSuggestionMessage(`Suggested ${result.suggestions.length} contribution${result.suggestions.length === 1 ? '' : 's'}.`);
+    } catch (e: any) {
+      setAiSuggestionMessage(String(e?.message ?? e));
+    } finally {
+      setAiSuggesting(false);
+    }
+  }
+
+  async function handleApplyAISuggestions() {
+    const selected = activeGoals
+      .map(goal => ({ goal, pct: parseInt(aiSuggestionInputs[goal.id] ?? '', 10) }))
+      .filter(item => Number.isFinite(item.pct) && item.pct > 0);
+
+    if (selected.length === 0 || aiApplying) return;
+
+    setAiApplying(true);
+    try {
+      for (const { goal, pct } of selected) {
+        await GoalsService.applyContribution(goal, pct, entry.id);
+      }
+      const refreshed = await GoalsService.getContributionsByEntryId(entry.id);
+      setGoalContributions(refreshed);
+      setActiveGoals(await GoalsService.getActiveGoals(entry.timestampEnd));
+      setAiSuggestionInputs({});
+      setAiSuggestionReasons({});
+      setAiSuggestionMessage(`Applied ${selected.length} contribution${selected.length === 1 ? '' : 's'}.`);
+      CalendarSyncService.syncChanged().catch(() => {});
+    } catch (e: any) {
+      Alert.alert('Failed to apply suggestions', String(e?.message ?? e));
+    } finally {
+      setAiApplying(false);
+    }
   }
 
   if (selectedNote) {
@@ -286,6 +355,65 @@ export default function EntryDetailScreen({ entry, onSave, onClose }: Props) {
               </View>
             ))}
           </>
+        )}
+
+        {aiAvailable && activeGoals.length > 0 && (
+          <View style={styles.aiSection}>
+            <View style={styles.aiHeaderRow}>
+              <Text style={styles.aiSectionLabel}>AI GOAL SUGGESTIONS</Text>
+              <TouchableOpacity
+                style={[styles.aiSuggestBtn, aiSuggesting && styles.aiSuggestBtnDisabled]}
+                onPress={handleSuggestWithAI}
+                disabled={aiSuggesting}>
+                {aiSuggesting ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={styles.aiSuggestBtnText}>✨ Suggest with AI</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+
+            {!!aiSuggestionMessage && (
+              <Text style={styles.aiSuggestionMessage}>{aiSuggestionMessage}</Text>
+            )}
+
+            {Object.keys(aiSuggestionInputs).length > 0 && (
+              <>
+                {activeGoals
+                  .filter(goal => aiSuggestionInputs[goal.id] !== undefined)
+                  .map(goal => (
+                    <View key={goal.id} style={styles.aiSuggestionCard}>
+                      <Text style={styles.aiSuggestionGoal}>{goal.text}</Text>
+                      {!!aiSuggestionReasons[goal.id] && (
+                        <Text style={styles.aiSuggestionReason}>{aiSuggestionReasons[goal.id]}</Text>
+                      )}
+                      <View style={styles.aiInputRow}>
+                        <Text style={styles.aiInputLabel}>Apply</Text>
+                        <TextInput
+                          style={styles.aiPctInput}
+                          value={aiSuggestionInputs[goal.id] ?? ''}
+                          onChangeText={v => setAiSuggestionInputs(prev => ({ ...prev, [goal.id]: v }))}
+                          placeholder="0"
+                          placeholderTextColor={colors.placeholder}
+                          keyboardType="numeric"
+                          maxLength={3}
+                        />
+                        <Text style={styles.aiInputLabel}>%</Text>
+                      </View>
+                    </View>
+                  ))}
+
+                <TouchableOpacity
+                  style={[styles.aiApplyBtn, aiApplying && styles.aiSuggestBtnDisabled]}
+                  onPress={handleApplyAISuggestions}
+                  disabled={aiApplying}>
+                  <Text style={styles.aiApplyBtnText}>
+                    {aiApplying ? 'Applying...' : 'Apply suggestions'}
+                  </Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
         )}
 
         {/* Add new note — always available */}
@@ -465,5 +593,68 @@ function makeStyles(colors: ColorPalette) {
     },
     goalContribText: { flex: 1, fontSize: 14, color: colors.text, lineHeight: 20 },
     goalContribDelta: { fontSize: 15, fontWeight: '700', color: GOAL_COLOR },
+    aiSection: {
+      backgroundColor: GOAL_COLOR + '0f',
+      borderRadius: 12,
+      padding: 14,
+      gap: 10,
+      borderLeftWidth: 4,
+      borderLeftColor: GOAL_COLOR,
+    },
+    aiHeaderRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 10,
+    },
+    aiSectionLabel: {
+      flex: 1,
+      fontSize: 11,
+      fontWeight: '700',
+      color: GOAL_COLOR,
+      letterSpacing: 0.5,
+    },
+    aiSuggestBtn: {
+      minHeight: 34,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      borderRadius: 8,
+      backgroundColor: GOAL_COLOR,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    aiSuggestBtnDisabled: { opacity: 0.65 },
+    aiSuggestBtnText: { fontSize: 13, color: '#fff', fontWeight: '700' },
+    aiSuggestionMessage: { fontSize: 12, color: colors.textSecondary, lineHeight: 17 },
+    aiSuggestionCard: {
+      backgroundColor: colors.surface + 'cc',
+      borderRadius: 10,
+      padding: 12,
+      gap: 8,
+      borderWidth: 1,
+      borderColor: GOAL_COLOR + '40',
+    },
+    aiSuggestionGoal: { fontSize: 14, color: colors.text, fontWeight: '600', lineHeight: 20 },
+    aiSuggestionReason: { fontSize: 12, color: GOAL_COLOR, lineHeight: 17 },
+    aiInputRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    aiInputLabel: { fontSize: 14, color: colors.textSecondary },
+    aiPctInput: {
+      width: 56,
+      textAlign: 'center',
+      fontSize: 18,
+      fontWeight: '700',
+      color: colors.text,
+      borderBottomWidth: 2,
+      borderBottomColor: GOAL_COLOR,
+      paddingVertical: 2,
+    },
+    aiApplyBtn: {
+      alignSelf: 'flex-end',
+      paddingHorizontal: 14,
+      paddingVertical: 8,
+      backgroundColor: GOAL_COLOR,
+      borderRadius: 8,
+    },
+    aiApplyBtnText: { fontSize: 14, color: '#fff', fontWeight: '700' },
   });
 }
