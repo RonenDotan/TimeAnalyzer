@@ -9,6 +9,7 @@ import SettingsService from './src/services/SettingsService';
 import StorageService from './src/services/StorageService';
 import DrawerMenu, { DrawerScreen } from './src/components/DrawerMenu';
 import { ThemeProvider } from './src/contexts/ThemeContext';
+import AITestScreen from './src/screens/AITestScreen';
 import CheckInScreen from './src/screens/CheckInScreen';
 import DayPlanScreen from './src/screens/DayPlanScreen';
 import GoalsScreen from './src/screens/GoalsScreen';
@@ -20,7 +21,7 @@ import { DEFAULT_CALENDAR_COLOR } from './src/services/SettingsService';
 
 export const version = `v${v.major}.${v.minor}.${v.ticket_id}.${v.sequence}`;
 
-type Screen = 'entries' | 'checkin' | 'settings' | 'reports' | 'dayplan' | 'goals';
+type Screen = 'entries' | 'checkin' | 'settings' | 'reports' | 'dayplan' | 'goals' | 'aitest';
 type Period = { periodStart: number; periodEnd: number };
 
 // ID format: checkin-{periodStart}-{fireAt}
@@ -172,11 +173,14 @@ function AppContent(): React.JSX.Element {
     screen === 'settings' ? 'settings' :
     screen === 'reports'  ? 'reports'  :
     screen === 'dayplan'  ? 'dayplan'  :
-    screen === 'goals'    ? 'goals'    : 'entries';
+    screen === 'goals'    ? 'goals'    :
+    screen === 'aitest'   ? 'aitest'   : 'entries';
 
   return (
     <ThemeProvider isDark={isDark}>
-      {screen === 'settings' ? (
+      {screen === 'aitest' ? (
+        <AITestScreen onClose={() => setScreen('entries')} />
+      ) : screen === 'settings' ? (
         <SettingsScreen onClose={handleSettingsClose} />
       ) : screen === 'dayplan' ? (
         <DayPlanScreen initialDate={planDate} onClose={() => setScreen('entries')} debugMode={debugMode} calendarColor={calendarColor} />

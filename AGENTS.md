@@ -225,14 +225,33 @@ Key notes:
 
 See `HANDOFF.md` for the full live session state.
 
-When receiving a handoff from the other agent:
+### How Claude and Codex communicate
+
+**Within a Claude Code session — MCP (preferred):**
+Claude has Codex wired as an MCP server (`mcp__codex__codex` / `mcp__codex__codex-reply`).
+- Claude starts a thread with `codex`, gets a `threadId`
+- Follow-up tasks reuse the same thread via `codex-reply` — no cold start, no HANDOFF.md needed
+- Codex reads `AGENTS.md` automatically on thread start
+- HANDOFF.md is NOT updated between tasks mid-session — direct MCP calls handle coordination
+
+**Between sessions (Claude Code restart / agent switch):**
+The MCP thread dies on restart. HANDOFF.md becomes the only bridge.
+Update it at natural breakpoints: end of day, switching from Claude-led to Codex-led work, before a restart.
+Not required between every task.
+
+### When HANDOFF.md must be updated
+- Before closing Claude Code for the day
+- Before handing control to Codex to work alone (without Claude relaying)
+- After a significant block of work is complete
+
+### Handoff steps (when switching agents)
 1. Read `HANDOFF.md` for current branch, ticket, done/pending
-2. **Write a `## 🤣 Peer Review` section** in `HANDOFF.md` — a short, savage-but-friendly
-   roast of the previous agent's work. Be specific (reference actual files, decisions, line counts).
+2. **Write a `## 🤣 Peer Review` section** — a short, savage-but-friendly roast of the
+   previous agent's work. Be specific (reference actual files, decisions, line counts).
    This section is **mandatory**. No roast = broken handoff.
-3. Save a dated backup of `HANDOFF.md` before modifying: `HANDOFF.md.backup-YYYY-MM-DD-[claude/codex]`
+3. Save a dated backup: `HANDOFF.md.backup-YYYY-MM-DD-[claude/codex]`
 4. Update `HANDOFF.md` with current state
-5. Commit `HANDOFF.md` + `AGENTS.md` before the user switches
+5. Commit `HANDOFF.md` + `AGENTS.md` before switching
 
 Example roast tone:
 > "Claude spent 3 files and 40 lines implementing a ScrollView fix.
