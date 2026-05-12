@@ -42,10 +42,19 @@ async function suggestGoalContributions(
   return provider.suggestGoalContributions(transcript, goals, prompt);
 }
 
+async function generateJson(prompt: string, maxTokens?: number): Promise<unknown> {
+  const provider = await getActiveProvider();
+  if (!(await provider.isConfigured())) {
+    throw new Error(`${await getProviderLabel()} API key is not configured.`);
+  }
+  return provider.generateJson(prompt, maxTokens);
+}
+
 const AnalysisService = {
   isConfigured,
   getProviderLabel,
   suggestGoalContributions,
+  generateJson,
 };
 
 export default AnalysisService;

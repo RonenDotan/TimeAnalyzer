@@ -13,6 +13,7 @@ export interface GoalContributionSuggestionResult {
 
 export interface AnalysisProvider {
   isConfigured(): Promise<boolean>;
+  generateJson(prompt: string, maxTokens?: number): Promise<unknown>;
   suggestGoalContributions(
     transcript: string,
     goals: Goal[],

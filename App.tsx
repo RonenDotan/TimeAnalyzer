@@ -11,6 +11,7 @@ import DrawerMenu, { DrawerScreen } from './src/components/DrawerMenu';
 import { ThemeProvider } from './src/contexts/ThemeContext';
 import AITestScreen from './src/screens/AITestScreen';
 import CheckInScreen from './src/screens/CheckInScreen';
+import DailySummariesScreen from './src/screens/DailySummariesScreen';
 import DayPlanScreen from './src/screens/DayPlanScreen';
 import GoalsScreen from './src/screens/GoalsScreen';
 import PromptsScreen from './src/screens/PromptsScreen';
@@ -22,7 +23,7 @@ import { DEFAULT_CALENDAR_COLOR } from './src/services/SettingsService';
 
 export const version = `v${v.major}.${v.minor}.${v.ticket_id}.${v.sequence}`;
 
-type Screen = 'entries' | 'checkin' | 'settings' | 'reports' | 'dayplan' | 'goals' | 'aitest' | 'prompts';
+type Screen = 'entries' | 'checkin' | 'settings' | 'reports' | 'dayplan' | 'goals' | 'aitest' | 'prompts' | 'dailySummaries';
 type Period = { periodStart: number; periodEnd: number };
 
 // ID format: checkin-{periodStart}-{fireAt}
@@ -163,7 +164,7 @@ function AppContent(): React.JSX.Element {
   }
 
   function handleDrawerNavigate(dest: DrawerScreen) {
-    if ((dest === 'prompts' || dest === 'aitest') && !debugMode) return;
+    if ((dest === 'prompts' || dest === 'aitest' || dest === 'dailySummaries') && !debugMode) return;
     if (dest === 'dayplan') {
       setPlanDate(undefined);
     }
@@ -177,6 +178,7 @@ function AppContent(): React.JSX.Element {
     screen === 'dayplan'  ? 'dayplan'  :
     screen === 'goals'    ? 'goals'    :
     screen === 'prompts'  ? 'prompts'  :
+    screen === 'dailySummaries' ? 'dailySummaries' :
     screen === 'aitest'   ? 'aitest'   : 'entries';
 
   return (
@@ -185,6 +187,8 @@ function AppContent(): React.JSX.Element {
         <AITestScreen onClose={() => setScreen('entries')} />
       ) : screen === 'prompts' && debugMode ? (
         <PromptsScreen onClose={() => setScreen('entries')} />
+      ) : screen === 'dailySummaries' && debugMode ? (
+        <DailySummariesScreen onClose={() => setScreen('entries')} />
       ) : screen === 'settings' ? (
         <SettingsScreen onClose={handleSettingsClose} />
       ) : screen === 'dayplan' ? (

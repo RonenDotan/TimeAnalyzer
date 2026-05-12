@@ -1,4 +1,6 @@
 import { Goal } from '../types/Goal';
+import { LogEntry } from '../types/LogEntry';
+import { PlanBlock } from '../types/DayPlan';
 
 export const DEFAULT_GOAL_CONTRIBUTION_PROMPT_BODY = [
   'Suggest goal progress contributions for this work journal check-in.',
@@ -35,6 +37,108 @@ export const DEFAULT_DAILY_SUMMARY_PROMPT_BODY = [
   '{{entries_json}}',
 ].join('\n');
 
+export const CLAUDE_GOAL_CONTRIBUTION_PROMPT_BODY = [
+  'You are analyzing a work journal check-in to suggest how much progress was made on each active goal.',
+  '',
+  'For each goal, consider:',
+  '- Does the transcript mention work directly related to this goal?',
+  '- How significant was that work relative to what remains?',
+  '- Err on the side of under-estimating — it is better to suggest too little than too much.',
+  '',
+  'Rules:',
+  '- Return only JSON: {"suggestions":[{"goalId":number,"contributionPct":number,"reason":string}]}',
+  '- Only include goals where the transcript clearly shows progress.',
+  '- contributionPct is the amount to add now (1 to remaining %).',
+  '- Small focused work: 5-10. Meaningful progress: 10-20. Near-completion work: 20-40.',
+  '- Reasons are one short sentence, written for the user, not for a developer.',
+  '- If nothing clearly advanced a goal, return {"suggestions":[]}.',
+  '',
+  'Active goals:',
+  '{{goals_json}}',
+  '',
+  'Transcript:',
+  '{{transcript}}',
+].join('\n');
+
+export const CLAUDE_DAILY_SUMMARY_PROMPT_BODY = [
+  'Summarize today\'s work journal as an end-of-day debrief.',
+  '',
+  'You have:',
+  '- Check-in transcripts: what was actually worked on',
+  '- Day plan: what was intended',
+  '- Active goals: long-term priorities with current progress',
+  '',
+  'Rules:',
+  '- Return only valid JSON. No markdown.',
+  '- Ground everything in the transcripts — they are the source of truth.',
+  '- Be specific and concrete. Reference actual work mentioned.',
+  '- Do not fabricate blockers, emotions, or progress not evidenced in the transcripts.',
+  '- If no transcripts exist, return a minimal response.',
+  '',
+  'Return JSON:',
+  '{',
+  '  "debrief": "2-4 sentences. What actually happened, how it compared to the plan, what moved forward on goals.",',
+  '  "momentum": "1 sentence. What to carry into tomorrow.",',
+  '  "gaps": ["Planned work that did not happen. Empty array if no plan or no gaps."]',
+  '}',
+  '',
+  'Date: {{date}}',
+  '',
+  'Transcripts: {{entries_json}}',
+  '',
+  'Plan: {{plan_json}}',
+  '',
+  'Goals: {{goals_json}}',
+].join('\n');
+
+export const CODEX_DAILY_SUMMARY_PROMPT_BODY = [
+  'Generate an end-of-day debrief for a voice-driven work journal.',
+  '',
+  'You will receive:',
+  '- Today\'s check-in transcripts: what was actually done, with timestamps.',
+  '- Today\'s day plan: planned time blocks and activities.',
+  '- Active goals: goal text, current progress %, and optional target date.',
+  '',
+  'Write a concise, factual debrief that helps the user understand how the day actually went.',
+  '',
+  'Rules:',
+  '- Return only valid JSON. Do not include markdown or commentary.',
+  '- Use the user\'s actual check-ins as the source of truth.',
+  '- Compare plan vs actual when a day plan exists.',
+  '- Mention goal progress only when the transcripts clearly relate to active goals.',
+  '- Do not invent work, emotions, blockers, meetings, or progress.',
+  '- If evidence is weak, say that directly.',
+  '- Keep the debrief paragraph readable and specific, not generic.',
+  '- Key insights should be short, practical observations.',
+  '- Prefer concrete phrasing like "The morning shifted from planned writing to debugging" over vague phrasing like "There were productivity challenges."',
+  '- If there are no transcripts, return an empty/low-confidence summary.',
+  '- If there is no plan, focus on what was done and any goal alignment.',
+  '',
+  'Return JSON with this exact shape:',
+  '{',
+  '  "debrief": "One concise paragraph, 3-6 sentences.",',
+  '  "keyInsights": [',
+  '    {',
+  '      "type": "plan_vs_actual | goal_progress | blocker | pattern | follow_up | note",',
+  '      "text": "Short user-facing insight.",',
+  '      "confidence": "high | medium | low"',
+  '    }',
+  '  ]',
+  '}',
+  '',
+  'Date:',
+  '{{date}}',
+  '',
+  'Check-in transcripts:',
+  '{{entries_json}}',
+  '',
+  'Day plan:',
+  '{{plan_json}}',
+  '',
+  'Active goals:',
+  '{{goals_json}}',
+].join('\n');
+
 export function goalContextJson(goals: Goal[]): string {
   return JSON.stringify(
     goals.map(goal => ({
@@ -57,4 +161,37 @@ export function renderGoalContributionPrompt(body: string, transcript: string, g
 
 export function buildGoalContributionPrompt(transcript: string, goals: Goal[]): string {
   return renderGoalContributionPrompt(DEFAULT_GOAL_CONTRIBUTION_PROMPT_BODY, transcript, goals);
+}
+
+export function renderDailySummaryPrompt(
+  body: string,
+  date: string,
+  entries: LogEntry[],
+  planBlocks: PlanBlock[],
+  goals: Goal[],
+): string {
+  return body
+    .replaceAll('{{date}}', date)
+    .replaceAll('{{entries_json}}', JSON.stringify(
+      entries.map(entry => ({
+        id: entry.id,
+        start: new Date(entry.timestampStart).toISOString(),
+        end: new Date(entry.timestampEnd).toISOString(),
+        transcript: entry.transcript,
+      })),
+      null,
+      2,
+    ))
+    .replaceAll('{{plan_json}}', JSON.stringify(
+      planBlocks.map(block => ({
+        id: block.id,
+        startMin: block.startMin,
+        endMin: block.endMin,
+        activity: block.activity,
+        source: block.source,
+      })),
+      null,
+      2,
+    ))
+    .replaceAll('{{goals_json}}', goalContextJson(goals));
 }

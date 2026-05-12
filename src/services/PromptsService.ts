@@ -3,13 +3,18 @@ import { PromptsProvider } from '../providers/prompts/PromptsProvider';
 import {
   Prompt,
   PromptInput,
+  PROMPT_ACTION_DAILY_SUMMARY,
   PROMPT_ACTION_GOAL_CONTRIBUTION,
 } from '../types/Prompt';
 import {
+  DEFAULT_DAILY_SUMMARY_PROMPT_BODY,
   DEFAULT_GOAL_CONTRIBUTION_PROMPT_BODY,
+  renderDailySummaryPrompt,
   renderGoalContributionPrompt,
 } from '../utils/promptTemplates';
 import { Goal } from '../types/Goal';
+import { LogEntry } from '../types/LogEntry';
+import { PlanBlock } from '../types/DayPlan';
 
 let activeProvider: PromptsProvider = SQLitePromptsProvider;
 
@@ -46,6 +51,17 @@ async function buildGoalContributionPromptFromDefault(
   return renderGoalContributionPrompt(body, transcript, goals);
 }
 
+async function buildDailySummaryPromptFromDefault(
+  date: string,
+  entries: LogEntry[],
+  planBlocks: PlanBlock[],
+  goals: Goal[],
+): Promise<string> {
+  const prompt = await getDefaultPrompt(PROMPT_ACTION_DAILY_SUMMARY);
+  const body = prompt?.body?.trim() || DEFAULT_DAILY_SUMMARY_PROMPT_BODY;
+  return renderDailySummaryPrompt(body, date, entries, planBlocks, goals);
+}
+
 const PromptsService = {
   setProvider,
   getAllPrompts,
@@ -54,6 +70,7 @@ const PromptsService = {
   updatePrompt,
   setDefaultPrompt,
   buildGoalContributionPromptFromDefault,
+  buildDailySummaryPromptFromDefault,
 };
 
 export default PromptsService;

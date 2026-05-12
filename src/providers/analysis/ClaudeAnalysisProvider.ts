@@ -16,6 +16,10 @@ async function suggestGoalContributions(
   goals: Goal[],
   prompt: string,
 ): Promise<GoalContributionSuggestionResult> {
+  return sanitizeGoalContributionSuggestions(await generateJson(prompt), goals);
+}
+
+async function generateJson(prompt: string, maxTokens = 700): Promise<unknown> {
   const apiKey = (await SettingsService.getClaudeApiKey()).trim();
   if (!apiKey) throw new Error('Claude API key is not configured.');
 
@@ -28,7 +32,7 @@ async function suggestGoalContributions(
     },
     body: JSON.stringify({
       model: 'claude-haiku-4-5',
-      max_tokens: 700,
+      max_tokens: maxTokens,
       messages: [{ role: 'user', content: prompt }],
     }),
   });
@@ -39,11 +43,12 @@ async function suggestGoalContributions(
   }
 
   const text = json?.content?.[0]?.text ?? '';
-  return sanitizeGoalContributionSuggestions(parseJsonObject(text), goals);
+  return parseJsonObject(text);
 }
 
 const ClaudeAnalysisProvider: AnalysisProvider = {
   isConfigured,
+  generateJson,
   suggestGoalContributions,
 };
 
