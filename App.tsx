@@ -163,7 +163,7 @@ function AppContent(): React.JSX.Element {
   }
 
   function handleDrawerNavigate(dest: DrawerScreen) {
-    if (dest === 'prompts' && !debugMode) return;
+    if ((dest === 'prompts' || dest === 'aitest') && !debugMode) return;
     if (dest === 'dayplan') {
       setPlanDate(undefined);
     }
