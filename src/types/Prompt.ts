@@ -1,4 +1,5 @@
 export const PROMPT_ACTION_GOAL_CONTRIBUTION = 1;
+export const PROMPT_ACTION_DAILY_SUMMARY = 2;
 
 export interface Prompt {
   id: number;
@@ -26,6 +27,12 @@ export const PROMPT_ACTIONS: PromptActionDefinition[] = [
     key: 'goal_contribution',
     label: 'Goal contribution',
     description: 'Suggest progress deltas for active goals from one check-in transcript.',
+  },
+  {
+    id: PROMPT_ACTION_DAILY_SUMMARY,
+    key: 'daily_summary',
+    label: 'Daily Summary',
+    description: 'Summarize a day of entries into a concise work report.',
   },
 ];
 

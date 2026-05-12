@@ -18,6 +18,23 @@ export const DEFAULT_GOAL_CONTRIBUTION_PROMPT_BODY = [
   '{{transcript}}',
 ].join('\n');
 
+export const DEFAULT_DAILY_SUMMARY_PROMPT_BODY = [
+  'Write a concise daily work summary from these work journal entries.',
+  '',
+  'Rules:',
+  '- Focus on what was actually done, not generic productivity language.',
+  '- Group related work into short bullets.',
+  '- Mention notable meetings, planning, debugging, implementation, and follow-up items when present.',
+  '- Keep the tone factual and user-facing.',
+  '- If entries are sparse, say so directly.',
+  '',
+  'Date:',
+  '{{date}}',
+  '',
+  'Entries:',
+  '{{entries_json}}',
+].join('\n');
+
 export function goalContextJson(goals: Goal[]): string {
   return JSON.stringify(
     goals.map(goal => ({

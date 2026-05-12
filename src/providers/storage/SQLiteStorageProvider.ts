@@ -3,8 +3,8 @@ import { LogEntry, EntrySource } from '../../types/LogEntry';
 import { Note } from '../../types/Note';
 import { DayPlan, ParsedBlock, PlanBlock, PlanBlockWithDate, BlockSource } from '../../types/DayPlan';
 import { StorageProvider } from './StorageProvider';
-import { PROMPT_ACTION_GOAL_CONTRIBUTION } from '../../types/Prompt';
-import { DEFAULT_GOAL_CONTRIBUTION_PROMPT_BODY } from '../../utils/promptTemplates';
+import { PROMPT_ACTION_DAILY_SUMMARY, PROMPT_ACTION_GOAL_CONTRIBUTION } from '../../types/Prompt';
+import { DEFAULT_DAILY_SUMMARY_PROMPT_BODY, DEFAULT_GOAL_CONTRIBUTION_PROMPT_BODY } from '../../utils/promptTemplates';
 
 type DB = ReturnType<typeof open>;
 let db: DB | null = null;
@@ -240,26 +240,34 @@ function runMigrations(d: DB): void {
       )
     `);
     try { d.executeSync('CREATE INDEX IF NOT EXISTS idx_prompts_action_default ON prompts (action_id, is_default)'); } catch {}
+    seedDefaultPrompts(d);
     setVersion(d, 5);
   }
 }
 
 function seedDefaultPrompts(d: DB): void {
-  const existing = d.executeSync(
-    'SELECT COUNT(*) as cnt FROM prompts WHERE action_id = ?',
-    [PROMPT_ACTION_GOAL_CONTRIBUTION],
+  seedPromptForAction(
+    d,
+    PROMPT_ACTION_GOAL_CONTRIBUTION,
+    'Default goal contribution prompt',
+    DEFAULT_GOAL_CONTRIBUTION_PROMPT_BODY,
   );
+  seedPromptForAction(
+    d,
+    PROMPT_ACTION_DAILY_SUMMARY,
+    'Default daily summary prompt',
+    DEFAULT_DAILY_SUMMARY_PROMPT_BODY,
+  );
+}
+
+function seedPromptForAction(d: DB, actionId: number, name: string, body: string): void {
+  const existing = d.executeSync('SELECT COUNT(*) as cnt FROM prompts WHERE action_id = ?', [actionId]);
   const count = ((existing.rows?.[0] as any)?.cnt as number) ?? 0;
   if (count > 0) return;
 
   d.executeSync(
     'INSERT INTO prompts (action_id, name, body, is_default, created_at) VALUES (?, ?, ?, 1, ?)',
-    [
-      PROMPT_ACTION_GOAL_CONTRIBUTION,
-      'Default goal contribution prompt',
-      DEFAULT_GOAL_CONTRIBUTION_PROMPT_BODY,
-      Date.now(),
-    ],
+    [actionId, name, body, Date.now()],
   );
 }
 

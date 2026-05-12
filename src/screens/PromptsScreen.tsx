@@ -14,11 +14,15 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import PromptsService from '../services/PromptsService';
 import {
   Prompt,
+  PROMPT_ACTION_DAILY_SUMMARY,
   PROMPT_ACTION_GOAL_CONTRIBUTION,
   PROMPT_ACTIONS,
   getPromptActionLabel,
 } from '../types/Prompt';
-import { DEFAULT_GOAL_CONTRIBUTION_PROMPT_BODY } from '../utils/promptTemplates';
+import {
+  DEFAULT_DAILY_SUMMARY_PROMPT_BODY,
+  DEFAULT_GOAL_CONTRIBUTION_PROMPT_BODY,
+} from '../utils/promptTemplates';
 import { ColorPalette, useTheme } from '../contexts/ThemeContext';
 
 interface Props {
@@ -38,6 +42,9 @@ function defaultBodyForAction(actionId: number): string {
   if (actionId === PROMPT_ACTION_GOAL_CONTRIBUTION) {
     return DEFAULT_GOAL_CONTRIBUTION_PROMPT_BODY;
   }
+  if (actionId === PROMPT_ACTION_DAILY_SUMMARY) {
+    return DEFAULT_DAILY_SUMMARY_PROMPT_BODY;
+  }
   return '';
 }
 
@@ -48,6 +55,7 @@ export default function PromptsScreen({ onClose }: Props) {
   const [prompts, setPrompts] = useState<Prompt[]>([]);
   const [editing, setEditing] = useState<EditState | null>(null);
   const [loading, setLoading] = useState(true);
+  const [selectedActionId, setSelectedActionId] = useState(PROMPT_ACTIONS[0].id);
 
   useEffect(() => {
     load();
@@ -119,6 +127,9 @@ export default function PromptsScreen({ onClose }: Props) {
     }
   }
 
+  const selectedAction = PROMPT_ACTIONS.find(action => action.id === selectedActionId) ?? PROMPT_ACTIONS[0];
+  const selectedPrompts = prompts.filter(prompt => prompt.actionId === selectedAction.id);
+
   return (
     <KeyboardAvoidingView
       style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}
@@ -134,85 +145,98 @@ export default function PromptsScreen({ onClose }: Props) {
       <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
         <View style={styles.hintCard}>
           <Text style={styles.hintTitle}>Template variables</Text>
-          <Text style={styles.hintText}>{'{{goals_json}}'} inserts active goals. {'{{transcript}}'} inserts the entry transcript.</Text>
+          <Text style={styles.hintText}>
+            {'{{goals_json}}'} inserts active goals. {'{{transcript}}'} inserts the entry transcript. {'{{date}}'} and {'{{entries_json}}'} are for daily summaries.
+          </Text>
         </View>
 
-        {PROMPT_ACTIONS.map(action => {
-          const actionPrompts = prompts.filter(prompt => prompt.actionId === action.id);
-          return (
-            <View key={action.id} style={styles.actionSection}>
-              <View style={styles.actionHeader}>
-                <View style={styles.actionTitleBlock}>
-                  <Text style={styles.actionLabel}>{action.label}</Text>
-                  <Text style={styles.actionSub}>Action ID {action.id} · {action.description}</Text>
-                </View>
-                <TouchableOpacity style={styles.addBtn} onPress={() => startAdd(action.id)}>
-                  <Text style={styles.addBtnText}>Add</Text>
-                </TouchableOpacity>
-              </View>
+        <View style={styles.tabRow}>
+          {PROMPT_ACTIONS.map(action => (
+            <TouchableOpacity
+              key={action.id}
+              style={[styles.tab, selectedActionId === action.id && styles.tabActive]}
+              onPress={() => {
+                setSelectedActionId(action.id);
+                if (editing?.id === 'new') setEditing(null);
+              }}>
+              <Text style={[styles.tabText, selectedActionId === action.id && styles.tabTextActive]}>
+                {action.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
 
-              {actionPrompts.map(prompt => {
-                const isEditing = editing?.id === prompt.id;
-                return (
-                  <View key={prompt.id} style={[styles.promptCard, prompt.isDefault && styles.promptCardDefault]}>
-                    {isEditing ? (
-                      <>
-                        <TextInput
-                          style={styles.nameInput}
-                          value={editing.name}
-                          onChangeText={name => setEditing(prev => prev ? { ...prev, name } : prev)}
-                          placeholder="Prompt name"
-                          placeholderTextColor={colors.placeholder}
-                        />
-                        <TextInput
-                          style={styles.bodyInput}
-                          value={editing.body}
-                          onChangeText={body => setEditing(prev => prev ? { ...prev, body } : prev)}
-                          multiline
-                          textAlignVertical="top"
-                          placeholder="Prompt body"
-                          placeholderTextColor={colors.placeholder}
-                        />
-                        <View style={styles.editActions}>
-                          <TouchableOpacity style={styles.saveBtn} onPress={saveEditing}>
-                            <Text style={styles.saveBtnText}>Save</Text>
-                          </TouchableOpacity>
-                          <TouchableOpacity style={styles.cancelBtn} onPress={() => setEditing(null)}>
-                            <Text style={styles.cancelBtnText}>Cancel</Text>
-                          </TouchableOpacity>
-                        </View>
-                      </>
-                    ) : (
-                      <>
-                        <TouchableOpacity style={styles.promptMain} onPress={() => startEdit(prompt)}>
-                          <View style={styles.promptTopRow}>
-                            <Text style={styles.promptName}>{prompt.name}</Text>
-                            {prompt.isDefault && <Text style={styles.defaultBadge}>Default</Text>}
-                          </View>
-                          <Text style={styles.promptPreview} numberOfLines={3}>{prompt.body}</Text>
-                        </TouchableOpacity>
-                        <View style={styles.promptActions}>
-                          <TouchableOpacity style={styles.secondaryBtn} onPress={() => startEdit(prompt)}>
-                            <Text style={styles.secondaryBtnText}>Edit</Text>
-                          </TouchableOpacity>
-                          {!prompt.isDefault && (
-                            <TouchableOpacity style={styles.secondaryBtn} onPress={() => setDefault(prompt)}>
-                              <Text style={styles.secondaryBtnText}>Set default</Text>
-                            </TouchableOpacity>
-                          )}
-                        </View>
-                      </>
-                    )}
-                  </View>
-                );
-              })}
-
-              {actionPrompts.length === 0 && !loading && (
-                <Text style={styles.emptyText}>No prompts yet.</Text>
-              )}
+        <View style={styles.actionSection}>
+          <View style={styles.actionHeader}>
+            <View style={styles.actionTitleBlock}>
+              <Text style={styles.actionLabel}>{selectedAction.label}</Text>
+              <Text style={styles.actionSub}>Action ID {selectedAction.id} · {selectedAction.description}</Text>
             </View>
-          );
-        })}
+            <TouchableOpacity style={styles.addBtn} onPress={() => startAdd(selectedAction.id)}>
+              <Text style={styles.addBtnText}>Add</Text>
+            </TouchableOpacity>
+          </View>
+
+          {selectedPrompts.map(prompt => {
+            const isEditing = editing?.id === prompt.id;
+            return (
+              <View key={prompt.id} style={[styles.promptCard, prompt.isDefault && styles.promptCardDefault]}>
+                {isEditing ? (
+                  <>
+                    <TextInput
+                      style={styles.nameInput}
+                      value={editing.name}
+                      onChangeText={name => setEditing(prev => prev ? { ...prev, name } : prev)}
+                      placeholder="Prompt name"
+                      placeholderTextColor={colors.placeholder}
+                    />
+                    <TextInput
+                      style={styles.bodyInput}
+                      value={editing.body}
+                      onChangeText={body => setEditing(prev => prev ? { ...prev, body } : prev)}
+                      multiline
+                      textAlignVertical="top"
+                      placeholder="Prompt body"
+                      placeholderTextColor={colors.placeholder}
+                    />
+                    <View style={styles.editActions}>
+                      <TouchableOpacity style={styles.saveBtn} onPress={saveEditing}>
+                        <Text style={styles.saveBtnText}>Save</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity style={styles.cancelBtn} onPress={() => setEditing(null)}>
+                        <Text style={styles.cancelBtnText}>Cancel</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </>
+                ) : (
+                  <>
+                    <TouchableOpacity style={styles.promptMain} onPress={() => startEdit(prompt)}>
+                      <View style={styles.promptTopRow}>
+                        <Text style={styles.promptName}>{prompt.name}</Text>
+                        {prompt.isDefault && <Text style={styles.defaultBadge}>Default</Text>}
+                      </View>
+                      <Text style={styles.promptPreview} numberOfLines={3}>{prompt.body}</Text>
+                    </TouchableOpacity>
+                    <View style={styles.promptActions}>
+                      <TouchableOpacity style={styles.secondaryBtn} onPress={() => startEdit(prompt)}>
+                        <Text style={styles.secondaryBtnText}>Edit</Text>
+                      </TouchableOpacity>
+                      {!prompt.isDefault && (
+                        <TouchableOpacity style={styles.secondaryBtn} onPress={() => setDefault(prompt)}>
+                          <Text style={styles.secondaryBtnText}>Set default</Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  </>
+                )}
+              </View>
+            );
+          })}
+
+          {selectedPrompts.length === 0 && !loading && (
+            <Text style={styles.emptyText}>No prompts yet.</Text>
+          )}
+        </View>
 
         {editing?.id === 'new' && (
           <View style={[styles.promptCard, styles.newPromptCard]}>
@@ -275,6 +299,26 @@ function makeStyles(colors: ColorPalette) {
     },
     hintTitle: { fontSize: 12, fontWeight: '700', color: PROMPT_COLOR },
     hintText: { fontSize: 13, color: colors.textSecondary, lineHeight: 19 },
+    tabRow: {
+      flexDirection: 'row',
+      gap: 8,
+      backgroundColor: colors.surface,
+      borderRadius: 8,
+      padding: 4,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    tab: {
+      flex: 1,
+      minHeight: 36,
+      borderRadius: 6,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 8,
+    },
+    tabActive: { backgroundColor: PROMPT_COLOR },
+    tabText: { fontSize: 12, color: colors.textSecondary, fontWeight: '700', textAlign: 'center' },
+    tabTextActive: { color: '#fff' },
     actionSection: { gap: 10 },
     actionHeader: {
       flexDirection: 'row',

@@ -27,8 +27,8 @@ Branched from `main`. Issue #39 is on the GitHub project board with status **In 
 
 - GitHub: https://github.com/RonenDotan/TimeAnalyzer/issues/39
 - Project status: **In Progress**
-- Version: `v0.0.39.1`
-- `version.json`: `major=0`, `minor=0`, `ticket_id=39`, `sequence=1`
+- Version: `v0.0.39.2`
+- `version.json`: `major=0`, `minor=0`, `ticket_id=39`, `sequence=2`
 
 ---
 
@@ -37,6 +37,7 @@ Branched from `main`. Issue #39 is on the GitHub project board with status **In 
 - Added persisted prompt management:
   - New `prompts` SQLite table in schema version 5 with `id`, `action_id`, `name`, `body`, `is_default`, `created_at`.
   - Seeded the default goal contribution prompt for action ID `1`.
+  - Added action ID `2` for daily summaries and seeded a default daily summary prompt.
   - Added prompt types/constants in `src/types/Prompt.ts`.
   - Added prompt template rendering in `src/utils/promptTemplates.ts`.
   - Added `PromptsService` and SQLite provider under `src/providers/prompts/`.
@@ -45,17 +46,20 @@ Branched from `main`. Issue #39 is on the GitHub project board with status **In 
   - Claude/OpenAI analysis providers now receive rendered prompt text instead of building the prompt internally.
 - Added debug prompt UI:
   - New `src/screens/PromptsScreen.tsx`.
-  - Shows prompts grouped by action.
+  - Shows prompts grouped by action and includes tabs to filter between actions.
   - Allows adding prompts, editing name/body, and setting one default prompt per action.
-  - Shows template variables: `{{goals_json}}` and `{{transcript}}`.
+  - Shows template variables: `{{goals_json}}`, `{{transcript}}`, `{{date}}`, and `{{entries_json}}`.
 - Updated navigation:
   - `DrawerMenu` accepts `debugMode`.
   - `Prompts` appears under a `DEBUG` section only when debug mode is enabled.
   - `App.tsx` routes to `PromptsScreen` only when `debugMode=true`.
-- Updated `version.json` to ticket #39 sequence 1.
+- Added the prompts table structure to ticket #39 as a GitHub issue comment:
+  - https://github.com/RonenDotan/TimeAnalyzer/issues/39#issuecomment-4427823879
+- Updated `version.json` to ticket #39 sequence 2.
 - Android JS bundle regenerated.
 - Backup created before handoff edit:
   - `HANDOFF.md.backup-2026-05-12-codex-ticket39`
+  - `HANDOFF.md.backup-2026-05-12-codex-ticket39-v2`
 
 ---
 
@@ -75,6 +79,7 @@ Branched from `main`. Issue #39 is on the GitHub project board with status **In 
   - `ANDROID_HOME=C:\Users\ronen\AppData\Local\Android\Sdk`
 - APK copied to:
   - `C:\Users\ronen\Desktop\TimeAnalyzer\apk\TimeAnalyzer_v0.0.39.1_2026-05-12_09-03.apk`
+  - `C:\Users\ronen\Desktop\TimeAnalyzer\apk\TimeAnalyzer_v0.0.39.2_2026-05-12_09-18.apk`
 - Full build/install script did not complete because no Android device was connected:
   - `adb devices` returned no devices.
   - `scripts\build-and-install.ps1` failed while trying to target an empty device serial.
