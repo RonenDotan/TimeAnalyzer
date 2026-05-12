@@ -100045,6 +100045,14 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
   var _jsxFileName = "C:\\Users\\ronen\\TimeAnalyzer\\App.tsx";
   function _interopRequireWildcard(e, t) { if ("function" == typeof WeakMap) var r = new WeakMap(), n = new WeakMap(); return (_interopRequireWildcard = function (e, t) { if (!t && e && e.__esModule) return e; var o, i, f = { __proto__: null, default: e }; if (null === e || "object" != typeof e && "function" != typeof e) return f; if (o = t ? n : r) { if (o.has(e)) return o.get(e); o.set(e, f); } for (var _t in e) "default" !== _t && {}.hasOwnProperty.call(e, _t) && ((i = (o = Object.defineProperty) && Object.getOwnPropertyDescriptor(e, _t)) && (i.get || i.set) ? o(f, _t, i) : f[_t] = e[_t]); return f; })(e, t); }
   var version = exports.version = `v${_version.default.major}.${_version.default.minor}.${_version.default.ticket_id}.${_version.default.sequence}`;
+  function startOfLocalDay(ts) {
+    var d = new Date(ts);
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  }
+  function workStartForToday(now, startHour) {
+    return startOfLocalDay(now) + startHour * 60 * 60 * 1000;
+  }
+
   // ID format: checkin-{periodStart}-{fireAt}
   function parsePeriodFromId(id) {
     var match = id.match(/^checkin-(\d+)-(\d+)$/);
@@ -100186,11 +100194,16 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
     function _handleStartCheckIn() {
       _handleStartCheckIn = (0, _asyncToGenerator2.default)(function* () {
         var now = Date.now();
-        var entries = yield _StorageService.default.getAll();
-        var periodStart = now - 2 * 60 * 60 * 1000;
+        var _yield$Promise$all = yield Promise.all([_StorageService.default.getAll(), _SettingsService.default.load()]),
+          _yield$Promise$all2 = (0, _slicedToArray2.default)(_yield$Promise$all, 2),
+          entries = _yield$Promise$all2[0],
+          settings = _yield$Promise$all2[1];
+        var todayStart = startOfLocalDay(now);
+        var defaultPeriodStart = Math.min(workStartForToday(now, settings.startHour), now);
+        var periodStart = defaultPeriodStart;
         if (entries.length > 0) {
           var last = entries.reduce((a, b) => a.timestampEnd > b.timestampEnd ? a : b);
-          periodStart = last.timestampEnd;
+          periodStart = last.timestampEnd >= todayStart ? last.timestampEnd : defaultPeriodStart;
         }
         setCheckInPeriod({
           periodStart,
@@ -104086,8 +104099,8 @@ __d(function(global, require, _importDefaultUnused, _importAllUnused, module, ex
   module.exports = {
     "major":  0,
     "minor":  0,
-    "ticket_id":  31,
-    "sequence":  6
+    "ticket_id":  40,
+    "sequence":  1
 }
 ;
 },638,[],"version.json");
@@ -107464,6 +107477,10 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
   var _SettingsService = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[4], "./SettingsService"));
   function _interopRequireWildcard(e, t) { if ("function" == typeof WeakMap) var r = new WeakMap(), n = new WeakMap(); return (_interopRequireWildcard = function (e, t) { if (!t && e && e.__esModule) return e; var o, i, f = { __proto__: null, default: e }; if (null === e || "object" != typeof e && "function" != typeof e) return f; if (o = t ? n : r) { if (o.has(e)) return o.get(e); o.set(e, f); } for (var _t in e) "default" !== _t && {}.hasOwnProperty.call(e, _t) && ((i = (o = Object.defineProperty) && Object.getOwnPropertyDescriptor(e, _t)) && (i.get || i.set) ? o(f, _t, i) : f[_t] = e[_t]); return f; })(e, t); }
   var BATCH_SIZE = 50;
+  var EXACT_ALARM_TRIGGER = {
+    type: _reactNative.AlarmType.SET_EXACT_AND_ALLOW_WHILE_IDLE,
+    allowWhileIdle: true
+  };
   function formatTime(timestamp) {
     var d = new Date(timestamp);
     return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
@@ -107566,7 +107583,8 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
           }
         }, {
           type: _reactNative.TriggerType.TIMESTAMP,
-          timestamp: fireAt
+          timestamp: fireAt,
+          alarmManager: EXACT_ALARM_TRIGGER
         });
       }
     });
@@ -107613,7 +107631,8 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
           }
         }, {
           type: _reactNative.TriggerType.TIMESTAMP,
-          timestamp: fireAt
+          timestamp: fireAt,
+          alarmManager: EXACT_ALARM_TRIGGER
         });
       }
     });
@@ -107671,7 +107690,8 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
             }
           }, {
             type: _reactNative.TriggerType.TIMESTAMP,
-            timestamp: fireAt
+            timestamp: fireAt,
+            alarmManager: EXACT_ALARM_TRIGGER
           });
         }
         lines.push(`✓ Scheduled ${slots.length} check-ins`);

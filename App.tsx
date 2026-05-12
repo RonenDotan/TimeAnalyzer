@@ -26,6 +26,15 @@ export const version = `v${v.major}.${v.minor}.${v.ticket_id}.${v.sequence}`;
 type Screen = 'entries' | 'checkin' | 'settings' | 'reports' | 'dayplan' | 'goals' | 'aitest' | 'prompts' | 'dailySummaries';
 type Period = { periodStart: number; periodEnd: number };
 
+function startOfLocalDay(ts: number): number {
+  const d = new Date(ts);
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+}
+
+function workStartForToday(now: number, startHour: number): number {
+  return startOfLocalDay(now) + startHour * 60 * 60 * 1000;
+}
+
 // ID format: checkin-{periodStart}-{fireAt}
 function parsePeriodFromId(id: string): Period | null {
   const match = id.match(/^checkin-(\d+)-(\d+)$/);
@@ -148,11 +157,16 @@ function AppContent(): React.JSX.Element {
 
   async function handleStartCheckIn() {
     const now = Date.now();
-    const entries = await StorageService.getAll();
-    let periodStart = now - 2 * 60 * 60 * 1000;
+    const [entries, settings] = await Promise.all([
+      StorageService.getAll(),
+      SettingsService.load(),
+    ]);
+    const todayStart = startOfLocalDay(now);
+    const defaultPeriodStart = Math.min(workStartForToday(now, settings.startHour), now);
+    let periodStart = defaultPeriodStart;
     if (entries.length > 0) {
       const last = entries.reduce((a, b) => a.timestampEnd > b.timestampEnd ? a : b);
-      periodStart = last.timestampEnd;
+      periodStart = last.timestampEnd >= todayStart ? last.timestampEnd : defaultPeriodStart;
     }
     setCheckInPeriod({ periodStart, periodEnd: now });
     setScreen('checkin');
