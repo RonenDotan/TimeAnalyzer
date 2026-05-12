@@ -31,4 +31,7 @@ export interface GoalsProvider {
 
   /** All contributions for a specific entry, with goal text joined in. */
   getContributionsByEntryId(entryId: number): Promise<GoalEntryContribution[]>;
+
+  /** Update the editable reason text for a saved contribution. */
+  updateContributionReason(id: number, reason: string | null): Promise<void>;
 }

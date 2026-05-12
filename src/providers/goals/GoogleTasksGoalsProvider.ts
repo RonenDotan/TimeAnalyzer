@@ -60,6 +60,10 @@ const GoogleTasksGoalsProvider: GoalsProvider = {
     // TODO (issue #25): parse contributions from task.notes JSON, join with goal text
     throw new Error('GoogleTasksGoalsProvider.getContributionsByEntryId not implemented — see issue #25');
   },
+  async updateContributionReason(_id: number, _reason: string | null): Promise<void> {
+    // TODO (issue #25): update contribution JSON stored in task notes
+    throw new Error('GoogleTasksGoalsProvider.updateContributionReason not implemented - see issue #25');
+  },
 };
 
 export default GoogleTasksGoalsProvider;

@@ -36,6 +36,10 @@ async function getContributionsByEntryId(entryId: number): Promise<GoalEntryCont
   return activeProvider.getContributionsByEntryId(entryId);
 }
 
+async function updateContributionReason(id: number, reason: string | null): Promise<void> {
+  return activeProvider.updateContributionReason(id, reason);
+}
+
 /**
  * Apply a session contribution to a goal:
  * - Adds contributionPct to goal.progress (capped at 100)
@@ -47,6 +51,7 @@ async function applyContribution(
   goal: Goal,
   contributionPct: number,
   entryId: number | null,
+  reason?: string | null,
 ): Promise<Goal> {
   const newProgress = Math.min(100, goal.progress + contributionPct);
   const newStatus = newProgress >= 100 ? 'done' : goal.status;
@@ -56,6 +61,7 @@ async function applyContribution(
     goalId: goal.id,
     entryId,
     contributionPct,
+    reason: reason?.trim() || null,
     createdAt: Date.now(),
   });
   return updated;
@@ -76,6 +82,7 @@ async function setProgress(goal: Goal, newProgress: number): Promise<Goal> {
       goalId: goal.id,
       entryId: null,
       contributionPct: delta,
+      reason: null,
       createdAt: Date.now(),
     });
   }
@@ -91,6 +98,7 @@ const GoalsService = {
   deleteGoal,
   getContributions,
   getContributionsByEntryId,
+  updateContributionReason,
   applyContribution,
   setProgress,
 };

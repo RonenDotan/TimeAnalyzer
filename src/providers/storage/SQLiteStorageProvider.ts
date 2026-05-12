@@ -9,7 +9,7 @@ import { CLAUDE_DAILY_SUMMARY_PROMPT_BODY, CLAUDE_GOAL_CONTRIBUTION_PROMPT_BODY,
 type DB = ReturnType<typeof open>;
 let db: DB | null = null;
 
-const SCHEMA_VERSION = 8;
+const SCHEMA_VERSION = 9;
 
 export function getDb(): DB {
   if (!db) {
@@ -81,6 +81,7 @@ export function getDb(): DB {
         goal_id          INTEGER NOT NULL,
         entry_id         INTEGER,
         contribution_pct INTEGER NOT NULL,
+        reason           TEXT,
         created_at       INTEGER NOT NULL
       )
     `);
@@ -133,6 +134,7 @@ export function getDb(): DB {
             goal_id          INTEGER NOT NULL,
             entry_id         INTEGER,
             contribution_pct INTEGER NOT NULL,
+            reason           TEXT,
             created_at       INTEGER NOT NULL
           )
         `);
@@ -226,6 +228,7 @@ function runMigrations(d: DB): void {
         goal_id          INTEGER NOT NULL,
         entry_id         INTEGER,
         contribution_pct INTEGER NOT NULL,
+        reason           TEXT,
         created_at       INTEGER NOT NULL
       )
     `);
@@ -304,6 +307,12 @@ function runMigrations(d: DB): void {
       [PROMPT_ACTION_DAILY_SUMMARY],
     );
     setVersion(d, 8);
+  }
+
+  // Migration 8->9: persist editable AI/user reasons for goal contributions
+  if (current < 9) {
+    try { d.executeSync('ALTER TABLE goal_contributions ADD COLUMN reason TEXT'); } catch {}
+    setVersion(d, 9);
   }
 }
 
