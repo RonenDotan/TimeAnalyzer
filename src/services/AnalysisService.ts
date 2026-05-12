@@ -5,6 +5,7 @@ import {
   GoalContributionSuggestionResult,
 } from '../providers/analysis/AnalysisProvider';
 import SettingsService from './SettingsService';
+import PromptsService from './PromptsService';
 import { AnalysisProvider as AnalysisProviderName } from '../types/Settings';
 import { Goal } from '../types/Goal';
 
@@ -37,7 +38,8 @@ async function suggestGoalContributions(
   if (!(await provider.isConfigured())) {
     return { suggestions: [] };
   }
-  return provider.suggestGoalContributions(transcript, goals);
+  const prompt = await PromptsService.buildGoalContributionPromptFromDefault(transcript, goals);
+  return provider.suggestGoalContributions(transcript, goals, prompt);
 }
 
 const AnalysisService = {

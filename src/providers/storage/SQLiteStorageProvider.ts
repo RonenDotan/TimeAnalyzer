@@ -3,11 +3,13 @@ import { LogEntry, EntrySource } from '../../types/LogEntry';
 import { Note } from '../../types/Note';
 import { DayPlan, ParsedBlock, PlanBlock, PlanBlockWithDate, BlockSource } from '../../types/DayPlan';
 import { StorageProvider } from './StorageProvider';
+import { PROMPT_ACTION_DAILY_SUMMARY, PROMPT_ACTION_GOAL_CONTRIBUTION } from '../../types/Prompt';
+import { DEFAULT_DAILY_SUMMARY_PROMPT_BODY, DEFAULT_GOAL_CONTRIBUTION_PROMPT_BODY } from '../../utils/promptTemplates';
 
 type DB = ReturnType<typeof open>;
 let db: DB | null = null;
 
-const SCHEMA_VERSION = 4;
+const SCHEMA_VERSION = 5;
 
 export function getDb(): DB {
   if (!db) {
@@ -82,9 +84,20 @@ export function getDb(): DB {
         created_at       INTEGER NOT NULL
       )
     `);
+    db.executeSync(`
+      CREATE TABLE IF NOT EXISTS prompts (
+        id         INTEGER PRIMARY KEY AUTOINCREMENT,
+        action_id  INTEGER NOT NULL,
+        name       TEXT    NOT NULL,
+        body       TEXT    NOT NULL,
+        is_default INTEGER NOT NULL DEFAULT 0,
+        created_at INTEGER NOT NULL
+      )
+    `);
     db.executeSync(`CREATE INDEX IF NOT EXISTS idx_goals_status    ON goals (status)`);
     db.executeSync(`CREATE INDEX IF NOT EXISTS idx_goals_start_at  ON goals (start_at)`);
     db.executeSync(`CREATE INDEX IF NOT EXISTS idx_contributions_goal ON goal_contributions (goal_id)`);
+    db.executeSync(`CREATE INDEX IF NOT EXISTS idx_prompts_action_default ON prompts (action_id, is_default)`);
 
     // Defensive fix: if goals table exists but has old schema (pre-v0.0.23.11),
     // drop and recreate regardless of schema_version state.
@@ -142,6 +155,7 @@ export function getDb(): DB {
     `);
 
     runMigrations(db);
+    seedDefaultPrompts(db);
   }
   return db;
 }
@@ -212,6 +226,49 @@ function runMigrations(d: DB): void {
     try { d.executeSync('CREATE INDEX IF NOT EXISTS idx_contributions_goal ON goal_contributions (goal_id)'); } catch {}
     setVersion(d, 4);
   }
+
+  // Migration 4->5: prompt management table for debug prompt editing/defaults
+  if (current < 5) {
+    d.executeSync(`
+      CREATE TABLE IF NOT EXISTS prompts (
+        id         INTEGER PRIMARY KEY AUTOINCREMENT,
+        action_id  INTEGER NOT NULL,
+        name       TEXT    NOT NULL,
+        body       TEXT    NOT NULL,
+        is_default INTEGER NOT NULL DEFAULT 0,
+        created_at INTEGER NOT NULL
+      )
+    `);
+    try { d.executeSync('CREATE INDEX IF NOT EXISTS idx_prompts_action_default ON prompts (action_id, is_default)'); } catch {}
+    seedDefaultPrompts(d);
+    setVersion(d, 5);
+  }
+}
+
+function seedDefaultPrompts(d: DB): void {
+  seedPromptForAction(
+    d,
+    PROMPT_ACTION_GOAL_CONTRIBUTION,
+    'Default goal contribution prompt',
+    DEFAULT_GOAL_CONTRIBUTION_PROMPT_BODY,
+  );
+  seedPromptForAction(
+    d,
+    PROMPT_ACTION_DAILY_SUMMARY,
+    'Default daily summary prompt',
+    DEFAULT_DAILY_SUMMARY_PROMPT_BODY,
+  );
+}
+
+function seedPromptForAction(d: DB, actionId: number, name: string, body: string): void {
+  const existing = d.executeSync('SELECT COUNT(*) as cnt FROM prompts WHERE action_id = ?', [actionId]);
+  const count = ((existing.rows?.[0] as any)?.cnt as number) ?? 0;
+  if (count > 0) return;
+
+  d.executeSync(
+    'INSERT INTO prompts (action_id, name, body, is_default, created_at) VALUES (?, ?, ?, 1, ?)',
+    [actionId, name, body, Date.now()],
+  );
 }
 
 function rowToEntry(row: Record<string, unknown>): LogEntry {
