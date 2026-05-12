@@ -9,7 +9,7 @@ import { CLAUDE_DAILY_SUMMARY_PROMPT_BODY, CODEX_DAILY_SUMMARY_PROMPT_BODY, DEFA
 type DB = ReturnType<typeof open>;
 let db: DB | null = null;
 
-const SCHEMA_VERSION = 6;
+const SCHEMA_VERSION = 7;
 
 export function getDb(): DB {
   if (!db) {
@@ -92,6 +92,14 @@ export function getDb(): DB {
         body       TEXT    NOT NULL,
         is_default INTEGER NOT NULL DEFAULT 0,
         created_at INTEGER NOT NULL
+      )
+    `);
+    db.executeSync(`
+      CREATE TABLE IF NOT EXISTS daily_summaries (
+        id           INTEGER PRIMARY KEY AUTOINCREMENT,
+        date         TEXT    NOT NULL UNIQUE,
+        summary_json TEXT    NOT NULL,
+        generated_at INTEGER NOT NULL
       )
     `);
     db.executeSync(`CREATE INDEX IF NOT EXISTS idx_goals_status    ON goals (status)`);
@@ -256,6 +264,19 @@ function runMigrations(d: DB): void {
       [PROMPT_ACTION_DAILY_SUMMARY, 'Codex daily summary', CODEX_DAILY_SUMMARY_PROMPT_BODY, now + 1],
     );
     setVersion(d, 6);
+  }
+
+  // Migration 6->7: saved end-of-day AI summaries by local date
+  if (current < 7) {
+    d.executeSync(`
+      CREATE TABLE IF NOT EXISTS daily_summaries (
+        id           INTEGER PRIMARY KEY AUTOINCREMENT,
+        date         TEXT    NOT NULL UNIQUE,
+        summary_json TEXT    NOT NULL,
+        generated_at INTEGER NOT NULL
+      )
+    `);
+    setVersion(d, 7);
   }
 }
 

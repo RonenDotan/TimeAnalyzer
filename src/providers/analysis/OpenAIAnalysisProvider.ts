@@ -16,6 +16,10 @@ async function suggestGoalContributions(
   goals: Goal[],
   prompt: string,
 ): Promise<GoalContributionSuggestionResult> {
+  return sanitizeGoalContributionSuggestions(await generateJson(prompt), goals);
+}
+
+async function generateJson(prompt: string, maxTokens = 700): Promise<unknown> {
   const apiKey = (await SettingsService.getOpenAIApiKey()).trim();
   if (!apiKey) throw new Error('OpenAI API key is not configured.');
 
@@ -27,6 +31,7 @@ async function suggestGoalContributions(
     },
     body: JSON.stringify({
       model: 'gpt-4o-mini',
+      max_tokens: maxTokens,
       response_format: { type: 'json_object' },
       messages: [
         {
@@ -47,11 +52,12 @@ async function suggestGoalContributions(
   }
 
   const text = json?.choices?.[0]?.message?.content ?? '';
-  return sanitizeGoalContributionSuggestions(parseJsonObject(text), goals);
+  return parseJsonObject(text);
 }
 
 const OpenAIAnalysisProvider: AnalysisProvider = {
   isConfigured,
+  generateJson,
   suggestGoalContributions,
 };
 

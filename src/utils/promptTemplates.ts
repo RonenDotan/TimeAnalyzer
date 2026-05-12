@@ -1,4 +1,6 @@
 import { Goal } from '../types/Goal';
+import { LogEntry } from '../types/LogEntry';
+import { PlanBlock } from '../types/DayPlan';
 
 export const DEFAULT_GOAL_CONTRIBUTION_PROMPT_BODY = [
   'Suggest goal progress contributions for this work journal check-in.',
@@ -136,4 +138,37 @@ export function renderGoalContributionPrompt(body: string, transcript: string, g
 
 export function buildGoalContributionPrompt(transcript: string, goals: Goal[]): string {
   return renderGoalContributionPrompt(DEFAULT_GOAL_CONTRIBUTION_PROMPT_BODY, transcript, goals);
+}
+
+export function renderDailySummaryPrompt(
+  body: string,
+  date: string,
+  entries: LogEntry[],
+  planBlocks: PlanBlock[],
+  goals: Goal[],
+): string {
+  return body
+    .replaceAll('{{date}}', date)
+    .replaceAll('{{entries_json}}', JSON.stringify(
+      entries.map(entry => ({
+        id: entry.id,
+        start: new Date(entry.timestampStart).toISOString(),
+        end: new Date(entry.timestampEnd).toISOString(),
+        transcript: entry.transcript,
+      })),
+      null,
+      2,
+    ))
+    .replaceAll('{{plan_json}}', JSON.stringify(
+      planBlocks.map(block => ({
+        id: block.id,
+        startMin: block.startMin,
+        endMin: block.endMin,
+        activity: block.activity,
+        source: block.source,
+      })),
+      null,
+      2,
+    ))
+    .replaceAll('{{goals_json}}', goalContextJson(goals));
 }

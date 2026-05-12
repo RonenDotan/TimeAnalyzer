@@ -15,51 +15,52 @@ See `AGENTS.md` for full architecture reference, `CLAUDE.md` for Claude-specific
 
 ## Current branch
 
-`ticket-39-prompt-display`
+`ticket-31-end-of-day-summary`
 
-Branched from `main`. Issue #39 is on the GitHub project board with status **In Progress**.
+Branched from current `main` after ticket #39 was merged.
 
 ---
 
 ## Current ticket
 
-**#39 - Debug: Prompt management and default prompt selection**
+**#31 - AI: End-of-day synthesis — daily debrief paragraph**
 
-- GitHub: https://github.com/RonenDotan/TimeAnalyzer/issues/39
+- GitHub: https://github.com/RonenDotan/TimeAnalyzer/issues/31
 - Project status: **In Progress**
-- Version: `v0.0.39.2`
-- `version.json`: `major=0`, `minor=0`, `ticket_id=39`, `sequence=2`
+- Version: `v0.0.31.3`
+- `version.json`: `major=0`, `minor=0`, `ticket_id=31`, `sequence=3`
 
 ---
 
 ## What changed
 
-- Added persisted prompt management:
-  - New `prompts` SQLite table in schema version 5 with `id`, `action_id`, `name`, `body`, `is_default`, `created_at`.
-  - Seeded the default goal contribution prompt for action ID `1`.
-  - Added action ID `2` for daily summaries and seeded a default daily summary prompt.
-  - Added prompt types/constants in `src/types/Prompt.ts`.
-  - Added prompt template rendering in `src/utils/promptTemplates.ts`.
-  - Added `PromptsService` and SQLite provider under `src/providers/prompts/`.
-- Updated AI analysis flow:
-  - `AnalysisService.suggestGoalContributions()` now resolves the default prompt through `PromptsService`.
-  - Claude/OpenAI analysis providers now receive rendered prompt text instead of building the prompt internally.
-- Added debug prompt UI:
-  - New `src/screens/PromptsScreen.tsx`.
-  - Shows prompts grouped by action and includes tabs to filter between actions.
-  - Allows adding prompts, editing name/body, and setting one default prompt per action.
-  - Shows template variables: `{{goals_json}}`, `{{transcript}}`, `{{date}}`, and `{{entries_json}}`.
-- Updated navigation:
-  - `DrawerMenu` accepts `debugMode`.
-  - `Prompts` appears under a `DEBUG` section only when debug mode is enabled.
-  - `App.tsx` routes to `PromptsScreen` only when `debugMode=true`.
-- Added the prompts table structure to ticket #39 as a GitHub issue comment:
-  - https://github.com/RonenDotan/TimeAnalyzer/issues/39#issuecomment-4427823879
-- Updated `version.json` to ticket #39 sequence 2.
+- Added daily summary persistence:
+  - New `daily_summaries` SQLite table in schema version 7.
+  - Table columns: `id`, `date`, `summary_json`, `generated_at`.
+  - Added issue #31 comment with the table structure:
+    - https://github.com/RonenDotan/TimeAnalyzer/issues/31#issuecomment-4428002056
+  - Added `DailySummary` types.
+  - Added `DailySummariesProvider` and SQLite implementation.
+- Added daily summary generation flow:
+  - New `DailySummaryService`.
+  - Reads entries, day plan blocks, calendar plan blocks, and active goals for a date.
+  - Renders the default prompt for prompt action `2` (`daily_summary`).
+  - Calls `AnalysisService.generateJson()`.
+  - Saves normalized JSON to `daily_summaries`.
+  - Can read one saved summary or list all saved summaries.
+- Extended analysis providers:
+  - Added generic `generateJson(prompt, maxTokens?)` to the analysis provider interface.
+  - Claude/OpenAI providers now share this path with goal contribution parsing.
+  - Daily summaries request up to 1200 tokens.
+- Added debug UI:
+  - `ReportScreen` shows `✨ Generate Summary` only when `debugMode=true`.
+  - Generated/saved summary is shown in a modal.
+  - New `DailySummariesScreen` lists all saved summaries by date.
+  - Drawer `DEBUG` section includes `Daily Summaries`.
+- Updated `version.json` to ticket #31 sequence 3.
 - Android JS bundle regenerated.
 - Backup created before handoff edit:
-  - `HANDOFF.md.backup-2026-05-12-codex-ticket39`
-  - `HANDOFF.md.backup-2026-05-12-codex-ticket39-v2`
+  - `HANDOFF.md.backup-2026-05-12-codex-ticket31`
 
 ---
 
@@ -72,29 +73,26 @@ Branched from `main`. Issue #39 is on the GitHub project board with status **In 
   - 10 suites passed, 107 tests passed.
   - Jest still prints the existing open-handle warning after completion.
 - JS bundle passed:
-  - `npx react-native bundle --platform android --dev false --entry-file index.js --bundle-output android/app/src/main/assets/index.android.bundle --assets-dest android/app/src/main/res`
-- Gradle debug build passed:
-  - `.\gradlew.bat app:assembleDebug` from `android/`
+  - `npx react-native bundle --platform android --dev true --entry-file index.js --bundle-output android/app/src/main/assets/index.android.bundle --assets-dest android/app/src/main/res`
+- Build/install passed:
+  - `.\gradlew.bat app:installDebug` from `android/`
+  - Installed on emulator `Medium_Phone(AVD) - 16`.
   - `JAVA_HOME=C:\Program Files\Android\Android Studio\jbr`
   - `ANDROID_HOME=C:\Users\ronen\AppData\Local\Android\Sdk`
 - APK copied to:
-  - `C:\Users\ronen\Desktop\TimeAnalyzer\apk\TimeAnalyzer_v0.0.39.1_2026-05-12_09-03.apk`
-  - `C:\Users\ronen\Desktop\TimeAnalyzer\apk\TimeAnalyzer_v0.0.39.2_2026-05-12_09-18.apk`
-- Full build/install script did not complete because no Android device was connected:
-  - `adb devices` returned no devices.
-  - `scripts\build-and-install.ps1` failed while trying to target an empty device serial.
-  - Install, launch, and screenshot were not run.
+  - `C:\Users\ronen\Desktop\TimeAnalyzer\apk\TimeAnalyzer_v0.0.31.3_2026-05-12_09-55.apk`
 
 ---
 
 ## Peer Review
 
-Codex took "we have one prompt" and responded by adding a schema migration, provider, service, template renderer, drawer plumbing, and an entire debug editor screen. Reasonable outcome, though the phone was apparently off duty, so the final install verification is still sitting in the hallway with its coat on.
+Claude added two daily summary prompts and a schema migration, then left Codex to wire the actual button, provider plumbing, storage service, modal, list screen, build, handoff, and emotional support for JSON parsing. Excellent division of labor: one agent wrote the poetry, the other installed the plumbing under the sink.
 
 ---
 
 ## Next steps
 
-1. Connect a device and run `C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -ExecutionPolicy Bypass -File .\scripts\build-and-install.ps1`.
-2. Enable debug mode in Settings, open the drawer, and verify `Prompts` appears under `DEBUG`.
-3. Edit the default goal contribution prompt, run an entry AI suggestion, and confirm the edited prompt is the one used.
+1. On emulator, enable debug mode if needed and open the entries screen.
+2. Tap `✨ Generate Summary` on a day with entries, plan blocks, and active goals.
+3. Confirm the modal shows the generated debrief and the drawer `Daily Summaries` screen lists the saved row.
+4. Consider adding a non-debug end-of-day surface once the prompt and saved summary shape are validated.

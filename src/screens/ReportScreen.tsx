@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
+  Modal,
   ScrollView,
   StyleSheet,
   Text,
@@ -11,8 +13,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import EntryDetailScreen from './EntryDetailScreen';
 import StorageService from '../services/StorageService';
 import GoalsService from '../services/GoalsService';
+import DailySummaryService from '../services/DailySummaryService';
 import { LogEntry } from '../types/LogEntry';
 import { Goal, GoalEntryContribution, isGoalOverdue } from '../types/Goal';
+import { DailySummaryResult } from '../types/DailySummary';
 
 const GOAL_COLOR = '#F97316';
 const OVERDUE_COLOR = '#DC2626';
@@ -71,6 +75,9 @@ export default function ReportScreen({ onStartCheckIn, onOpenMenu, onEditPlan, i
   const [planBlocks, setPlanBlocks] = useState<PlanBlock[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
   const [entryContributions, setEntryContributions] = useState<Record<number, GoalEntryContribution[]>>({});
+  const [summary, setSummary] = useState<DailySummaryResult | null>(null);
+  const [summaryVisible, setSummaryVisible] = useState(false);
+  const [summaryGenerating, setSummaryGenerating] = useState(false);
 
   const loadEntries = useCallback(async (date: Date) => {
     setLoading(true);
@@ -85,6 +92,8 @@ export default function ReportScreen({ onStartCheckIn, onOpenMenu, onEditPlan, i
     setEntries(sorted);
     setDayPlan(plan);
     setGoals(loadedGoals);
+    const savedSummary = await DailySummaryService.getSummary(dateStr);
+    setSummary(DailySummaryService.parseSummary(savedSummary));
     // Load goal contributions for each entry (to show 🎯 tag)
     const contribMap: Record<number, GoalEntryContribution[]> = {};
     await Promise.all(sorted.map(async e => {
@@ -119,6 +128,20 @@ export default function ReportScreen({ onStartCheckIn, onOpenMenu, onEditPlan, i
   function handleEntrySaved(updated: LogEntry) {
     setEntries(prev => prev.map(e => e.id === updated.id ? updated : e));
     setSelectedEntry(null);
+  }
+
+  async function handleGenerateSummary() {
+    if (summaryGenerating) return;
+    setSummaryGenerating(true);
+    try {
+      const saved = await DailySummaryService.generateSummary(currentDate);
+      setSummary(DailySummaryService.parseSummary(saved));
+      setSummaryVisible(true);
+    } catch (e: any) {
+      Alert.alert('Summary failed', String(e?.message ?? e));
+    } finally {
+      setSummaryGenerating(false);
+    }
   }
 
   if (selectedEntry) {
@@ -189,6 +212,26 @@ export default function ReportScreen({ onStartCheckIn, onOpenMenu, onEditPlan, i
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.list}>
+          {debugMode && (
+            <View style={styles.summaryDebugCard}>
+              <View style={styles.summaryDebugHeader}>
+                <Text style={styles.summaryDebugTitle}>DAILY SUMMARY</Text>
+                {summary && (
+                  <TouchableOpacity onPress={() => setSummaryVisible(true)}>
+                    <Text style={styles.summaryDebugLink}>View saved</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+              <TouchableOpacity
+                style={[styles.summaryButton, summaryGenerating && styles.summaryButtonDisabled]}
+                onPress={handleGenerateSummary}
+                disabled={summaryGenerating}>
+                <Text style={styles.summaryButtonText}>
+                  {summaryGenerating ? 'Generating...' : '✨ Generate Summary'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
           {/* Plan section — always shown if plan exists */}
           {planBlocks.length > 0 && (() => {
             const coveredCount = planBlocks.filter(b => isCovered(b, entries)).length;
@@ -288,6 +331,52 @@ export default function ReportScreen({ onStartCheckIn, onOpenMenu, onEditPlan, i
         onPress={onStartCheckIn}>
         <Text style={styles.fabIcon}>+</Text>
       </TouchableOpacity>
+
+      <Modal visible={summaryVisible} transparent animationType="fade" onRequestClose={() => setSummaryVisible(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.summaryModal}>
+            <View style={styles.summaryModalHeader}>
+              <Text style={styles.summaryModalTitle}>Daily Summary</Text>
+              <TouchableOpacity onPress={() => setSummaryVisible(false)}>
+                <Text style={styles.summaryModalClose}>Close</Text>
+              </TouchableOpacity>
+            </View>
+            <ScrollView contentContainerStyle={styles.summaryModalBody}>
+              {summary ? (
+                <>
+                  <Text style={styles.summaryDebrief}>{summary.debrief}</Text>
+                  {!!summary.momentum && (
+                    <>
+                      <Text style={styles.summarySectionTitle}>MOMENTUM</Text>
+                      <Text style={styles.summaryText}>{summary.momentum}</Text>
+                    </>
+                  )}
+                  {summary.keyInsights && summary.keyInsights.length > 0 && (
+                    <>
+                      <Text style={styles.summarySectionTitle}>KEY INSIGHTS</Text>
+                      {summary.keyInsights.map((insight, i) => (
+                        <Text key={i} style={styles.summaryBullet}>
+                          • {insight.text}{insight.confidence ? ` (${insight.confidence})` : ''}
+                        </Text>
+                      ))}
+                    </>
+                  )}
+                  {summary.gaps && summary.gaps.length > 0 && (
+                    <>
+                      <Text style={styles.summarySectionTitle}>GAPS</Text>
+                      {summary.gaps.map((gap, i) => (
+                        <Text key={i} style={styles.summaryBullet}>• {gap}</Text>
+                      ))}
+                    </>
+                  )}
+                </>
+              ) : (
+                <Text style={styles.summaryText}>No saved summary for this day.</Text>
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -327,6 +416,30 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
     centered: { alignItems: 'center', justifyContent: 'center', paddingVertical: 48 },
     emptyText: { fontSize: 16, color: colors.textSecondary },
     list: { padding: 16, gap: 12, paddingBottom: 100 },
+    summaryDebugCard: {
+      backgroundColor: GOAL_COLOR + '12',
+      borderRadius: 12,
+      padding: 12,
+      gap: 10,
+      borderLeftWidth: 4,
+      borderLeftColor: GOAL_COLOR,
+    },
+    summaryDebugHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    summaryDebugTitle: { fontSize: 11, fontWeight: '700', color: GOAL_COLOR, letterSpacing: 0.5 },
+    summaryDebugLink: { fontSize: 13, color: GOAL_COLOR, fontWeight: '600' },
+    summaryButton: {
+      alignSelf: 'flex-start',
+      backgroundColor: GOAL_COLOR,
+      borderRadius: 8,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+    },
+    summaryButtonDisabled: { opacity: 0.65 },
+    summaryButtonText: { fontSize: 14, color: '#fff', fontWeight: '700' },
     entryCardHeader: {
       flexDirection: 'row',
       justifyContent: 'space-between',
@@ -439,5 +552,33 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
       borderTopColor: colors.border,
     },
     debugText: { fontSize: 11, color: colors.textSecondary, fontFamily: 'monospace' },
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: colors.overlay,
+      justifyContent: 'center',
+      padding: 20,
+    },
+    summaryModal: {
+      maxHeight: '82%',
+      backgroundColor: colors.surface,
+      borderRadius: 12,
+      overflow: 'hidden',
+    },
+    summaryModalHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.border,
+    },
+    summaryModalTitle: { fontSize: 17, fontWeight: '700', color: colors.text },
+    summaryModalClose: { fontSize: 15, color: GOAL_COLOR, fontWeight: '600' },
+    summaryModalBody: { padding: 16, gap: 10 },
+    summaryDebrief: { fontSize: 15, color: colors.text, lineHeight: 22 },
+    summaryText: { fontSize: 14, color: colors.textSecondary, lineHeight: 20 },
+    summarySectionTitle: { fontSize: 11, color: GOAL_COLOR, fontWeight: '700', letterSpacing: 0.5, marginTop: 6 },
+    summaryBullet: { fontSize: 14, color: colors.text, lineHeight: 20 },
   });
 }
