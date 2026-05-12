@@ -4,12 +4,12 @@ import { Note } from '../../types/Note';
 import { DayPlan, ParsedBlock, PlanBlock, PlanBlockWithDate, BlockSource } from '../../types/DayPlan';
 import { StorageProvider } from './StorageProvider';
 import { PROMPT_ACTION_DAILY_SUMMARY, PROMPT_ACTION_GOAL_CONTRIBUTION } from '../../types/Prompt';
-import { DEFAULT_DAILY_SUMMARY_PROMPT_BODY, DEFAULT_GOAL_CONTRIBUTION_PROMPT_BODY } from '../../utils/promptTemplates';
+import { CLAUDE_DAILY_SUMMARY_PROMPT_BODY, CODEX_DAILY_SUMMARY_PROMPT_BODY, DEFAULT_DAILY_SUMMARY_PROMPT_BODY, DEFAULT_GOAL_CONTRIBUTION_PROMPT_BODY } from '../../utils/promptTemplates';
 
 type DB = ReturnType<typeof open>;
 let db: DB | null = null;
 
-const SCHEMA_VERSION = 5;
+const SCHEMA_VERSION = 6;
 
 export function getDb(): DB {
   if (!db) {
@@ -242,6 +242,20 @@ function runMigrations(d: DB): void {
     try { d.executeSync('CREATE INDEX IF NOT EXISTS idx_prompts_action_default ON prompts (action_id, is_default)'); } catch {}
     seedDefaultPrompts(d);
     setVersion(d, 5);
+  }
+
+  // Migration 5->6: add Claude and Codex daily summary prompts as alternatives
+  if (current < 6) {
+    const now = Date.now();
+    d.executeSync(
+      'INSERT INTO prompts (action_id, name, body, is_default, created_at) VALUES (?, ?, ?, 0, ?)',
+      [PROMPT_ACTION_DAILY_SUMMARY, 'Claude daily summary', CLAUDE_DAILY_SUMMARY_PROMPT_BODY, now],
+    );
+    d.executeSync(
+      'INSERT INTO prompts (action_id, name, body, is_default, created_at) VALUES (?, ?, ?, 0, ?)',
+      [PROMPT_ACTION_DAILY_SUMMARY, 'Codex daily summary', CODEX_DAILY_SUMMARY_PROMPT_BODY, now + 1],
+    );
+    setVersion(d, 6);
   }
 }
 
