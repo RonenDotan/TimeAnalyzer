@@ -37,6 +37,29 @@ export const DEFAULT_DAILY_SUMMARY_PROMPT_BODY = [
   '{{entries_json}}',
 ].join('\n');
 
+export const CLAUDE_GOAL_CONTRIBUTION_PROMPT_BODY = [
+  'You are analyzing a work journal check-in to suggest how much progress was made on each active goal.',
+  '',
+  'For each goal, consider:',
+  '- Does the transcript mention work directly related to this goal?',
+  '- How significant was that work relative to what remains?',
+  '- Err on the side of under-estimating — it is better to suggest too little than too much.',
+  '',
+  'Rules:',
+  '- Return only JSON: {"suggestions":[{"goalId":number,"contributionPct":number,"reason":string}]}',
+  '- Only include goals where the transcript clearly shows progress.',
+  '- contributionPct is the amount to add now (1 to remaining %).',
+  '- Small focused work: 5-10. Meaningful progress: 10-20. Near-completion work: 20-40.',
+  '- Reasons are one short sentence, written for the user, not for a developer.',
+  '- If nothing clearly advanced a goal, return {"suggestions":[]}.',
+  '',
+  'Active goals:',
+  '{{goals_json}}',
+  '',
+  'Transcript:',
+  '{{transcript}}',
+].join('\n');
+
 export const CLAUDE_DAILY_SUMMARY_PROMPT_BODY = [
   'Summarize today\'s work journal as an end-of-day debrief.',
   '',

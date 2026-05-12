@@ -4,12 +4,12 @@ import { Note } from '../../types/Note';
 import { DayPlan, ParsedBlock, PlanBlock, PlanBlockWithDate, BlockSource } from '../../types/DayPlan';
 import { StorageProvider } from './StorageProvider';
 import { PROMPT_ACTION_DAILY_SUMMARY, PROMPT_ACTION_GOAL_CONTRIBUTION } from '../../types/Prompt';
-import { CLAUDE_DAILY_SUMMARY_PROMPT_BODY, CODEX_DAILY_SUMMARY_PROMPT_BODY, DEFAULT_DAILY_SUMMARY_PROMPT_BODY, DEFAULT_GOAL_CONTRIBUTION_PROMPT_BODY } from '../../utils/promptTemplates';
+import { CLAUDE_DAILY_SUMMARY_PROMPT_BODY, CLAUDE_GOAL_CONTRIBUTION_PROMPT_BODY, CODEX_DAILY_SUMMARY_PROMPT_BODY, DEFAULT_DAILY_SUMMARY_PROMPT_BODY, DEFAULT_GOAL_CONTRIBUTION_PROMPT_BODY } from '../../utils/promptTemplates';
 
 type DB = ReturnType<typeof open>;
 let db: DB | null = null;
 
-const SCHEMA_VERSION = 7;
+const SCHEMA_VERSION = 8;
 
 export function getDb(): DB {
   if (!db) {
@@ -277,6 +277,33 @@ function runMigrations(d: DB): void {
       )
     `);
     setVersion(d, 7);
+  }
+
+  // Migration 7->8: rename prompt labels; add Claude goal contribution prompt; remove default daily summary prompt
+  if (current < 8) {
+    const now = Date.now();
+    // Rename the original goal contribution prompt to "Codex prompt"
+    d.executeSync(
+      "UPDATE prompts SET name = 'Codex prompt' WHERE action_id = ? AND name = 'Default goal contribution prompt'",
+      [PROMPT_ACTION_GOAL_CONTRIBUTION],
+    );
+    // Add Claude's goal contribution prompt as default for action 1
+    d.executeSync('UPDATE prompts SET is_default = 0 WHERE action_id = ?', [PROMPT_ACTION_GOAL_CONTRIBUTION]);
+    d.executeSync(
+      'INSERT INTO prompts (action_id, name, body, is_default, created_at) VALUES (?, ?, ?, 1, ?)',
+      [PROMPT_ACTION_GOAL_CONTRIBUTION, 'Claude prompt', CLAUDE_GOAL_CONTRIBUTION_PROMPT_BODY, now],
+    );
+    // Remove the original default daily summary prompt; make Claude daily summary the default
+    d.executeSync(
+      "DELETE FROM prompts WHERE action_id = ? AND name = 'Default daily summary prompt'",
+      [PROMPT_ACTION_DAILY_SUMMARY],
+    );
+    d.executeSync('UPDATE prompts SET is_default = 0 WHERE action_id = ?', [PROMPT_ACTION_DAILY_SUMMARY]);
+    d.executeSync(
+      "UPDATE prompts SET is_default = 1 WHERE action_id = ? AND name = 'Claude daily summary'",
+      [PROMPT_ACTION_DAILY_SUMMARY],
+    );
+    setVersion(d, 8);
   }
 }
 
