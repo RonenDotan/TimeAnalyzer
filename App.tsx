@@ -13,6 +13,7 @@ import AITestScreen from './src/screens/AITestScreen';
 import CheckInScreen from './src/screens/CheckInScreen';
 import DayPlanScreen from './src/screens/DayPlanScreen';
 import GoalsScreen from './src/screens/GoalsScreen';
+import PromptsScreen from './src/screens/PromptsScreen';
 import ReportScreen from './src/screens/ReportScreen';
 import ReportsScreen from './src/screens/ReportsScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
@@ -21,7 +22,7 @@ import { DEFAULT_CALENDAR_COLOR } from './src/services/SettingsService';
 
 export const version = `v${v.major}.${v.minor}.${v.ticket_id}.${v.sequence}`;
 
-type Screen = 'entries' | 'checkin' | 'settings' | 'reports' | 'dayplan' | 'goals' | 'aitest';
+type Screen = 'entries' | 'checkin' | 'settings' | 'reports' | 'dayplan' | 'goals' | 'aitest' | 'prompts';
 type Period = { periodStart: number; periodEnd: number };
 
 // ID format: checkin-{periodStart}-{fireAt}
@@ -162,6 +163,7 @@ function AppContent(): React.JSX.Element {
   }
 
   function handleDrawerNavigate(dest: DrawerScreen) {
+    if (dest === 'prompts' && !debugMode) return;
     if (dest === 'dayplan') {
       setPlanDate(undefined);
     }
@@ -174,12 +176,15 @@ function AppContent(): React.JSX.Element {
     screen === 'reports'  ? 'reports'  :
     screen === 'dayplan'  ? 'dayplan'  :
     screen === 'goals'    ? 'goals'    :
+    screen === 'prompts'  ? 'prompts'  :
     screen === 'aitest'   ? 'aitest'   : 'entries';
 
   return (
     <ThemeProvider isDark={isDark}>
       {screen === 'aitest' ? (
         <AITestScreen onClose={() => setScreen('entries')} />
+      ) : screen === 'prompts' && debugMode ? (
+        <PromptsScreen onClose={() => setScreen('entries')} />
       ) : screen === 'settings' ? (
         <SettingsScreen onClose={handleSettingsClose} />
       ) : screen === 'dayplan' ? (
@@ -211,6 +216,7 @@ function AppContent(): React.JSX.Element {
             currentScreen={drawerScreen}
             onClose={() => setDrawerOpen(false)}
             onNavigate={handleDrawerNavigate}
+            debugMode={debugMode}
           />
         </View>
       )}

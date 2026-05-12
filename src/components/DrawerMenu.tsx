@@ -10,7 +10,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ColorPalette, useTheme } from '../contexts/ThemeContext';
 
-export type DrawerScreen = 'entries' | 'reports' | 'settings' | 'dayplan' | 'goals' | 'aitest';
+export type DrawerScreen = 'entries' | 'reports' | 'settings' | 'dayplan' | 'goals' | 'aitest' | 'prompts';
 
 interface NavItem {
   key: DrawerScreen;
@@ -30,6 +30,10 @@ const BOTTOM_ITEMS: NavItem[] = [
   { key: 'settings', label: 'Settings', icon: '\u{2699}\u{FE0F}' },
 ];
 
+const DEBUG_ITEMS: NavItem[] = [
+  { key: 'prompts', label: 'Prompts', icon: '\u{1F4DD}' },
+];
+
 const DRAWER_WIDTH = 280;
 
 interface Props {
@@ -37,9 +41,10 @@ interface Props {
   currentScreen: DrawerScreen;
   onClose: () => void;
   onNavigate: (screen: DrawerScreen) => void;
+  debugMode: boolean;
 }
 
-export default function DrawerMenu({ visible, currentScreen, onClose, onNavigate }: Props) {
+export default function DrawerMenu({ visible, currentScreen, onClose, onNavigate, debugMode }: Props) {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const slideAnim = useRef(new Animated.Value(-DRAWER_WIDTH)).current;
@@ -108,6 +113,23 @@ export default function DrawerMenu({ visible, currentScreen, onClose, onNavigate
         {/* Bottom nav */}
         <View style={styles.bottomSection}>
           <View style={styles.divider} />
+          {debugMode && (
+            <>
+              <Text style={styles.sectionLabel}>DEBUG</Text>
+              {DEBUG_ITEMS.map(item => (
+                <TouchableOpacity
+                  key={item.key}
+                  style={[styles.navItem, currentScreen === item.key && styles.navItemActive]}
+                  onPress={() => handleNavigate(item.key)}>
+                  <Text style={styles.navIcon}>{item.icon}</Text>
+                  <Text style={[styles.navLabel, currentScreen === item.key && styles.navLabelActive]}>
+                    {item.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+              <View style={styles.divider} />
+            </>
+          )}
           {BOTTOM_ITEMS.map(item => (
             <TouchableOpacity
               key={item.key}
@@ -180,6 +202,14 @@ function makeStyles(colors: ColorPalette) {
       backgroundColor: colors.border,
       marginHorizontal: 20,
       marginBottom: 8,
+    },
+    sectionLabel: {
+      fontSize: 11,
+      fontWeight: '700',
+      color: colors.placeholder,
+      letterSpacing: 0.5,
+      marginHorizontal: 20,
+      marginBottom: 4,
     },
   });
 }

@@ -2,7 +2,6 @@ import SettingsService from '../../services/SettingsService';
 import { Goal } from '../../types/Goal';
 import {
   AnalysisProvider,
-  buildGoalContributionPrompt,
   GoalContributionSuggestionResult,
   parseJsonObject,
   sanitizeGoalContributionSuggestions,
@@ -15,6 +14,7 @@ async function isConfigured(): Promise<boolean> {
 async function suggestGoalContributions(
   transcript: string,
   goals: Goal[],
+  prompt: string,
 ): Promise<GoalContributionSuggestionResult> {
   const apiKey = (await SettingsService.getOpenAIApiKey()).trim();
   if (!apiKey) throw new Error('OpenAI API key is not configured.');
@@ -35,7 +35,7 @@ async function suggestGoalContributions(
         },
         {
           role: 'user',
-          content: buildGoalContributionPrompt(transcript, goals),
+          content: prompt,
         },
       ],
     }),

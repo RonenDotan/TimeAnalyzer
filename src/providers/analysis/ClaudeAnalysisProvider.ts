@@ -2,7 +2,6 @@ import SettingsService from '../../services/SettingsService';
 import { Goal } from '../../types/Goal';
 import {
   AnalysisProvider,
-  buildGoalContributionPrompt,
   GoalContributionSuggestionResult,
   parseJsonObject,
   sanitizeGoalContributionSuggestions,
@@ -15,6 +14,7 @@ async function isConfigured(): Promise<boolean> {
 async function suggestGoalContributions(
   transcript: string,
   goals: Goal[],
+  prompt: string,
 ): Promise<GoalContributionSuggestionResult> {
   const apiKey = (await SettingsService.getClaudeApiKey()).trim();
   if (!apiKey) throw new Error('Claude API key is not configured.');
@@ -29,7 +29,7 @@ async function suggestGoalContributions(
     body: JSON.stringify({
       model: 'claude-haiku-4-5',
       max_tokens: 700,
-      messages: [{ role: 'user', content: buildGoalContributionPrompt(transcript, goals) }],
+      messages: [{ role: 'user', content: prompt }],
     }),
   });
 
