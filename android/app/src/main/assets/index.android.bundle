@@ -104087,7 +104087,7 @@ __d(function(global, require, _importDefaultUnused, _importAllUnused, module, ex
     "major":  0,
     "minor":  0,
     "ticket_id":  31,
-    "sequence":  3
+    "sequence":  5
 }
 ;
 },638,[],"version.json");
@@ -111225,7 +111225,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
   var _jsxRuntime = _$$_REQUIRE(_dependencyMap[6], "react/jsx-runtime");
   var _jsxFileName = "C:\\Users\\ronen\\TimeAnalyzer\\src\\screens\\DailySummariesScreen.tsx";
   function _interopRequireWildcard(e, t) { if ("function" == typeof WeakMap) var r = new WeakMap(), n = new WeakMap(); return (_interopRequireWildcard = function (e, t) { if (!t && e && e.__esModule) return e; var o, i, f = { __proto__: null, default: e }; if (null === e || "object" != typeof e && "function" != typeof e) return f; if (o = t ? n : r) { if (o.has(e)) return o.get(e); o.set(e, f); } for (var _t in e) "default" !== _t && {}.hasOwnProperty.call(e, _t) && ((i = (o = Object.defineProperty) && Object.getOwnPropertyDescriptor(e, _t)) && (i.get || i.set) ? o(f, _t, i) : f[_t] = e[_t]); return f; })(e, t); }
-  var SUMMARY_COLOR = '#0F766E';
+  var SUMMARY_COLOR = '#F5A623';
   function formatGeneratedAt(ts) {
     return new Date(ts).toLocaleString('en-US', {
       month: 'short',
@@ -111249,6 +111249,14 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       _useState4 = (0, _slicedToArray2.default)(_useState3, 2),
       expandedId = _useState4[0],
       setExpandedId = _useState4[1];
+    var _useState5 = (0, _react.useState)(null),
+      _useState6 = (0, _slicedToArray2.default)(_useState5, 2),
+      editingId = _useState6[0],
+      setEditingId = _useState6[1];
+    var _useState7 = (0, _react.useState)(''),
+      _useState8 = (0, _slicedToArray2.default)(_useState7, 2),
+      draft = _useState8[0],
+      setDraft = _useState8[1];
     (0, _react.useEffect)(() => {
       load();
     }, []);
@@ -111269,6 +111277,31 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       return _DailySummaryService.default.parseSummary(summary) ?? {
         debrief: 'Unable to parse saved summary.'
       };
+    }
+    function startEdit(summary) {
+      setExpandedId(summary.id);
+      setEditingId(summary.id);
+      setDraft(parse(summary).debrief);
+    }
+    function saveEdit(_x) {
+      return _saveEdit.apply(this, arguments);
+    }
+    function _saveEdit() {
+      _saveEdit = (0, _asyncToGenerator2.default)(function* (summary) {
+        try {
+          var saved = yield _DailySummaryService.default.saveSummaryText(summary.date, draft);
+          setSummaries(prev => prev.map(item => item.id === summary.id ? saved : item));
+          setEditingId(null);
+          setDraft('');
+        } catch (e) {
+          _reactNative.Alert.alert('Save failed', String(e?.message ?? e));
+        }
+      });
+      return _saveEdit.apply(this, arguments);
+    }
+    function cancelEdit() {
+      setEditingId(null);
+      setDraft('');
     }
     return /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
       style: [styles.container, {
@@ -111297,23 +111330,62 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         }) : summaries.map(summary => {
           var parsed = parse(summary);
           var expanded = expandedId === summary.id;
-          return /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.TouchableOpacity, {
+          var editing = editingId === summary.id;
+          return /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
             style: styles.summaryCard,
-            activeOpacity: 0.85,
-            onPress: () => setExpandedId(expanded ? null : summary.id),
             children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
               style: styles.cardHeader,
-              children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                style: styles.dateText,
-                children: summary.date
-              }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                style: styles.generatedText,
-                children: formatGeneratedAt(summary.generatedAt)
+              children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.TouchableOpacity, {
+                style: styles.cardTitleBlock,
+                onPress: () => !editing && setExpandedId(expanded ? null : summary.id),
+                children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                  style: styles.dateText,
+                  children: summary.date
+                }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                  style: styles.generatedText,
+                  children: formatGeneratedAt(summary.generatedAt)
+                })]
+              }), !editing && /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
+                onPress: () => startEdit(summary),
+                children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                  style: styles.editLink,
+                  children: "Edit"
+                })
               })]
-            }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-              style: styles.debriefText,
-              numberOfLines: expanded ? undefined : 3,
-              children: parsed.debrief
+            }), editing ? /*#__PURE__*/(0, _jsxRuntime.jsxs)(_jsxRuntime.Fragment, {
+              children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TextInput, {
+                style: styles.editInput,
+                value: draft,
+                onChangeText: setDraft,
+                multiline: true,
+                textAlignVertical: "top",
+                placeholder: "Write a summary...",
+                placeholderTextColor: colors.placeholder
+              }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+                style: styles.editActions,
+                children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
+                  style: styles.saveBtn,
+                  onPress: () => saveEdit(summary),
+                  children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                    style: styles.saveBtnText,
+                    children: "Save"
+                  })
+                }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
+                  style: styles.cancelBtn,
+                  onPress: cancelEdit,
+                  children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                    style: styles.cancelBtnText,
+                    children: "Cancel"
+                  })
+                })]
+              })]
+            }) : /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
+              onPress: () => setExpandedId(expanded ? null : summary.id),
+              children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                style: styles.debriefText,
+                numberOfLines: expanded ? undefined : 3,
+                children: parsed.debrief
+              })
             }), expanded && parsed.keyInsights && parsed.keyInsights.length > 0 && /*#__PURE__*/(0, _jsxRuntime.jsxs)(_jsxRuntime.Fragment, {
               children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
                 style: styles.sectionLabel,
@@ -111389,6 +111461,10 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         justifyContent: 'space-between',
         gap: 10
       },
+      cardTitleBlock: {
+        flex: 1,
+        gap: 2
+      },
       dateText: {
         fontSize: 15,
         color: colors.text,
@@ -111398,10 +111474,55 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         fontSize: 11,
         color: colors.textSecondary
       },
+      editLink: {
+        fontSize: 13,
+        color: SUMMARY_COLOR,
+        fontWeight: '700'
+      },
       debriefText: {
         fontSize: 14,
         color: colors.text,
         lineHeight: 20
+      },
+      editInput: {
+        minHeight: 120,
+        backgroundColor: colors.surface,
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: SUMMARY_COLOR + '70',
+        padding: 10,
+        fontSize: 14,
+        color: colors.text,
+        lineHeight: 20,
+        textAlignVertical: 'top'
+      },
+      editActions: {
+        flexDirection: 'row',
+        gap: 8,
+        alignItems: 'center'
+      },
+      saveBtn: {
+        backgroundColor: SUMMARY_COLOR,
+        borderRadius: 8,
+        paddingHorizontal: 12,
+        paddingVertical: 8
+      },
+      saveBtnText: {
+        fontSize: 14,
+        color: '#fff',
+        fontWeight: '700'
+      },
+      cancelBtn: {
+        borderWidth: 1,
+        borderColor: colors.border,
+        borderRadius: 8,
+        paddingHorizontal: 12,
+        paddingVertical: 8
+      },
+      cancelBtnText: {
+        fontSize: 14,
+        color: colors.textSecondary,
+        fontWeight: '700'
       },
       sectionLabel: {
         fontSize: 11,
@@ -111488,7 +111609,19 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
     });
     return _generateSummary.apply(this, arguments);
   }
-  function getSummary(_x2) {
+  function saveSummaryText(_x2, _x3) {
+    return _saveSummaryText.apply(this, arguments);
+  }
+  function _saveSummaryText() {
+    _saveSummaryText = (0, _asyncToGenerator2.default)(function* (date, text) {
+      var dateStr = typeof date === 'string' ? date : toDateStr(date);
+      return activeProvider.saveSummary(dateStr, JSON.stringify({
+        debrief: text.trim()
+      }));
+    });
+    return _saveSummaryText.apply(this, arguments);
+  }
+  function getSummary(_x4) {
     return _getSummary.apply(this, arguments);
   }
   function _getSummary() {
@@ -111509,6 +111642,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
   var DailySummaryService = {
     setProvider,
     generateSummary,
+    saveSummaryText,
     getSummary,
     getAllSummaries,
     parseSummary
@@ -114948,6 +115082,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
   function _interopRequireWildcard(e, t) { if ("function" == typeof WeakMap) var r = new WeakMap(), n = new WeakMap(); return (_interopRequireWildcard = function (e, t) { if (!t && e && e.__esModule) return e; var o, i, f = { __proto__: null, default: e }; if (null === e || "object" != typeof e && "function" != typeof e) return f; if (o = t ? n : r) { if (o.has(e)) return o.get(e); o.set(e, f); } for (var _t in e) "default" !== _t && {}.hasOwnProperty.call(e, _t) && ((i = (o = Object.defineProperty) && Object.getOwnPropertyDescriptor(e, _t)) && (i.get || i.set) ? o(f, _t, i) : f[_t] = e[_t]); return f; })(e, t); }
   var GOAL_COLOR = '#F97316';
   var OVERDUE_COLOR = '#DC2626';
+  var SUMMARY_COLOR = '#F5A623';
   function startOfDay(date) {
     return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
   }
@@ -115016,18 +115151,22 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       _useState16 = (0, _slicedToArray2.default)(_useState15, 2),
       summary = _useState16[0],
       setSummary = _useState16[1];
-    var _useState17 = (0, _react.useState)(false),
+    var _useState17 = (0, _react.useState)(''),
       _useState18 = (0, _slicedToArray2.default)(_useState17, 2),
-      summaryVisible = _useState18[0],
-      setSummaryVisible = _useState18[1];
+      summaryDraft = _useState18[0],
+      setSummaryDraft = _useState18[1];
     var _useState19 = (0, _react.useState)(false),
       _useState20 = (0, _slicedToArray2.default)(_useState19, 2),
-      summaryGenerating = _useState20[0],
-      setSummaryGenerating = _useState20[1];
+      summaryEditing = _useState20[0],
+      setSummaryEditing = _useState20[1];
+    var _useState21 = (0, _react.useState)(false),
+      _useState22 = (0, _slicedToArray2.default)(_useState21, 2),
+      summaryGenerating = _useState22[0],
+      setSummaryGenerating = _useState22[1];
     var loadEntries = (0, _react.useCallback)(/*#__PURE__*/function () {
       var _ref = (0, _asyncToGenerator2.default)(function* (date) {
         setLoading(true);
-        var dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        var dateStr = dateToStr(date);
         var _yield$Promise$all = yield Promise.all([_StorageService.default.getByDateRange(startOfDay(date), endOfDay(date)), _StorageService.default.getDayPlan(dateStr), _StorageService.default.getCalendarPlanBlocksByDate(dateStr), _GoalsService.default.getActiveGoals(endOfDay(date).getTime())]),
           _yield$Promise$all2 = (0, _slicedToArray2.default)(_yield$Promise$all, 4),
           results = _yield$Promise$all2[0],
@@ -115039,7 +115178,10 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         setDayPlan(plan);
         setGoals(loadedGoals);
         var savedSummary = yield _DailySummaryService.default.getSummary(dateStr);
-        setSummary(_DailySummaryService.default.parseSummary(savedSummary));
+        var parsedSummary = _DailySummaryService.default.parseSummary(savedSummary);
+        setSummary(parsedSummary);
+        setSummaryDraft(parsedSummary?.debrief ?? '');
+        setSummaryEditing(false);
         // Load goal contributions for each entry (to show 🎯 tag)
         var contribMap = {};
         yield Promise.all(sorted.map(/*#__PURE__*/function () {
@@ -115088,8 +115230,10 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         setSummaryGenerating(true);
         try {
           var saved = yield _DailySummaryService.default.generateSummary(currentDate);
-          setSummary(_DailySummaryService.default.parseSummary(saved));
-          setSummaryVisible(true);
+          var parsedSummary = _DailySummaryService.default.parseSummary(saved);
+          setSummary(parsedSummary);
+          setSummaryDraft(parsedSummary?.debrief ?? '');
+          setSummaryEditing(true);
         } catch (e) {
           _reactNative.Alert.alert('Summary failed', String(e?.message ?? e));
         } finally {
@@ -115098,6 +115242,31 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       });
       return _handleGenerateSummary.apply(this, arguments);
     }
+    function handleEditSummary() {
+      setSummaryDraft(summary?.debrief ?? '');
+      setSummaryEditing(true);
+    }
+    function handleSaveSummary() {
+      return _handleSaveSummary.apply(this, arguments);
+    }
+    function _handleSaveSummary() {
+      _handleSaveSummary = (0, _asyncToGenerator2.default)(function* () {
+        try {
+          var saved = yield _DailySummaryService.default.saveSummaryText(currentDate, summaryDraft);
+          var parsedSummary = _DailySummaryService.default.parseSummary(saved);
+          setSummary(parsedSummary);
+          setSummaryDraft(parsedSummary?.debrief ?? '');
+          setSummaryEditing(false);
+        } catch (e) {
+          _reactNative.Alert.alert('Save failed', String(e?.message ?? e));
+        }
+      });
+      return _handleSaveSummary.apply(this, arguments);
+    }
+    function handleCancelSummary() {
+      setSummaryDraft(summary?.debrief ?? '');
+      setSummaryEditing(false);
+    }
     if (selectedEntry) {
       return /*#__PURE__*/(0, _jsxRuntime.jsx)(_EntryDetailScreen.default, {
         entry: selectedEntry,
@@ -115105,10 +115274,11 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         onClose: () => setSelectedEntry(null)
       });
     }
-    return /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+    return /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.KeyboardAvoidingView, {
       style: [styles.container, {
         paddingTop: insets.top
       }],
+      behavior: "android" === 'ios' ? 'padding' : 'height',
       children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
         style: styles.topBar,
         children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
@@ -115195,30 +115365,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         })
       }) : /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.ScrollView, {
         contentContainerStyle: styles.list,
-        children: [debugMode && /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-          style: styles.summaryDebugCard,
-          children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-            style: styles.summaryDebugHeader,
-            children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-              style: styles.summaryDebugTitle,
-              children: "DAILY SUMMARY"
-            }), summary && /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
-              onPress: () => setSummaryVisible(true),
-              children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                style: styles.summaryDebugLink,
-                children: "View saved"
-              })
-            })]
-          }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
-            style: [styles.summaryButton, summaryGenerating && styles.summaryButtonDisabled],
-            onPress: handleGenerateSummary,
-            disabled: summaryGenerating,
-            children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-              style: styles.summaryButtonText,
-              children: summaryGenerating ? 'Generating...' : '✨ Generate Summary'
-            })
-          })]
-        }), planBlocks.length > 0 && (() => {
+        children: [planBlocks.length > 0 && (() => {
           var coveredCount = planBlocks.filter(b => (0, _$$_REQUIRE(_dependencyMap[13], "../utils/planMatching").isCovered)(b, entries)).length;
           return /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.TouchableOpacity, {
             style: styles.planSection,
@@ -115300,6 +115447,69 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
               })]
             })]
           }, entry.id);
+        }), debugMode && /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+          style: styles.summaryDebugCard,
+          children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+            style: styles.summaryDebugHeader,
+            children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+              style: styles.summaryDebugTitle,
+              children: "DAILY SUMMARY"
+            }), !summaryEditing && /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
+              onPress: handleEditSummary,
+              children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                style: styles.summaryDebugLink,
+                children: "Edit"
+              })
+            })]
+          }), summaryEditing ? /*#__PURE__*/(0, _jsxRuntime.jsxs)(_jsxRuntime.Fragment, {
+            children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TextInput, {
+              style: styles.summaryInput,
+              value: summaryDraft,
+              onChangeText: setSummaryDraft,
+              multiline: true,
+              textAlignVertical: "top",
+              placeholder: "Write a summary...",
+              placeholderTextColor: colors.placeholder
+            }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+              style: styles.summaryActions,
+              children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
+                style: [styles.summaryButton, summaryGenerating && styles.summaryButtonDisabled],
+                onPress: handleGenerateSummary,
+                disabled: summaryGenerating,
+                children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                  style: styles.summaryButtonText,
+                  children: summaryGenerating ? 'Generating...' : '✨ Generate with AI'
+                })
+              }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
+                style: styles.summarySaveButton,
+                onPress: handleSaveSummary,
+                children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                  style: styles.summaryButtonText,
+                  children: "Save"
+                })
+              }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
+                style: styles.summaryCancelButton,
+                onPress: handleCancelSummary,
+                children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                  style: styles.summaryCancelText,
+                  children: "Cancel"
+                })
+              })]
+            })]
+          }) : /*#__PURE__*/(0, _jsxRuntime.jsxs)(_jsxRuntime.Fragment, {
+            children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+              style: [styles.summaryReadOnly, !summary && styles.summaryPlaceholder],
+              children: summary?.debrief || 'No summary yet'
+            }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
+              style: [styles.summaryButton, summaryGenerating && styles.summaryButtonDisabled],
+              onPress: handleGenerateSummary,
+              disabled: summaryGenerating,
+              children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                style: styles.summaryButtonText,
+                children: summaryGenerating ? 'Generating...' : '✨ Generate with AI'
+              })
+            })]
+          })]
         })]
       }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
         style: [styles.fab, {
@@ -115310,67 +115520,11 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
           style: styles.fabIcon,
           children: "+"
         })
-      }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Modal, {
-        visible: summaryVisible,
-        transparent: true,
-        animationType: "fade",
-        onRequestClose: () => setSummaryVisible(false),
-        children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
-          style: styles.modalOverlay,
-          children: /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-            style: styles.summaryModal,
-            children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-              style: styles.summaryModalHeader,
-              children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                style: styles.summaryModalTitle,
-                children: "Daily Summary"
-              }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
-                onPress: () => setSummaryVisible(false),
-                children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                  style: styles.summaryModalClose,
-                  children: "Close"
-                })
-              })]
-            }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.ScrollView, {
-              contentContainerStyle: styles.summaryModalBody,
-              children: summary ? /*#__PURE__*/(0, _jsxRuntime.jsxs)(_jsxRuntime.Fragment, {
-                children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                  style: styles.summaryDebrief,
-                  children: summary.debrief
-                }), !!summary.momentum && /*#__PURE__*/(0, _jsxRuntime.jsxs)(_jsxRuntime.Fragment, {
-                  children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                    style: styles.summarySectionTitle,
-                    children: "MOMENTUM"
-                  }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                    style: styles.summaryText,
-                    children: summary.momentum
-                  })]
-                }), summary.keyInsights && summary.keyInsights.length > 0 && /*#__PURE__*/(0, _jsxRuntime.jsxs)(_jsxRuntime.Fragment, {
-                  children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                    style: styles.summarySectionTitle,
-                    children: "KEY INSIGHTS"
-                  }), summary.keyInsights.map((insight, i) => /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
-                    style: styles.summaryBullet,
-                    children: ["\u2022 ", insight.text, insight.confidence ? ` (${insight.confidence})` : '']
-                  }, i))]
-                }), summary.gaps && summary.gaps.length > 0 && /*#__PURE__*/(0, _jsxRuntime.jsxs)(_jsxRuntime.Fragment, {
-                  children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                    style: styles.summarySectionTitle,
-                    children: "GAPS"
-                  }), summary.gaps.map((gap, i) => /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
-                    style: styles.summaryBullet,
-                    children: ["\u2022 ", gap]
-                  }, i))]
-                })]
-              }) : /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                style: styles.summaryText,
-                children: "No saved summary for this day."
-              })
-            })]
-          })
-        })
       })]
     });
+  }
+  function dateToStr(date) {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
   }
   function makeStyles(colors, calendarColor) {
     return _reactNative.StyleSheet.create({
@@ -115450,12 +115604,12 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         paddingBottom: 100
       },
       summaryDebugCard: {
-        backgroundColor: GOAL_COLOR + '12',
+        backgroundColor: SUMMARY_COLOR + '18',
         borderRadius: 12,
         padding: 12,
         gap: 10,
         borderLeftWidth: 4,
-        borderLeftColor: GOAL_COLOR
+        borderLeftColor: SUMMARY_COLOR
       },
       summaryDebugHeader: {
         flexDirection: 'row',
@@ -115465,17 +115619,17 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       summaryDebugTitle: {
         fontSize: 11,
         fontWeight: '700',
-        color: GOAL_COLOR,
+        color: SUMMARY_COLOR,
         letterSpacing: 0.5
       },
       summaryDebugLink: {
         fontSize: 13,
-        color: GOAL_COLOR,
+        color: SUMMARY_COLOR,
         fontWeight: '600'
       },
       summaryButton: {
         alignSelf: 'flex-start',
-        backgroundColor: GOAL_COLOR,
+        backgroundColor: SUMMARY_COLOR,
         borderRadius: 8,
         paddingHorizontal: 12,
         paddingVertical: 8
@@ -115486,6 +115640,53 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       summaryButtonText: {
         fontSize: 14,
         color: '#fff',
+        fontWeight: '700'
+      },
+      summaryInput: {
+        minHeight: 120,
+        backgroundColor: colors.surface,
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: SUMMARY_COLOR + '70',
+        padding: 10,
+        fontSize: 14,
+        color: colors.text,
+        lineHeight: 20,
+        textAlignVertical: 'top'
+      },
+      summaryReadOnly: {
+        fontSize: 14,
+        color: colors.text,
+        lineHeight: 20
+      },
+      summaryPlaceholder: {
+        color: colors.placeholder,
+        fontStyle: 'italic'
+      },
+      summaryActions: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 8,
+        alignItems: 'center'
+      },
+      summarySaveButton: {
+        alignSelf: 'flex-start',
+        backgroundColor: SUMMARY_COLOR,
+        borderRadius: 8,
+        paddingHorizontal: 12,
+        paddingVertical: 8
+      },
+      summaryCancelButton: {
+        alignSelf: 'flex-start',
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: colors.border,
+        paddingHorizontal: 12,
+        paddingVertical: 8
+      },
+      summaryCancelText: {
+        fontSize: 14,
+        color: colors.textSecondary,
         fontWeight: '700'
       },
       entryCardHeader: {
@@ -115695,63 +115896,6 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         fontSize: 11,
         color: colors.textSecondary,
         fontFamily: 'monospace'
-      },
-      modalOverlay: {
-        flex: 1,
-        backgroundColor: colors.overlay,
-        justifyContent: 'center',
-        padding: 20
-      },
-      summaryModal: {
-        maxHeight: '82%',
-        backgroundColor: colors.surface,
-        borderRadius: 12,
-        overflow: 'hidden'
-      },
-      summaryModalHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-        borderBottomWidth: _reactNative.StyleSheet.hairlineWidth,
-        borderBottomColor: colors.border
-      },
-      summaryModalTitle: {
-        fontSize: 17,
-        fontWeight: '700',
-        color: colors.text
-      },
-      summaryModalClose: {
-        fontSize: 15,
-        color: GOAL_COLOR,
-        fontWeight: '600'
-      },
-      summaryModalBody: {
-        padding: 16,
-        gap: 10
-      },
-      summaryDebrief: {
-        fontSize: 15,
-        color: colors.text,
-        lineHeight: 22
-      },
-      summaryText: {
-        fontSize: 14,
-        color: colors.textSecondary,
-        lineHeight: 20
-      },
-      summarySectionTitle: {
-        fontSize: 11,
-        color: GOAL_COLOR,
-        fontWeight: '700',
-        letterSpacing: 0.5,
-        marginTop: 6
-      },
-      summaryBullet: {
-        fontSize: 14,
-        color: colors.text,
-        lineHeight: 20
       }
     });
   }

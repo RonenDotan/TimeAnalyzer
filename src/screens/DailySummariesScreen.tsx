@@ -4,6 +4,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -16,7 +17,7 @@ interface Props {
   onClose: () => void;
 }
 
-const SUMMARY_COLOR = '#0F766E';
+const SUMMARY_COLOR = '#F5A623';
 
 function formatGeneratedAt(ts: number): string {
   return new Date(ts).toLocaleString('en-US', {
@@ -33,6 +34,8 @@ export default function DailySummariesScreen({ onClose }: Props) {
   const styles = makeStyles(colors);
   const [summaries, setSummaries] = useState<DailySummary[]>([]);
   const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [draft, setDraft] = useState('');
 
   useEffect(() => {
     load();
@@ -48,6 +51,28 @@ export default function DailySummariesScreen({ onClose }: Props) {
 
   function parse(summary: DailySummary): DailySummaryResult {
     return DailySummaryService.parseSummary(summary) ?? { debrief: 'Unable to parse saved summary.' };
+  }
+
+  function startEdit(summary: DailySummary) {
+    setExpandedId(summary.id);
+    setEditingId(summary.id);
+    setDraft(parse(summary).debrief);
+  }
+
+  async function saveEdit(summary: DailySummary) {
+    try {
+      const saved = await DailySummaryService.saveSummaryText(summary.date, draft);
+      setSummaries(prev => prev.map(item => item.id === summary.id ? saved : item));
+      setEditingId(null);
+      setDraft('');
+    } catch (e: any) {
+      Alert.alert('Save failed', String(e?.message ?? e));
+    }
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setDraft('');
   }
 
   return (
@@ -67,19 +92,51 @@ export default function DailySummariesScreen({ onClose }: Props) {
           summaries.map(summary => {
             const parsed = parse(summary);
             const expanded = expandedId === summary.id;
+            const editing = editingId === summary.id;
             return (
-              <TouchableOpacity
+              <View
                 key={summary.id}
-                style={styles.summaryCard}
-                activeOpacity={0.85}
-                onPress={() => setExpandedId(expanded ? null : summary.id)}>
+                style={styles.summaryCard}>
                 <View style={styles.cardHeader}>
-                  <Text style={styles.dateText}>{summary.date}</Text>
-                  <Text style={styles.generatedText}>{formatGeneratedAt(summary.generatedAt)}</Text>
+                  <TouchableOpacity
+                    style={styles.cardTitleBlock}
+                    onPress={() => !editing && setExpandedId(expanded ? null : summary.id)}>
+                    <Text style={styles.dateText}>{summary.date}</Text>
+                    <Text style={styles.generatedText}>{formatGeneratedAt(summary.generatedAt)}</Text>
+                  </TouchableOpacity>
+                  {!editing && (
+                    <TouchableOpacity onPress={() => startEdit(summary)}>
+                      <Text style={styles.editLink}>Edit</Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
-                <Text style={styles.debriefText} numberOfLines={expanded ? undefined : 3}>
-                  {parsed.debrief}
-                </Text>
+                {editing ? (
+                  <>
+                    <TextInput
+                      style={styles.editInput}
+                      value={draft}
+                      onChangeText={setDraft}
+                      multiline
+                      textAlignVertical="top"
+                      placeholder="Write a summary..."
+                      placeholderTextColor={colors.placeholder}
+                    />
+                    <View style={styles.editActions}>
+                      <TouchableOpacity style={styles.saveBtn} onPress={() => saveEdit(summary)}>
+                        <Text style={styles.saveBtnText}>Save</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity style={styles.cancelBtn} onPress={cancelEdit}>
+                        <Text style={styles.cancelBtnText}>Cancel</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </>
+                ) : (
+                  <TouchableOpacity onPress={() => setExpandedId(expanded ? null : summary.id)}>
+                    <Text style={styles.debriefText} numberOfLines={expanded ? undefined : 3}>
+                      {parsed.debrief}
+                    </Text>
+                  </TouchableOpacity>
+                )}
                 {expanded && parsed.keyInsights && parsed.keyInsights.length > 0 && (
                   <>
                     <Text style={styles.sectionLabel}>KEY INSIGHTS</Text>
@@ -94,7 +151,7 @@ export default function DailySummariesScreen({ onClose }: Props) {
                     <Text style={styles.bulletText}>{parsed.momentum}</Text>
                   </>
                 )}
-              </TouchableOpacity>
+              </View>
             );
           })
         )}
@@ -130,9 +187,39 @@ function makeStyles(colors: ColorPalette) {
       gap: 8,
     },
     cardHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
+    cardTitleBlock: { flex: 1, gap: 2 },
     dateText: { fontSize: 15, color: colors.text, fontWeight: '700' },
     generatedText: { fontSize: 11, color: colors.textSecondary },
+    editLink: { fontSize: 13, color: SUMMARY_COLOR, fontWeight: '700' },
     debriefText: { fontSize: 14, color: colors.text, lineHeight: 20 },
+    editInput: {
+      minHeight: 120,
+      backgroundColor: colors.surface,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: SUMMARY_COLOR + '70',
+      padding: 10,
+      fontSize: 14,
+      color: colors.text,
+      lineHeight: 20,
+      textAlignVertical: 'top',
+    },
+    editActions: { flexDirection: 'row', gap: 8, alignItems: 'center' },
+    saveBtn: {
+      backgroundColor: SUMMARY_COLOR,
+      borderRadius: 8,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+    },
+    saveBtnText: { fontSize: 14, color: '#fff', fontWeight: '700' },
+    cancelBtn: {
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+    },
+    cancelBtnText: { fontSize: 14, color: colors.textSecondary, fontWeight: '700' },
     sectionLabel: {
       fontSize: 11,
       fontWeight: '700',

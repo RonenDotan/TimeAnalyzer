@@ -75,6 +75,11 @@ async function generateSummary(date: Date): Promise<DailySummary> {
   return activeProvider.saveSummary(dateStr, JSON.stringify(summary));
 }
 
+async function saveSummaryText(date: Date | string, text: string): Promise<DailySummary> {
+  const dateStr = typeof date === 'string' ? date : toDateStr(date);
+  return activeProvider.saveSummary(dateStr, JSON.stringify({ debrief: text.trim() }));
+}
+
 async function getSummary(date: Date | string): Promise<DailySummary | null> {
   return activeProvider.getSummary(typeof date === 'string' ? date : toDateStr(date));
 }
@@ -86,6 +91,7 @@ async function getAllSummaries(): Promise<DailySummary[]> {
 const DailySummaryService = {
   setProvider,
   generateSummary,
+  saveSummaryText,
   getSummary,
   getAllSummaries,
   parseSummary,
