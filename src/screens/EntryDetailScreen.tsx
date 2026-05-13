@@ -512,7 +512,12 @@ export default function EntryDetailScreen({ entry, onSave, onClose }: Props) {
 
 function makeStyles(colors: ColorPalette) {
   return StyleSheet.create({
-    container: { flex: 1, backgroundColor: colors.background },
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+      borderLeftWidth: 4,
+      borderLeftColor: '#33B679',
+    },
     header: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -520,7 +525,7 @@ function makeStyles(colors: ColorPalette) {
       paddingHorizontal: 16,
       paddingVertical: 12,
       backgroundColor: '#33B679' + '18',
-      borderBottomWidth: 2,
+      borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: '#33B679',
     },
     headerTitle: { fontSize: 17, fontWeight: '600', color: colors.text },
@@ -564,11 +569,12 @@ function makeStyles(colors: ColorPalette) {
       color: colors.text,
       lineHeight: 24,
       minHeight: 120,
-      borderWidth: 1,
+      borderWidth: 1.5,
       borderColor: '#33B679',
       borderRadius: 8,
       padding: 10,
-      backgroundColor: colors.surface + 'cc',
+      backgroundColor: colors.surface,
+      textAlignVertical: 'top',
     },
     notesGroupLabel: {
       fontSize: 11,

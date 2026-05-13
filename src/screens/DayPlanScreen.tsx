@@ -122,6 +122,8 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false,
   const [goalsExpanded, setGoalsExpanded] = useState(false);
   const [newGoalText, setNewGoalText] = useState('');
   const [addingGoal, setAddingGoal] = useState(false);
+  const [editingBlockIndex, setEditingBlockIndex] = useState<number | null>(null);
+  const [editingBlockDraft, setEditingBlockDraft] = useState<EditBlock | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const suppressAutosaveRef = useRef(true);
@@ -197,7 +199,8 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false,
     setBlocks(prev => [...prev, { startText: '', endText: '', activity: '' }]);
   }
 
-  function pickerDateFor(block: EditBlock, field: 'start' | 'end'): Date {
+  function pickerDateFor(index: number, field: 'start' | 'end'): Date {
+    const block = (editingBlockIndex === index && editingBlockDraft) ? editingBlockDraft : blocks[index];
     const raw = field === 'start' ? block.startText : block.endText;
     return minToDate(parseTimeText(raw) ?? 9 * 60);
   }
@@ -207,9 +210,14 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false,
     const picker = activeTimePicker;
     setActiveTimePicker(null);
     if (event.type === 'dismissed' || !picked) return;
-    updateBlock(picker.index, {
-      [picker.field === 'start' ? 'startText' : 'endText']: formatMin(dateToMin(picked)),
-    });
+    const field = picker.field === 'start' ? 'startText' : 'endText';
+    const value = formatMin(dateToMin(picked));
+    // If we're in inline-edit mode for this block, update the draft instead
+    if (editingBlockIndex === picker.index && editingBlockDraft) {
+      setEditingBlockDraft(prev => prev ? { ...prev, [field]: value } : prev);
+    } else {
+      updateBlock(picker.index, { [field]: value });
+    }
   }
 
   async function startBlockDictation(index: number) {
@@ -232,7 +240,11 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false,
     try {
       const text = await TranscriptionService.stop();
       if (text?.trim()) {
-        updateBlock(index, { activity: text.trim() });
+        if (editingBlockIndex === index && editingBlockDraft) {
+          setEditingBlockDraft(prev => prev ? { ...prev, activity: text!.trim() } : prev);
+        } else {
+          updateBlock(index, { activity: text.trim() });
+        }
       }
     } catch (e: any) {
       Alert.alert('Transcription failed', String(e?.message ?? e));
@@ -375,88 +387,149 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false,
           </View>
         )}
 
-        {/* Voice / text input area */}
-        <View style={styles.inputCard}>
-          <TextInput
-            style={styles.rawInput}
-            value={rawInput}
-            onChangeText={setRawInput}
-            placeholder={'e.g. "from 8 to 10 backend work, 10 to 12 meetings"'}
-            placeholderTextColor={colors.placeholder}
-            multiline
-            textAlignVertical="top"
-          />
-          <DictateBar onResult={raw => setRawInput(prev => applyTranscription(prev, raw))} />
-          {rawInput.trim().length > 0 && (
-            <TouchableOpacity style={styles.parseBtn} onPress={handleParse}>
-              <Text style={styles.parseBtnText}>Parse into blocks</Text>
-            </TouchableOpacity>
-          )}
-        </View>
+        {/* Voice / text input area — debug only */}
+        {debugMode && (
+          <View style={styles.inputCard}>
+            <TextInput
+              style={styles.rawInput}
+              value={rawInput}
+              onChangeText={setRawInput}
+              placeholder={'e.g. "from 8 to 10 backend work, 10 to 12 meetings"'}
+              placeholderTextColor={colors.placeholder}
+              multiline
+              textAlignVertical="top"
+            />
+            <DictateBar onResult={raw => setRawInput(prev => applyTranscription(prev, raw))} />
+            {rawInput.trim().length > 0 && (
+              <TouchableOpacity style={styles.parseBtn} onPress={handleParse}>
+                <Text style={styles.parseBtnText}>Parse into blocks</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
 
         {/* Block list */}
         {(blocks.length > 0 || calendarBlocks.length > 0) && (
           <Text style={styles.sectionLabel}>PLAN BLOCKS</Text>
         )}
         {blocks.map((block, i) => {
+          const isEditing = editingBlockIndex === i;
           const isRecording = recording?.index === i;
+
+          if (isEditing && editingBlockDraft) {
+            // Inline edit mode
+            return (
+              <View key={i} style={styles.blockCard}>
+                <View style={styles.blockTimes}>
+                  <TouchableOpacity style={styles.timeInput} onPress={() => setActiveTimePicker({ index: i, field: 'start' })}>
+                    <Text style={styles.timeInputText}>{normalizeTimeText(editingBlockDraft.startText) || 'Start'}</Text>
+                  </TouchableOpacity>
+                  <Text style={styles.timeDash}>–</Text>
+                  <TouchableOpacity style={styles.timeInput} onPress={() => setActiveTimePicker({ index: i, field: 'end' })}>
+                    <Text style={styles.timeInputText}>{normalizeTimeText(editingBlockDraft.endText) || 'End'}</Text>
+                  </TouchableOpacity>
+                </View>
+                <View style={styles.activityRow}>
+                  <TextInput
+                    style={styles.activityInput}
+                    value={editingBlockDraft.activity}
+                    onChangeText={v => setEditingBlockDraft(prev => prev ? { ...prev, activity: v } : prev)}
+                    placeholder="Activity description…"
+                    placeholderTextColor={colors.placeholder}
+                    editable={!isRecording}
+                    multiline
+                    textAlignVertical="top"
+                    autoFocus
+                  />
+                  <TouchableOpacity
+                    style={[styles.micBtn, isRecording && styles.micBtnActive]}
+                    onPress={() => isRecording ? stopBlockDictation(i) : startBlockDictation(i)}>
+                    <Text style={styles.micIcon}>{isRecording ? '⏹' : '🎙'}</Text>
+                  </TouchableOpacity>
+                </View>
+                {isRecording && (
+                  <Text style={styles.recordingLabel}>
+                    Recording… {(recording!.ms / 1000).toFixed(1)}s — tap ⏹ to stop
+                  </Text>
+                )}
+                <View style={styles.blockEditActions}>
+                  <TouchableOpacity
+                    style={styles.blockSaveBtn}
+                    onPress={() => {
+                      updateBlock(i, editingBlockDraft);
+                      setEditingBlockIndex(null);
+                      setEditingBlockDraft(null);
+                    }}>
+                    <Text style={styles.blockSaveBtnText}>Save</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.blockCancelBtn}
+                    onPress={() => {
+                      setEditingBlockIndex(null);
+                      setEditingBlockDraft(null);
+                    }}>
+                    <Text style={styles.blockCancelBtnText}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.blockDeleteBtn}
+                    onPress={() => {
+                      removeBlock(i);
+                      setEditingBlockIndex(null);
+                      setEditingBlockDraft(null);
+                    }}>
+                    <Text style={styles.blockDeleteBtnText}>Delete</Text>
+                  </TouchableOpacity>
+                </View>
+                {debugMode && block.id !== undefined && (
+                  <View style={styles.debugRow}>
+                    <Text style={styles.debugText}>
+                      synced: {block.syncedAt !== null && block.syncedAt !== undefined && block.updatedAt !== undefined && block.syncedAt >= block.updatedAt ? 'yes' : 'no'}
+                    </Text>
+                    {block.updatedAt !== undefined && (
+                      <Text style={styles.debugText}>upd: {new Date(block.updatedAt).toLocaleTimeString()}</Text>
+                    )}
+                    {block.syncedAt != null && (
+                      <Text style={styles.debugText}>sync_at: {new Date(block.syncedAt).toLocaleTimeString()}</Text>
+                    )}
+                    <Text style={styles.debugText}>status: {block.status === 1 ? 'active' : block.status === 0 ? 'del' : 'new'}</Text>
+                  </View>
+                )}
+              </View>
+            );
+          }
+
+          // Collapsed card view (goal-card style)
           return (
-            <View key={i} style={styles.blockCard}>
-              <View style={styles.blockTimes}>
-                <TouchableOpacity style={styles.timeInput} onPress={() => setActiveTimePicker({ index: i, field: 'start' })}>
-                  <Text style={styles.timeInputText}>{normalizeTimeText(block.startText) || 'Start'}</Text>
-                </TouchableOpacity>
-                <Text style={styles.timeDash}>–</Text>
-                <TouchableOpacity style={styles.timeInput} onPress={() => setActiveTimePicker({ index: i, field: 'end' })}>
-                  <Text style={styles.timeInputText}>{normalizeTimeText(block.endText) || 'End'}</Text>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => removeBlock(i)} style={styles.removeBtn}>
-                  <Text style={styles.removeBtnText}>✕</Text>
-                </TouchableOpacity>
-              </View>
-              <View style={styles.activityRow}>
-                <TextInput
-                  style={styles.activityInput}
-                  value={block.activity}
-                  onChangeText={v => updateBlock(i, { activity: v })}
-                  placeholder="Activity description…"
-                  placeholderTextColor={colors.placeholder}
-                  editable={!isRecording}
-                  multiline
-                  textAlignVertical="top"
-                />
-                <TouchableOpacity
-                  style={[styles.micBtn, isRecording && styles.micBtnActive]}
-                  onPress={() => isRecording ? stopBlockDictation(i) : startBlockDictation(i)}>
-                  <Text style={styles.micIcon}>{isRecording ? '⏹' : '🎙'}</Text>
-                </TouchableOpacity>
-              </View>
-              {isRecording && (
-                <Text style={styles.recordingLabel}>
-                  Recording… {(recording!.ms / 1000).toFixed(1)}s — tap ⏹ to stop
+            <TouchableOpacity
+              key={i}
+              style={styles.blockCard}
+              onPress={() => {
+                setEditingBlockIndex(i);
+                setEditingBlockDraft({ ...block });
+              }}
+              activeOpacity={0.75}>
+              <View style={styles.blockCardRow}>
+                <Text style={styles.blockCardTime}>
+                  {normalizeTimeText(block.startText) || '??'} – {normalizeTimeText(block.endText) || '??'}
                 </Text>
-              )}
+                <Text style={styles.blockCardEdit}>Edit</Text>
+              </View>
+              <Text style={styles.blockCardActivity}>{block.activity || 'No activity set'}</Text>
               {debugMode && block.id !== undefined && (
                 <View style={styles.debugRow}>
                   <Text style={styles.debugText}>
                     synced: {block.syncedAt !== null && block.syncedAt !== undefined && block.updatedAt !== undefined && block.syncedAt >= block.updatedAt ? 'yes' : 'no'}
                   </Text>
                   {block.updatedAt !== undefined && (
-                    <Text style={styles.debugText}>
-                      upd: {new Date(block.updatedAt).toLocaleTimeString()}
-                    </Text>
+                    <Text style={styles.debugText}>upd: {new Date(block.updatedAt).toLocaleTimeString()}</Text>
                   )}
                   {block.syncedAt != null && (
-                    <Text style={styles.debugText}>
-                      sync_at: {new Date(block.syncedAt).toLocaleTimeString()}
-                    </Text>
+                    <Text style={styles.debugText}>sync_at: {new Date(block.syncedAt).toLocaleTimeString()}</Text>
                   )}
-                  <Text style={styles.debugText}>
-                    status: {block.status === 1 ? 'active' : block.status === 0 ? 'del' : 'new'}
-                  </Text>
+                  <Text style={styles.debugText}>status: {block.status === 1 ? 'active' : block.status === 0 ? 'del' : 'new'}</Text>
                 </View>
               )}
-            </View>
+            </TouchableOpacity>
           );
         })}
 
@@ -495,7 +568,7 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false,
 
       {activeTimePicker && blocks[activeTimePicker.index] && (
         <DateTimePicker
-          value={pickerDateFor(blocks[activeTimePicker.index], activeTimePicker.field)}
+          value={pickerDateFor(activeTimePicker.index, activeTimePicker.field)}
           mode="time"
           display="default"
           onChange={handleTimePicked}
@@ -724,5 +797,52 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
     },
     addGoalBtnDisabled: { backgroundColor: colors.placeholder },
     addGoalBtnText: { fontSize: 14, color: '#fff', fontWeight: '600' },
+    blockCardRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 4,
+    },
+    blockCardTime: {
+      fontSize: 14,
+      fontWeight: '700',
+      color: '#039BE5',
+    },
+    blockCardEdit: {
+      fontSize: 13,
+      color: '#039BE5',
+      fontWeight: '600',
+    },
+    blockCardActivity: {
+      fontSize: 15,
+      color: colors.text,
+      lineHeight: 22,
+    },
+    blockEditActions: {
+      flexDirection: 'row',
+      gap: 8,
+      marginTop: 4,
+    },
+    blockSaveBtn: {
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      backgroundColor: '#039BE5',
+      borderRadius: 8,
+    },
+    blockSaveBtnText: { fontSize: 14, color: '#fff', fontWeight: '700' },
+    blockCancelBtn: {
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    blockCancelBtnText: { fontSize: 14, color: colors.textSecondary, fontWeight: '700' },
+    blockDeleteBtn: {
+      marginLeft: 'auto',
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+    },
+    blockDeleteBtnText: { fontSize: 14, color: colors.recordBtn, fontWeight: '500' },
   });
 }

@@ -104170,7 +104170,7 @@ __d(function(global, require, _importDefaultUnused, _importAllUnused, module, ex
     "major":  0,
     "minor":  0,
     "ticket_id":  41,
-    "sequence":  9
+    "sequence":  10
 }
 ;
 },638,[],"version.json");
@@ -112824,6 +112824,14 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       _useState20 = (0, _slicedToArray2.default)(_useState19, 2),
       addingGoal = _useState20[0],
       setAddingGoal = _useState20[1];
+    var _useState21 = (0, _react.useState)(null),
+      _useState22 = (0, _slicedToArray2.default)(_useState21, 2),
+      editingBlockIndex = _useState22[0],
+      setEditingBlockIndex = _useState22[1];
+    var _useState23 = (0, _react.useState)(null),
+      _useState24 = (0, _slicedToArray2.default)(_useState23, 2),
+      editingBlockDraft = _useState24[0],
+      setEditingBlockDraft = _useState24[1];
     var timerRef = (0, _react.useRef)(null);
     var autosaveTimerRef = (0, _react.useRef)(null);
     var suppressAutosaveRef = (0, _react.useRef)(true);
@@ -112910,7 +112918,8 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         activity: ''
       }]);
     }
-    function pickerDateFor(block, field) {
+    function pickerDateFor(index, field) {
+      var block = editingBlockIndex === index && editingBlockDraft ? editingBlockDraft : blocks[index];
       var raw = field === 'start' ? block.startText : block.endText;
       return minToDate(parseTimeText(raw) ?? 9 * 60);
     }
@@ -112919,9 +112928,19 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       var picker = activeTimePicker;
       setActiveTimePicker(null);
       if (event.type === 'dismissed' || !picked) return;
-      updateBlock(picker.index, {
-        [picker.field === 'start' ? 'startText' : 'endText']: (0, _$$_REQUIRE(_dependencyMap[15], "../utils/parseDayPlan").formatMin)(dateToMin(picked))
-      });
+      var field = picker.field === 'start' ? 'startText' : 'endText';
+      var value = (0, _$$_REQUIRE(_dependencyMap[15], "../utils/parseDayPlan").formatMin)(dateToMin(picked));
+      // If we're in inline-edit mode for this block, update the draft instead
+      if (editingBlockIndex === picker.index && editingBlockDraft) {
+        setEditingBlockDraft(prev => prev ? {
+          ...prev,
+          [field]: value
+        } : prev);
+      } else {
+        updateBlock(picker.index, {
+          [field]: value
+        });
+      }
     }
     function startBlockDictation(_x) {
       return _startBlockDictation.apply(this, arguments);
@@ -112958,9 +112977,16 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         try {
           var text = yield _TranscriptionService.default.stop();
           if (text?.trim()) {
-            updateBlock(index, {
-              activity: text.trim()
-            });
+            if (editingBlockIndex === index && editingBlockDraft) {
+              setEditingBlockDraft(prev => prev ? {
+                ...prev,
+                activity: text.trim()
+              } : prev);
+            } else {
+              updateBlock(index, {
+                activity: text.trim()
+              });
+            }
           }
         } catch (e) {
           _reactNative.Alert.alert('Transcription failed', String(e?.message ?? e));
@@ -113107,7 +113133,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
               })
             })]
           })]
-        }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+        }), debugMode && /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
           style: styles.inputCard,
           children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TextInput, {
             style: styles.rawInput,
@@ -113131,66 +113157,140 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
           style: styles.sectionLabel,
           children: "PLAN BLOCKS"
         }), blocks.map((block, i) => {
+          var isEditing = editingBlockIndex === i;
           var isRecording = recording?.index === i;
-          return /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+          if (isEditing && editingBlockDraft) {
+            // Inline edit mode
+            return /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+              style: styles.blockCard,
+              children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+                style: styles.blockTimes,
+                children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
+                  style: styles.timeInput,
+                  onPress: () => setActiveTimePicker({
+                    index: i,
+                    field: 'start'
+                  }),
+                  children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                    style: styles.timeInputText,
+                    children: normalizeTimeText(editingBlockDraft.startText) || 'Start'
+                  })
+                }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                  style: styles.timeDash,
+                  children: "\u2013"
+                }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
+                  style: styles.timeInput,
+                  onPress: () => setActiveTimePicker({
+                    index: i,
+                    field: 'end'
+                  }),
+                  children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                    style: styles.timeInputText,
+                    children: normalizeTimeText(editingBlockDraft.endText) || 'End'
+                  })
+                })]
+              }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+                style: styles.activityRow,
+                children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TextInput, {
+                  style: styles.activityInput,
+                  value: editingBlockDraft.activity,
+                  onChangeText: v => setEditingBlockDraft(prev => prev ? {
+                    ...prev,
+                    activity: v
+                  } : prev),
+                  placeholder: "Activity description\u2026",
+                  placeholderTextColor: colors.placeholder,
+                  editable: !isRecording,
+                  multiline: true,
+                  textAlignVertical: "top",
+                  autoFocus: true
+                }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
+                  style: [styles.micBtn, isRecording && styles.micBtnActive],
+                  onPress: () => isRecording ? stopBlockDictation(i) : startBlockDictation(i),
+                  children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                    style: styles.micIcon,
+                    children: isRecording ? '⏹' : '🎙'
+                  })
+                })]
+              }), isRecording && /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
+                style: styles.recordingLabel,
+                children: ["Recording\u2026 ", (recording.ms / 1000).toFixed(1), "s \u2014 tap \u23F9 to stop"]
+              }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+                style: styles.blockEditActions,
+                children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
+                  style: styles.blockSaveBtn,
+                  onPress: () => {
+                    updateBlock(i, editingBlockDraft);
+                    setEditingBlockIndex(null);
+                    setEditingBlockDraft(null);
+                  },
+                  children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                    style: styles.blockSaveBtnText,
+                    children: "Save"
+                  })
+                }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
+                  style: styles.blockCancelBtn,
+                  onPress: () => {
+                    setEditingBlockIndex(null);
+                    setEditingBlockDraft(null);
+                  },
+                  children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                    style: styles.blockCancelBtnText,
+                    children: "Cancel"
+                  })
+                }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
+                  style: styles.blockDeleteBtn,
+                  onPress: () => {
+                    removeBlock(i);
+                    setEditingBlockIndex(null);
+                    setEditingBlockDraft(null);
+                  },
+                  children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                    style: styles.blockDeleteBtnText,
+                    children: "Delete"
+                  })
+                })]
+              }), debugMode && block.id !== undefined && /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+                style: styles.debugRow,
+                children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
+                  style: styles.debugText,
+                  children: ["synced: ", block.syncedAt !== null && block.syncedAt !== undefined && block.updatedAt !== undefined && block.syncedAt >= block.updatedAt ? 'yes' : 'no']
+                }), block.updatedAt !== undefined && /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
+                  style: styles.debugText,
+                  children: ["upd: ", new Date(block.updatedAt).toLocaleTimeString()]
+                }), block.syncedAt != null && /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
+                  style: styles.debugText,
+                  children: ["sync_at: ", new Date(block.syncedAt).toLocaleTimeString()]
+                }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
+                  style: styles.debugText,
+                  children: ["status: ", block.status === 1 ? 'active' : block.status === 0 ? 'del' : 'new']
+                })]
+              })]
+            }, i);
+          }
+
+          // Collapsed card view (goal-card style)
+          return /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.TouchableOpacity, {
             style: styles.blockCard,
+            onPress: () => {
+              setEditingBlockIndex(i);
+              setEditingBlockDraft({
+                ...block
+              });
+            },
+            activeOpacity: 0.75,
             children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-              style: styles.blockTimes,
-              children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
-                style: styles.timeInput,
-                onPress: () => setActiveTimePicker({
-                  index: i,
-                  field: 'start'
-                }),
-                children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                  style: styles.timeInputText,
-                  children: normalizeTimeText(block.startText) || 'Start'
-                })
+              style: styles.blockCardRow,
+              children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
+                style: styles.blockCardTime,
+                children: [normalizeTimeText(block.startText) || '??', " \u2013 ", normalizeTimeText(block.endText) || '??']
               }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                style: styles.timeDash,
-                children: "\u2013"
-              }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
-                style: styles.timeInput,
-                onPress: () => setActiveTimePicker({
-                  index: i,
-                  field: 'end'
-                }),
-                children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                  style: styles.timeInputText,
-                  children: normalizeTimeText(block.endText) || 'End'
-                })
-              }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
-                onPress: () => removeBlock(i),
-                style: styles.removeBtn,
-                children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                  style: styles.removeBtnText,
-                  children: "\u2715"
-                })
+                style: styles.blockCardEdit,
+                children: "Edit"
               })]
-            }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-              style: styles.activityRow,
-              children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TextInput, {
-                style: styles.activityInput,
-                value: block.activity,
-                onChangeText: v => updateBlock(i, {
-                  activity: v
-                }),
-                placeholder: "Activity description\u2026",
-                placeholderTextColor: colors.placeholder,
-                editable: !isRecording,
-                multiline: true,
-                textAlignVertical: "top"
-              }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
-                style: [styles.micBtn, isRecording && styles.micBtnActive],
-                onPress: () => isRecording ? stopBlockDictation(i) : startBlockDictation(i),
-                children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-                  style: styles.micIcon,
-                  children: isRecording ? '⏹' : '🎙'
-                })
-              })]
-            }), isRecording && /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
-              style: styles.recordingLabel,
-              children: ["Recording\u2026 ", (recording.ms / 1000).toFixed(1), "s \u2014 tap \u23F9 to stop"]
+            }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+              style: styles.blockCardActivity,
+              children: block.activity || 'No activity set'
             }), debugMode && block.id !== undefined && /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
               style: styles.debugRow,
               children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
@@ -113241,7 +113341,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
           })
         })]
       }), activeTimePicker && blocks[activeTimePicker.index] && /*#__PURE__*/(0, _jsxRuntime.jsx)(_datetimepicker.default, {
-        value: pickerDateFor(blocks[activeTimePicker.index], activeTimePicker.field),
+        value: pickerDateFor(activeTimePicker.index, activeTimePicker.field),
         mode: "time",
         display: "default",
         onChange: handleTimePicked
@@ -113575,6 +113675,65 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         fontSize: 14,
         color: '#fff',
         fontWeight: '600'
+      },
+      blockCardRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 4
+      },
+      blockCardTime: {
+        fontSize: 14,
+        fontWeight: '700',
+        color: '#039BE5'
+      },
+      blockCardEdit: {
+        fontSize: 13,
+        color: '#039BE5',
+        fontWeight: '600'
+      },
+      blockCardActivity: {
+        fontSize: 15,
+        color: colors.text,
+        lineHeight: 22
+      },
+      blockEditActions: {
+        flexDirection: 'row',
+        gap: 8,
+        marginTop: 4
+      },
+      blockSaveBtn: {
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        backgroundColor: '#039BE5',
+        borderRadius: 8
+      },
+      blockSaveBtnText: {
+        fontSize: 14,
+        color: '#fff',
+        fontWeight: '700'
+      },
+      blockCancelBtn: {
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: colors.border
+      },
+      blockCancelBtnText: {
+        fontSize: 14,
+        color: colors.textSecondary,
+        fontWeight: '700'
+      },
+      blockDeleteBtn: {
+        marginLeft: 'auto',
+        paddingHorizontal: 12,
+        paddingVertical: 8
+      },
+      blockDeleteBtnText: {
+        fontSize: 14,
+        color: colors.recordBtn,
+        fontWeight: '500'
       }
     });
   }
@@ -116094,14 +116253,18 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       _useState14 = (0, _slicedToArray2.default)(_useState13, 2),
       goalsExpanded = _useState14[0],
       setGoalsExpanded = _useState14[1];
-    var _useState15 = (0, _react.useState)({}),
+    var _useState15 = (0, _react.useState)(false),
       _useState16 = (0, _slicedToArray2.default)(_useState15, 2),
-      entryContributions = _useState16[0],
-      setEntryContributions = _useState16[1];
-    var _useState17 = (0, _react.useState)(null),
+      entriesExpanded = _useState16[0],
+      setEntriesExpanded = _useState16[1];
+    var _useState17 = (0, _react.useState)({}),
       _useState18 = (0, _slicedToArray2.default)(_useState17, 2),
-      summary = _useState18[0],
-      setSummary = _useState18[1];
+      entryContributions = _useState18[0],
+      setEntryContributions = _useState18[1];
+    var _useState19 = (0, _react.useState)(null),
+      _useState20 = (0, _slicedToArray2.default)(_useState19, 2),
+      summary = _useState20[0],
+      setSummary = _useState20[1];
     var loadEntries = (0, _react.useCallback)(/*#__PURE__*/function () {
       var _ref = (0, _asyncToGenerator2.default)(function* (date) {
         setLoading(true);
@@ -116148,15 +116311,20 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
     }, [currentDate, loadEntries]);
     function goToPrevDay() {
       setGoalsExpanded(false);
+      setEntriesExpanded(false);
       setCurrentDate(d => new Date(d.getTime() - 86_400_000));
     }
     function goToNextDay() {
       setGoalsExpanded(false);
+      setEntriesExpanded(false);
       setCurrentDate(d => new Date(d.getTime() + 86_400_000));
     }
+    var ENTRIES_COLLAPSED_COUNT = 2;
     var canGoForward = !isToday(currentDate);
     var visibleGoals = goalsExpanded ? goals : goals.slice(0, PINNED_GOALS_COLLAPSED_COUNT);
     var hiddenGoalCount = Math.max(0, goals.length - PINNED_GOALS_COLLAPSED_COUNT);
+    var visibleEntries = entriesExpanded ? entries : entries.slice(0, ENTRIES_COLLAPSED_COUNT);
+    var hiddenEntryCount = Math.max(0, entries.length - ENTRIES_COLLAPSED_COUNT);
     var styles = makeStyles(colors, calendarColor);
     function handleEntrySaved(updated) {
       setEntries(prev => prev.map(e => e.id === updated.id ? updated : e));
@@ -116213,24 +116381,6 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
             asOf: endOfDay(currentDate).getTime(),
             onPress: () => onOpenGoal?.(goal.id)
           }, goal.id ?? `goal-${index}-${goal.text}`))]
-        }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.TouchableOpacity, {
-          style: styles.summaryDebugCard,
-          onPress: () => onOpenDailySummary?.(currentDate),
-          activeOpacity: 0.85,
-          children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-            style: styles.summaryDebugHeader,
-            children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-              style: styles.summaryDebugTitle,
-              children: "DAILY SUMMARY"
-            }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-              style: styles.summaryDebugLink,
-              children: "Open"
-            })]
-          }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-            style: [styles.summaryReadOnly, !summary && styles.summaryPlaceholder],
-            numberOfLines: 3,
-            children: summary?.debrief || 'No summary yet'
-          })]
         }), planBlocks.length > 0 && (() => {
           var coveredCount = planBlocks.filter(b => (0, _$$_REQUIRE(_dependencyMap[15], "../utils/planMatching").isCovered)(b, entries)).length;
           return /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.TouchableOpacity, {
@@ -116267,57 +116417,84 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
             style: styles.emptyText,
             children: "No entries for this day"
           })
-        }) : entries.map((entry, index) => {
-          var matched = planBlocks.length > 0 ? (0, _$$_REQUIRE(_dependencyMap[15], "../utils/planMatching").allMatchingBlocks)(entry, planBlocks) : [];
-          return /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.TouchableOpacity, {
-            style: styles.entryCard,
-            onPress: () => setSelectedEntry(entry),
-            children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-              style: styles.entryCardHeader,
-              children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
-                style: styles.timeRange,
-                children: [formatTime(entry.timestampStart), " \u2013 ", formatTime(entry.timestampEnd)]
-              }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
-                style: styles.entryId,
-                children: ["#", entry.id]
+        }) : /*#__PURE__*/(0, _jsxRuntime.jsxs)(_jsxRuntime.Fragment, {
+          children: [visibleEntries.map((entry, index) => {
+            var matched = planBlocks.length > 0 ? (0, _$$_REQUIRE(_dependencyMap[15], "../utils/planMatching").allMatchingBlocks)(entry, planBlocks) : [];
+            return /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.TouchableOpacity, {
+              style: styles.entryCard,
+              onPress: () => setSelectedEntry(entry),
+              children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+                style: styles.entryCardHeader,
+                children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
+                  style: styles.timeRange,
+                  children: [formatTime(entry.timestampStart), " \u2013 ", formatTime(entry.timestampEnd)]
+                }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
+                  style: styles.entryId,
+                  children: ["#", entry.id]
+                })]
+              }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                style: styles.transcript,
+                children: entry.transcript
+              }), matched.length > 0 && /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
+                style: styles.planTag,
+                children: ["\u2192 ", matched.map(b => b.activity).join(', ')]
+              }), entryContributions[entry.id] && entryContributions[entry.id].length > 0 && /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
+                style: styles.goalTagRow,
+                children: entryContributions[entry.id].map((c, i) => /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
+                  style: styles.goalTag,
+                  onPress: event => {
+                    event.stopPropagation();
+                    onOpenGoal?.(c.goalId);
+                  },
+                  children: /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
+                    style: styles.goalTagText,
+                    numberOfLines: 1,
+                    children: ["\uD83C\uDFAF ", c.goalText, "  +", c.contributionPct, "%"]
+                  })
+                }, i))
+              }), debugMode && /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+                style: styles.debugRow,
+                children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
+                  style: styles.debugText,
+                  children: ["synced: ", entry.syncedAt !== null && entry.syncedAt >= entry.updatedAt ? 'yes' : 'no']
+                }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
+                  style: styles.debugText,
+                  children: ["upd: ", new Date(entry.updatedAt).toLocaleTimeString()]
+                }), entry.syncedAt !== null && /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
+                  style: styles.debugText,
+                  children: ["sync_at: ", new Date(entry.syncedAt).toLocaleTimeString()]
+                }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
+                  style: styles.debugText,
+                  children: ["status: ", entry.status === 1 ? 'active' : 'del']
+                })]
               })]
+            }, entry.id ?? `entry-${index}-${entry.timestampStart}-${entry.timestampEnd}`);
+          }), hiddenEntryCount > 0 && /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
+            onPress: () => setEntriesExpanded(prev => !prev),
+            style: styles.entriesToggle,
+            children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+              style: styles.entriesToggleText,
+              children: entriesExpanded ? 'Show less' : `Show ${hiddenEntryCount} more`
+            })
+          })]
+        }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.TouchableOpacity, {
+          style: styles.summaryDebugCard,
+          onPress: () => onOpenDailySummary?.(currentDate),
+          activeOpacity: 0.85,
+          children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+            style: styles.summaryDebugHeader,
+            children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+              style: styles.summaryDebugTitle,
+              children: "DAILY SUMMARY"
             }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-              style: styles.transcript,
-              children: entry.transcript
-            }), matched.length > 0 && /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
-              style: styles.planTag,
-              children: ["\u2192 ", matched.map(b => b.activity).join(', ')]
-            }), entryContributions[entry.id] && entryContributions[entry.id].length > 0 && /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.View, {
-              style: styles.goalTagRow,
-              children: entryContributions[entry.id].map((c, i) => /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
-                style: styles.goalTag,
-                onPress: event => {
-                  event.stopPropagation();
-                  onOpenGoal?.(c.goalId);
-                },
-                children: /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
-                  style: styles.goalTagText,
-                  numberOfLines: 1,
-                  children: ["\uD83C\uDFAF ", c.goalText, "  +", c.contributionPct, "%"]
-                })
-              }, i))
-            }), debugMode && /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
-              style: styles.debugRow,
-              children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
-                style: styles.debugText,
-                children: ["synced: ", entry.syncedAt !== null && entry.syncedAt >= entry.updatedAt ? 'yes' : 'no']
-              }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
-                style: styles.debugText,
-                children: ["upd: ", new Date(entry.updatedAt).toLocaleTimeString()]
-              }), entry.syncedAt !== null && /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
-                style: styles.debugText,
-                children: ["sync_at: ", new Date(entry.syncedAt).toLocaleTimeString()]
-              }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
-                style: styles.debugText,
-                children: ["status: ", entry.status === 1 ? 'active' : 'del']
-              })]
+              style: styles.summaryDebugLink,
+              children: "Open"
             })]
-          }, entry.id ?? `entry-${index}-${entry.timestampStart}-${entry.timestampEnd}`);
+          }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+            style: [styles.summaryReadOnly, !summary && styles.summaryPlaceholder],
+            numberOfLines: 3,
+            children: summary?.debrief || 'No summary yet'
+          })]
         })]
       }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
         style: [styles.fab, {
@@ -116725,6 +116902,17 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         fontSize: 11,
         color: colors.textSecondary,
         fontFamily: 'monospace'
+      },
+      entriesToggle: {
+        alignSelf: 'flex-start',
+        minHeight: 22,
+        justifyContent: 'center',
+        paddingHorizontal: 4
+      },
+      entriesToggleText: {
+        fontSize: 12,
+        color: '#33B679',
+        fontWeight: '700'
       }
     });
   }
@@ -117338,7 +117526,9 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
     return _reactNative.StyleSheet.create({
       container: {
         flex: 1,
-        backgroundColor: colors.background
+        backgroundColor: colors.background,
+        borderLeftWidth: 4,
+        borderLeftColor: '#33B679'
       },
       header: {
         flexDirection: 'row',
@@ -117347,7 +117537,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         paddingHorizontal: 16,
         paddingVertical: 12,
         backgroundColor: '#33B679' + '18',
-        borderBottomWidth: 2,
+        borderBottomWidth: _reactNative.StyleSheet.hairlineWidth,
         borderBottomColor: '#33B679'
       },
       headerTitle: {
@@ -117425,11 +117615,12 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         color: colors.text,
         lineHeight: 24,
         minHeight: 120,
-        borderWidth: 1,
+        borderWidth: 1.5,
         borderColor: '#33B679',
         borderRadius: 8,
         padding: 10,
-        backgroundColor: colors.surface + 'cc'
+        backgroundColor: colors.surface,
+        textAlignVertical: 'top'
       },
       notesGroupLabel: {
         fontSize: 11,

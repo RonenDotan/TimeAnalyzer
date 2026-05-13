@@ -98,6 +98,7 @@ export default function ReportScreen({
   const [planBlocks, setPlanBlocks] = useState<PlanBlock[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
   const [goalsExpanded, setGoalsExpanded] = useState(false);
+  const [entriesExpanded, setEntriesExpanded] = useState(false);
   const [entryContributions, setEntryContributions] = useState<Record<number, GoalEntryContribution[]>>({});
   const [summary, setSummary] = useState<DailySummaryResult | null>(null);
 
@@ -139,17 +140,22 @@ export default function ReportScreen({
 
   function goToPrevDay() {
     setGoalsExpanded(false);
+    setEntriesExpanded(false);
     setCurrentDate(d => new Date(d.getTime() - 86_400_000));
   }
 
   function goToNextDay() {
     setGoalsExpanded(false);
+    setEntriesExpanded(false);
     setCurrentDate(d => new Date(d.getTime() + 86_400_000));
   }
 
+  const ENTRIES_COLLAPSED_COUNT = 2;
   const canGoForward = !isToday(currentDate);
   const visibleGoals = goalsExpanded ? goals : goals.slice(0, PINNED_GOALS_COLLAPSED_COUNT);
   const hiddenGoalCount = Math.max(0, goals.length - PINNED_GOALS_COLLAPSED_COUNT);
+  const visibleEntries = entriesExpanded ? entries : entries.slice(0, ENTRIES_COLLAPSED_COUNT);
+  const hiddenEntryCount = Math.max(0, entries.length - ENTRIES_COLLAPSED_COUNT);
   const styles = makeStyles(colors, calendarColor);
 
   function handleEntrySaved(updated: LogEntry) {
@@ -187,6 +193,7 @@ export default function ReportScreen({
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.list}>
+          {/* Active Goals */}
           {goals.length > 0 && (
             <View style={styles.pinnedGoals}>
               <View style={styles.pinnedGoalsTop}>
@@ -210,18 +217,6 @@ export default function ReportScreen({
             </View>
           )}
 
-          <TouchableOpacity
-            style={styles.summaryDebugCard}
-            onPress={() => onOpenDailySummary?.(currentDate)}
-            activeOpacity={0.85}>
-            <View style={styles.summaryDebugHeader}>
-              <Text style={styles.summaryDebugTitle}>DAILY SUMMARY</Text>
-              <Text style={styles.summaryDebugLink}>Open</Text>
-            </View>
-            <Text style={[styles.summaryReadOnly, !summary && styles.summaryPlaceholder]} numberOfLines={3}>
-              {summary?.debrief || 'No summary yet'}
-            </Text>
-          </TouchableOpacity>
           {/* Plan section — always shown if plan exists */}
           {planBlocks.length > 0 && (() => {
             const coveredCount = planBlocks.filter(b => isCovered(b, entries)).length;
@@ -258,68 +253,93 @@ export default function ReportScreen({
             );
           })()}
 
-          {/* Entries */}
+          {/* Check-in Entries */}
           {entries.length === 0 ? (
             <View style={styles.centered}>
               <Text style={styles.emptyText}>No entries for this day</Text>
             </View>
           ) : (
-            entries.map((entry, index) => {
-              const matched = planBlocks.length > 0 ? allMatchingBlocks(entry, planBlocks) : [];
-              return (
-                <TouchableOpacity
-                  key={entry.id ?? `entry-${index}-${entry.timestampStart}-${entry.timestampEnd}`}
-                  style={styles.entryCard}
-                  onPress={() => setSelectedEntry(entry)}>
-                  <View style={styles.entryCardHeader}>
-                    <Text style={styles.timeRange}>
-                      {formatTime(entry.timestampStart)} – {formatTime(entry.timestampEnd)}
-                    </Text>
-                    <Text style={styles.entryId}>#{entry.id}</Text>
-                  </View>
-                  <Text style={styles.transcript}>{entry.transcript}</Text>
-                  {matched.length > 0 && (
-                    <Text style={styles.planTag}>→ {matched.map(b => b.activity).join(', ')}</Text>
-                  )}
-                  {entryContributions[entry.id] && entryContributions[entry.id].length > 0 && (
-                    <View style={styles.goalTagRow}>
-                      {entryContributions[entry.id].map((c, i) => (
-                        <TouchableOpacity
-                          key={i}
-                          style={styles.goalTag}
-                          onPress={event => {
-                            event.stopPropagation();
-                            onOpenGoal?.(c.goalId);
-                          }}>
-                          <Text style={styles.goalTagText} numberOfLines={1}>
-                            🎯 {c.goalText}  +{c.contributionPct}%
-                          </Text>
-                        </TouchableOpacity>
-                      ))}
+            <>
+              {visibleEntries.map((entry, index) => {
+                const matched = planBlocks.length > 0 ? allMatchingBlocks(entry, planBlocks) : [];
+                return (
+                  <TouchableOpacity
+                    key={entry.id ?? `entry-${index}-${entry.timestampStart}-${entry.timestampEnd}`}
+                    style={styles.entryCard}
+                    onPress={() => setSelectedEntry(entry)}>
+                    <View style={styles.entryCardHeader}>
+                      <Text style={styles.timeRange}>
+                        {formatTime(entry.timestampStart)} – {formatTime(entry.timestampEnd)}
+                      </Text>
+                      <Text style={styles.entryId}>#{entry.id}</Text>
                     </View>
-                  )}
-                  {debugMode && (
-                    <View style={styles.debugRow}>
-                      <Text style={styles.debugText}>
-                        synced: {entry.syncedAt !== null && entry.syncedAt >= entry.updatedAt ? 'yes' : 'no'}
-                      </Text>
-                      <Text style={styles.debugText}>
-                        upd: {new Date(entry.updatedAt).toLocaleTimeString()}
-                      </Text>
-                      {entry.syncedAt !== null && (
+                    <Text style={styles.transcript}>{entry.transcript}</Text>
+                    {matched.length > 0 && (
+                      <Text style={styles.planTag}>→ {matched.map(b => b.activity).join(', ')}</Text>
+                    )}
+                    {entryContributions[entry.id] && entryContributions[entry.id].length > 0 && (
+                      <View style={styles.goalTagRow}>
+                        {entryContributions[entry.id].map((c, i) => (
+                          <TouchableOpacity
+                            key={i}
+                            style={styles.goalTag}
+                            onPress={event => {
+                              event.stopPropagation();
+                              onOpenGoal?.(c.goalId);
+                            }}>
+                            <Text style={styles.goalTagText} numberOfLines={1}>
+                              🎯 {c.goalText}  +{c.contributionPct}%
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    )}
+                    {debugMode && (
+                      <View style={styles.debugRow}>
                         <Text style={styles.debugText}>
-                          sync_at: {new Date(entry.syncedAt).toLocaleTimeString()}
+                          synced: {entry.syncedAt !== null && entry.syncedAt >= entry.updatedAt ? 'yes' : 'no'}
                         </Text>
-                      )}
-                      <Text style={styles.debugText}>
-                        status: {entry.status === 1 ? 'active' : 'del'}
-                      </Text>
-                    </View>
-                  )}
+                        <Text style={styles.debugText}>
+                          upd: {new Date(entry.updatedAt).toLocaleTimeString()}
+                        </Text>
+                        {entry.syncedAt !== null && (
+                          <Text style={styles.debugText}>
+                            sync_at: {new Date(entry.syncedAt).toLocaleTimeString()}
+                          </Text>
+                        )}
+                        <Text style={styles.debugText}>
+                          status: {entry.status === 1 ? 'active' : 'del'}
+                        </Text>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+              {hiddenEntryCount > 0 && (
+                <TouchableOpacity
+                  onPress={() => setEntriesExpanded(prev => !prev)}
+                  style={styles.entriesToggle}>
+                  <Text style={styles.entriesToggleText}>
+                    {entriesExpanded ? 'Show less' : `Show ${hiddenEntryCount} more`}
+                  </Text>
                 </TouchableOpacity>
-              );
-            })
+              )}
+            </>
           )}
+
+          {/* Daily Summary — bottom */}
+          <TouchableOpacity
+            style={styles.summaryDebugCard}
+            onPress={() => onOpenDailySummary?.(currentDate)}
+            activeOpacity={0.85}>
+            <View style={styles.summaryDebugHeader}>
+              <Text style={styles.summaryDebugTitle}>DAILY SUMMARY</Text>
+              <Text style={styles.summaryDebugLink}>Open</Text>
+            </View>
+            <Text style={[styles.summaryReadOnly, !summary && styles.summaryPlaceholder]} numberOfLines={3}>
+              {summary?.debrief || 'No summary yet'}
+            </Text>
+          </TouchableOpacity>
 
         </ScrollView>
       )}
@@ -556,5 +576,16 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
       borderTopColor: colors.border,
     },
     debugText: { fontSize: 11, color: colors.textSecondary, fontFamily: 'monospace' },
+    entriesToggle: {
+      alignSelf: 'flex-start',
+      minHeight: 22,
+      justifyContent: 'center',
+      paddingHorizontal: 4,
+    },
+    entriesToggleText: {
+      fontSize: 12,
+      color: '#33B679',
+      fontWeight: '700',
+    },
   });
 }
