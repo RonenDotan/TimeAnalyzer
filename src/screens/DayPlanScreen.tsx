@@ -25,6 +25,7 @@ import { ColorPalette, useTheme } from '../contexts/ThemeContext';
 
 const GOAL_COLOR = '#F97316';
 const OVERDUE_COLOR = '#DC2626';
+const GOALS_COLLAPSED_COUNT = 2;
 
 interface Props {
   initialDate?: Date;
@@ -116,6 +117,7 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false,
   const [recording, setRecording] = useState<RecordingState>(null);
   const [activeTimePicker, setActiveTimePicker] = useState<ActiveTimePicker>(null);
   const [goals, setGoals] = useState<Goal[]>([]);
+  const [goalsExpanded, setGoalsExpanded] = useState(false);
   const [newGoalText, setNewGoalText] = useState('');
   const [addingGoal, setAddingGoal] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -148,6 +150,7 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false,
     }
     load();
     loadGoals();
+    setGoalsExpanded(false);
   }, [dateStr]);
 
   function goToPrevDay() {
@@ -341,7 +344,7 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false,
             </TouchableOpacity>
           </View>
 
-          {goals.map(goal => {
+          {(goalsExpanded ? goals : goals.slice(0, GOALS_COLLAPSED_COUNT)).map(goal => {
             const overdue = isGoalOverdue(goal);
             const goalColor = overdue ? OVERDUE_COLOR : GOAL_COLOR;
             return (
@@ -362,6 +365,16 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false,
             </View>
             );
           })}
+
+          {goals.length > GOALS_COLLAPSED_COUNT && (
+            <TouchableOpacity
+              style={styles.goalsToggle}
+              onPress={() => setGoalsExpanded(prev => !prev)}>
+              <Text style={styles.goalsToggleText}>
+                {goalsExpanded ? 'Show less' : `Show ${goals.length - GOALS_COLLAPSED_COUNT} more`}
+              </Text>
+            </TouchableOpacity>
+          )}
 
           {addingGoal && (
             <View style={styles.addGoalRow}>
@@ -685,6 +698,17 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
       fontSize: 13,
       color: GOAL_COLOR,
       fontWeight: '500',
+    },
+    goalsToggle: {
+      alignSelf: 'flex-start',
+      minHeight: 28,
+      justifyContent: 'center',
+      paddingHorizontal: 6,
+    },
+    goalsToggleText: {
+      fontSize: 12,
+      color: GOAL_COLOR,
+      fontWeight: '700',
     },
     goalsEmpty: {
       fontSize: 14,
