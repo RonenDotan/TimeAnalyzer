@@ -21,6 +21,7 @@ import { DailySummaryResult } from '../types/DailySummary';
 const GOAL_COLOR = '#F97316';
 const OVERDUE_COLOR = '#DC2626';
 const SUMMARY_COLOR = '#F5A623';
+const PINNED_GOALS_COLLAPSED_COUNT = 2;
 import { ColorPalette, useTheme } from '../contexts/ThemeContext';
 import { DayPlan, PlanBlock } from '../types/DayPlan';
 import { allMatchingBlocks, isCovered } from '../utils/planMatching';
@@ -86,6 +87,7 @@ export default function ReportScreen({
   const [dayPlan, setDayPlan] = useState<DayPlan | null>(null);
   const [planBlocks, setPlanBlocks] = useState<PlanBlock[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
+  const [goalsExpanded, setGoalsExpanded] = useState(false);
   const [entryContributions, setEntryContributions] = useState<Record<number, GoalEntryContribution[]>>({});
   const [summary, setSummary] = useState<DailySummaryResult | null>(null);
 
@@ -126,14 +128,18 @@ export default function ReportScreen({
   }, [currentDate, loadEntries]);
 
   function goToPrevDay() {
+    setGoalsExpanded(false);
     setCurrentDate(d => new Date(d.getTime() - 86_400_000));
   }
 
   function goToNextDay() {
+    setGoalsExpanded(false);
     setCurrentDate(d => new Date(d.getTime() + 86_400_000));
   }
 
   const canGoForward = !isToday(currentDate);
+  const visibleGoals = goalsExpanded ? goals : goals.slice(0, PINNED_GOALS_COLLAPSED_COUNT);
+  const hiddenGoalCount = Math.max(0, goals.length - PINNED_GOALS_COLLAPSED_COUNT);
   const styles = makeStyles(colors, calendarColor);
 
   function handleEntrySaved(updated: LogEntry) {
@@ -179,8 +185,17 @@ export default function ReportScreen({
       {/* Pinned active goals — always visible above plan/entries */}
       {!loading && goals.length > 0 && (
         <View style={styles.pinnedGoals}>
-          <Text style={styles.pinnedGoalsHeader}>🎯  ACTIVE GOALS</Text>
-          {goals.map(goal => {
+          <View style={styles.pinnedGoalsTop}>
+            <Text style={styles.pinnedGoalsHeader}>🎯  ACTIVE GOALS</Text>
+            {hiddenGoalCount > 0 && (
+              <TouchableOpacity onPress={() => setGoalsExpanded(prev => !prev)} style={styles.pinnedGoalsToggle}>
+                <Text style={styles.pinnedGoalsToggleText}>
+                  {goalsExpanded ? 'Show less' : `Show ${hiddenGoalCount} more`}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+          {visibleGoals.map(goal => {
             const overdue = isGoalOverdue(goal, endOfDay(currentDate).getTime());
             const goalColor = overdue ? OVERDUE_COLOR : GOAL_COLOR;
             return (
@@ -475,12 +490,28 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
       paddingVertical: 10,
       gap: 8,
     },
+    pinnedGoalsTop: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 10,
+    },
     pinnedGoalsHeader: {
+      flex: 1,
       fontSize: 11,
       fontWeight: '700',
       color: GOAL_COLOR,
       letterSpacing: 0.8,
-      marginBottom: 2,
+    },
+    pinnedGoalsToggle: {
+      minHeight: 28,
+      justifyContent: 'center',
+      paddingHorizontal: 8,
+    },
+    pinnedGoalsToggleText: {
+      fontSize: 12,
+      color: GOAL_COLOR,
+      fontWeight: '700',
     },
     pinnedGoalRow: {
       flexDirection: 'row',

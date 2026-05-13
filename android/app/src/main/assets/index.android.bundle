@@ -104126,7 +104126,7 @@ __d(function(global, require, _importDefaultUnused, _importAllUnused, module, ex
     "major":  0,
     "minor":  0,
     "ticket_id":  40,
-    "sequence":  5
+    "sequence":  6
 }
 ;
 },638,[],"version.json");
@@ -115644,6 +115644,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
   var GOAL_COLOR = '#F97316';
   var OVERDUE_COLOR = '#DC2626';
   var SUMMARY_COLOR = '#F5A623';
+  var PINNED_GOALS_COLLAPSED_COUNT = 2;
   function startOfDay(date) {
     return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
   }
@@ -115706,14 +115707,18 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       _useState12 = (0, _slicedToArray2.default)(_useState11, 2),
       goals = _useState12[0],
       setGoals = _useState12[1];
-    var _useState13 = (0, _react.useState)({}),
+    var _useState13 = (0, _react.useState)(false),
       _useState14 = (0, _slicedToArray2.default)(_useState13, 2),
-      entryContributions = _useState14[0],
-      setEntryContributions = _useState14[1];
-    var _useState15 = (0, _react.useState)(null),
+      goalsExpanded = _useState14[0],
+      setGoalsExpanded = _useState14[1];
+    var _useState15 = (0, _react.useState)({}),
       _useState16 = (0, _slicedToArray2.default)(_useState15, 2),
-      summary = _useState16[0],
-      setSummary = _useState16[1];
+      entryContributions = _useState16[0],
+      setEntryContributions = _useState16[1];
+    var _useState17 = (0, _react.useState)(null),
+      _useState18 = (0, _slicedToArray2.default)(_useState17, 2),
+      summary = _useState18[0],
+      setSummary = _useState18[1];
     var loadEntries = (0, _react.useCallback)(/*#__PURE__*/function () {
       var _ref = (0, _asyncToGenerator2.default)(function* (date) {
         setLoading(true);
@@ -115759,12 +115764,16 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       loadEntries(currentDate);
     }, [currentDate, loadEntries]);
     function goToPrevDay() {
+      setGoalsExpanded(false);
       setCurrentDate(d => new Date(d.getTime() - 86_400_000));
     }
     function goToNextDay() {
+      setGoalsExpanded(false);
       setCurrentDate(d => new Date(d.getTime() + 86_400_000));
     }
     var canGoForward = !isToday(currentDate);
+    var visibleGoals = goalsExpanded ? goals : goals.slice(0, PINNED_GOALS_COLLAPSED_COUNT);
+    var hiddenGoalCount = Math.max(0, goals.length - PINNED_GOALS_COLLAPSED_COUNT);
     var styles = makeStyles(colors, calendarColor);
     function handleEntrySaved(updated) {
       setEntries(prev => prev.map(e => e.id === updated.id ? updated : e));
@@ -115820,10 +115829,20 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         })]
       }), !loading && goals.length > 0 && /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
         style: styles.pinnedGoals,
-        children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-          style: styles.pinnedGoalsHeader,
-          children: "\uD83C\uDFAF  ACTIVE GOALS"
-        }), goals.map(goal => {
+        children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+          style: styles.pinnedGoalsTop,
+          children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+            style: styles.pinnedGoalsHeader,
+            children: "\uD83C\uDFAF  ACTIVE GOALS"
+          }), hiddenGoalCount > 0 && /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
+            onPress: () => setGoalsExpanded(prev => !prev),
+            style: styles.pinnedGoalsToggle,
+            children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+              style: styles.pinnedGoalsToggleText,
+              children: goalsExpanded ? 'Show less' : `Show ${hiddenGoalCount} more`
+            })
+          })]
+        }), visibleGoals.map(goal => {
           var overdue = (0, _$$_REQUIRE(_dependencyMap[12], "../types/Goal").isGoalOverdue)(goal, endOfDay(currentDate).getTime());
           var goalColor = overdue ? OVERDUE_COLOR : GOAL_COLOR;
           return /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.TouchableOpacity, {
@@ -116213,12 +116232,28 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         paddingVertical: 10,
         gap: 8
       },
+      pinnedGoalsTop: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 10
+      },
       pinnedGoalsHeader: {
+        flex: 1,
         fontSize: 11,
         fontWeight: '700',
         color: GOAL_COLOR,
-        letterSpacing: 0.8,
-        marginBottom: 2
+        letterSpacing: 0.8
+      },
+      pinnedGoalsToggle: {
+        minHeight: 28,
+        justifyContent: 'center',
+        paddingHorizontal: 8
+      },
+      pinnedGoalsToggleText: {
+        fontSize: 12,
+        color: GOAL_COLOR,
+        fontWeight: '700'
       },
       pinnedGoalRow: {
         flexDirection: 'row',
