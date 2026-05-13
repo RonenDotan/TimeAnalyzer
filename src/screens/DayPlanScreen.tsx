@@ -334,53 +334,53 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false,
         formatLabel={() => formatHeader(dateStr)}
       />
 
-      {(goals.length > 0 || addingGoal) && (
-        <View style={styles.goalsSectionCard}>
-          <View style={styles.goalsSectionHeader}>
-            <Text style={styles.goalsSectionTitle}>{'\u{1F3AF}  ACTIVE GOALS'}</Text>
-            <TouchableOpacity onPress={() => setAddingGoal(v => !v)}>
-              <Text style={styles.goalsSectionAdd}>{addingGoal ? '\u{2715}' : '+ New goal'}</Text>
-            </TouchableOpacity>
-          </View>
-
-          {(goalsExpanded ? goals : goals.slice(0, GOALS_COLLAPSED_COUNT)).map(goal => (
-            <GoalCard key={goal.id} goal={goal} />
-          ))}
-
-          {goals.length > GOALS_COLLAPSED_COUNT && (
-            <TouchableOpacity
-              style={styles.goalsToggle}
-              onPress={() => setGoalsExpanded(prev => !prev)}>
-              <Text style={styles.goalsToggleText}>
-                {goalsExpanded ? 'Show less' : `Show ${goals.length - GOALS_COLLAPSED_COUNT} more`}
-              </Text>
-            </TouchableOpacity>
-          )}
-
-          {addingGoal && (
-            <View style={styles.addGoalRow}>
-              <TextInput
-                style={styles.addGoalInput}
-                value={newGoalText}
-                onChangeText={setNewGoalText}
-                placeholder="Describe your goal..."
-                placeholderTextColor={colors.placeholder}
-                multiline
-                textAlignVertical="top"
-                autoFocus
-              />
-              <TouchableOpacity
-                style={[styles.addGoalBtn, !newGoalText.trim() && styles.addGoalBtnDisabled]}
-                onPress={handleAddGoal}
-                disabled={!newGoalText.trim()}>
-                <Text style={styles.addGoalBtnText}>Add</Text>
+      <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+        {(goals.length > 0 || addingGoal) && (
+          <View style={styles.goalsSectionCard}>
+            <View style={styles.goalsSectionHeader}>
+              <Text style={styles.goalsSectionTitle}>{'\u{1F3AF}  ACTIVE GOALS'}</Text>
+              <TouchableOpacity onPress={() => setAddingGoal(v => !v)}>
+                <Text style={styles.goalsSectionAdd}>{addingGoal ? '\u{2715}' : '+ New goal'}</Text>
               </TouchableOpacity>
             </View>
-          )}
-        </View>
-      )}
 
-      <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+            {(goalsExpanded ? goals : goals.slice(0, GOALS_COLLAPSED_COUNT)).map(goal => (
+              <GoalCard key={goal.id} goal={goal} />
+            ))}
+
+            {goals.length > GOALS_COLLAPSED_COUNT && (
+              <TouchableOpacity
+                style={styles.goalsToggle}
+                onPress={() => setGoalsExpanded(prev => !prev)}>
+                <Text style={styles.goalsToggleText}>
+                  {goalsExpanded ? 'Show less' : `Show ${goals.length - GOALS_COLLAPSED_COUNT} more`}
+                </Text>
+              </TouchableOpacity>
+            )}
+
+            {addingGoal && (
+              <View style={styles.addGoalRow}>
+                <TextInput
+                  style={styles.addGoalInput}
+                  value={newGoalText}
+                  onChangeText={setNewGoalText}
+                  placeholder="Describe your goal..."
+                  placeholderTextColor={colors.placeholder}
+                  multiline
+                  textAlignVertical="top"
+                  autoFocus
+                />
+                <TouchableOpacity
+                  style={[styles.addGoalBtn, !newGoalText.trim() && styles.addGoalBtnDisabled]}
+                  onPress={handleAddGoal}
+                  disabled={!newGoalText.trim()}>
+                  <Text style={styles.addGoalBtnText}>Add</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        )}
+
         {/* Voice / text input area */}
         <View style={styles.inputCard}>
           <TextInput
@@ -541,12 +541,12 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
     navBtn: { paddingHorizontal: 8, paddingVertical: 3 },
     navArrow: { fontSize: 24, color: colors.accent, fontWeight: '300' },
     dayLabel: { fontSize: 14, fontWeight: '600', color: colors.text },
-    body: { padding: 16, gap: 12, paddingBottom: 40 },
+    body: { paddingHorizontal: 16, paddingTop: 16, gap: 12, paddingBottom: 40 },
     inputCard: {
       backgroundColor: colors.surface,
-      borderRadius: 12,
-      padding: 14,
-      gap: 10,
+      borderRadius: 8,
+      padding: 12,
+      gap: 8,
     },
     rawInput: {
       fontSize: 15,
@@ -572,9 +572,9 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
     },
     blockCard: {
       backgroundColor: '#039BE5' + '18',
-      borderRadius: 12,
-      padding: 14,
-      gap: 10,
+      borderRadius: 8,
+      padding: 12,
+      gap: 8,
       borderLeftWidth: 4,
       borderLeftColor: '#039BE5',
     },
@@ -623,8 +623,8 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
     addBtnText: { fontSize: 15, color: colors.accent, fontWeight: '500' },
     calendarBlockCard: {
       backgroundColor: calendarColor + '18',
-      borderRadius: 12,
-      padding: 14,
+      borderRadius: 8,
+      padding: 12,
       gap: 6,
       borderLeftWidth: 4,
       borderLeftColor: calendarColor,
@@ -658,11 +658,11 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
     debugText: { fontSize: 11, color: colors.textSecondary, fontFamily: 'monospace' },
     goalsSectionCard: {
       backgroundColor: GOAL_COLOR + '10',
-      paddingHorizontal: 12,
-      paddingVertical: 8,
-      gap: 6,
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: GOAL_COLOR + '40',
+      borderRadius: 8,
+      padding: 12,
+      gap: 8,
+      borderLeftWidth: 4,
+      borderLeftColor: GOAL_COLOR,
     },
     goalsSectionHeader: {
       flexDirection: 'row',
@@ -715,7 +715,7 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
       color: colors.text,
       backgroundColor: colors.background,
       borderRadius: 8,
-      padding: 10,
+      padding: 8,
       minHeight: 64,
       lineHeight: 22,
       borderWidth: 1,

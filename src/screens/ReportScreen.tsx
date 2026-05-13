@@ -165,37 +165,35 @@ export default function ReportScreen({
         disableNext={!canGoForward}
       />
 
-      {/* Pinned active goals — always visible above plan/entries */}
-      {!loading && goals.length > 0 && (
-        <View style={styles.pinnedGoals}>
-          <View style={styles.pinnedGoalsTop}>
-            <Text style={styles.pinnedGoalsHeader}>🎯  ACTIVE GOALS</Text>
-            {hiddenGoalCount > 0 && (
-              <TouchableOpacity onPress={() => setGoalsExpanded(prev => !prev)} style={styles.pinnedGoalsToggle}>
-                <Text style={styles.pinnedGoalsToggleText}>
-                  {goalsExpanded ? 'Show less' : `Show ${hiddenGoalCount} more`}
-                </Text>
-              </TouchableOpacity>
-            )}
-          </View>
-          {visibleGoals.map(goal => (
-            <GoalCard
-              key={goal.id}
-              goal={goal}
-              asOf={endOfDay(currentDate).getTime()}
-              onPress={() => onOpenGoal?.(goal.id)}
-            />
-          ))}
-        </View>
-      )}
-
-
       {loading ? (
         <View style={styles.centeredFull}>
           <ActivityIndicator size="large" color={colors.accent} />
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.list}>
+          {goals.length > 0 && (
+            <View style={styles.pinnedGoals}>
+              <View style={styles.pinnedGoalsTop}>
+                <Text style={styles.pinnedGoalsHeader}>🎯  ACTIVE GOALS</Text>
+                {hiddenGoalCount > 0 && (
+                  <TouchableOpacity onPress={() => setGoalsExpanded(prev => !prev)} style={styles.pinnedGoalsToggle}>
+                    <Text style={styles.pinnedGoalsToggleText}>
+                      {goalsExpanded ? 'Show less' : `Show ${hiddenGoalCount} more`}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+              {visibleGoals.map(goal => (
+                <GoalCard
+                  key={goal.id}
+                  goal={goal}
+                  asOf={endOfDay(currentDate).getTime()}
+                  onPress={() => onOpenGoal?.(goal.id)}
+                />
+              ))}
+            </View>
+          )}
+
           <TouchableOpacity
             style={styles.summaryDebugCard}
             onPress={() => onOpenDailySummary?.(currentDate)}
@@ -357,12 +355,12 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
     centeredFull: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     centered: { alignItems: 'center', justifyContent: 'center', paddingVertical: 48 },
     emptyText: { fontSize: 16, color: colors.textSecondary },
-    list: { padding: 16, gap: 12, paddingBottom: 100 },
+    list: { paddingHorizontal: 16, paddingTop: 16, gap: 12, paddingBottom: 100 },
     summaryDebugCard: {
       backgroundColor: SUMMARY_COLOR + '18',
-      borderRadius: 12,
+      borderRadius: 8,
       padding: 12,
-      gap: 10,
+      gap: 8,
       borderLeftWidth: 4,
       borderLeftColor: SUMMARY_COLOR,
     },
@@ -422,8 +420,8 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
     entryId: { fontSize: 11, color: colors.border, fontWeight: '500' },
     entryCard: {
       backgroundColor: '#33B679' + '18',
-      borderRadius: 12,
-      padding: 16,
+      borderRadius: 8,
+      padding: 12,
       borderLeftWidth: 4,
       borderLeftColor: '#33B679',
       shadowColor: '#000',
@@ -448,14 +446,13 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
       elevation: 8,
     },
     fabIcon: { fontSize: 32, color: '#fff', lineHeight: 36 },
-    // Pinned goals strip — sits between dayNav and scroll content
     pinnedGoals: {
-      backgroundColor: GOAL_COLOR + '12',
-      borderBottomWidth: 2,
-      borderBottomColor: GOAL_COLOR + '40',
-      paddingHorizontal: 12,
-      paddingVertical: 7,
-      gap: 5,
+      backgroundColor: GOAL_COLOR + '10',
+      borderRadius: 8,
+      padding: 12,
+      gap: 8,
+      borderLeftWidth: 4,
+      borderLeftColor: GOAL_COLOR,
     },
     pinnedGoalsTop: {
       flexDirection: 'row',
@@ -498,8 +495,8 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
     pinnedGoalPct: { fontSize: 12, fontWeight: '700', color: GOAL_COLOR, minWidth: 34, textAlign: 'right' },
     planSection: {
       backgroundColor: '#039BE5' + '18',
-      borderRadius: 12,
-      padding: 14,
+      borderRadius: 8,
+      padding: 12,
       gap: 8,
       borderLeftWidth: 4,
       borderLeftColor: '#039BE5',
