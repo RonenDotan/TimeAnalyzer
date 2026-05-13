@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import CalendarSyncService from '../services/CalendarSyncService';
+import DevSeedService from '../services/DevSeedService';
 import GoogleAuthService, { getSignInErrorMessage } from '../services/GoogleAuthService';
 import SettingsService from '../services/SettingsService';
 import SchedulerService from '../services/SchedulerService';
@@ -47,6 +48,7 @@ export default function SettingsScreen({ onClose }: Props) {
   const [googleState, setGoogleState] = useState<GoogleIntegrationState | null>(null);
   const [signingIn, setSigningIn] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [seeding, setSeeding] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -161,6 +163,35 @@ export default function SettingsScreen({ onClose }: Props) {
       SettingsService.setOpenAIApiKey(openaiKey.trim()),
     ]);
     onClose(true);
+  }
+
+  async function handleSeedDemoData() {
+    if (!settings) return;
+    Alert.alert(
+      'Seed Mock Data',
+      'This clears existing entries, goals, plans, notes, and daily summaries, then inserts a software engineer demo day.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clear and Seed',
+          style: 'destructive',
+          onPress: async () => {
+            setSeeding(true);
+            try {
+              const result = await DevSeedService.seedSoftwareEngineerDemo(settings.debugMode);
+              Alert.alert(
+                result.seeded ? 'Seed complete' : 'Seed skipped',
+                result.seeded ? 'Mock software engineer data was added.' : (result.reason ?? 'No data was added.'),
+              );
+            } catch (e: any) {
+              Alert.alert('Seed failed', e?.message ?? String(e));
+            } finally {
+              setSeeding(false);
+            }
+          },
+        },
+      ],
+    );
   }
 
   const set = (patch: Partial<Settings>) => setSettings(s => ({ ...(s ?? DEFAULT_SETTINGS), ...patch }));
@@ -597,6 +628,20 @@ export default function SettingsScreen({ onClose }: Props) {
               </View>
               {settings.debugMode && <Text style={styles.checkmark}>✓</Text>}
             </TouchableOpacity>
+            {settings.debugMode && (
+              <TouchableOpacity
+                style={[styles.row, styles.rowBorder]}
+                onPress={handleSeedDemoData}
+                disabled={seeding}>
+                <View>
+                  <Text style={styles.rowLabel}>Seed Mock Data</Text>
+                  <Text style={styles.rowSub}>Emulator-only software engineer dataset</Text>
+                </View>
+                {seeding
+                  ? <ActivityIndicator size="small" color={colors.accent} />
+                  : <Text style={styles.chevron}>›</Text>}
+              </TouchableOpacity>
+            )}
           </View>
         )}
 

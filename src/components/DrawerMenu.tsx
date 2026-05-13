@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import {
   Animated,
+  ActivityIndicator,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -42,10 +43,20 @@ interface Props {
   currentScreen: DrawerScreen;
   onClose: () => void;
   onNavigate: (screen: DrawerScreen) => void;
+  onSeedMockData: () => void;
   debugMode: boolean;
+  seedingMockData?: boolean;
 }
 
-export default function DrawerMenu({ visible, currentScreen, onClose, onNavigate, debugMode }: Props) {
+export default function DrawerMenu({
+  visible,
+  currentScreen,
+  onClose,
+  onNavigate,
+  onSeedMockData,
+  debugMode,
+  seedingMockData = false,
+}: Props) {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const slideAnim = useRef(new Animated.Value(-DRAWER_WIDTH)).current;
@@ -128,6 +139,14 @@ export default function DrawerMenu({ visible, currentScreen, onClose, onNavigate
                   </Text>
                 </TouchableOpacity>
               ))}
+              <TouchableOpacity
+                style={styles.navItem}
+                onPress={onSeedMockData}
+                disabled={seedingMockData}>
+                <Text style={styles.navIcon}>{'\u{1F331}'}</Text>
+                <Text style={styles.navLabel}>Seed Mock Data</Text>
+                {seedingMockData && <ActivityIndicator size="small" color={colors.accent} />}
+              </TouchableOpacity>
               <View style={styles.divider} />
             </>
           )}

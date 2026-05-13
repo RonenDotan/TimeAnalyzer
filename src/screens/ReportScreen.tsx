@@ -199,9 +199,9 @@ export default function ReportScreen({
                   </TouchableOpacity>
                 )}
               </View>
-              {visibleGoals.map(goal => (
+              {visibleGoals.map((goal, index) => (
                 <GoalCard
-                  key={goal.id}
+                  key={goal.id ?? `goal-${index}-${goal.text}`}
                   goal={goal}
                   asOf={endOfDay(currentDate).getTime()}
                   onPress={() => onOpenGoal?.(goal.id)}
@@ -234,8 +234,9 @@ export default function ReportScreen({
                 {planBlocks.map(block => {
                   const covered = isCovered(block, entries);
                   const isCalendar = block.source === 'calendar';
+                  const blockKey = block.id ?? `${block.source}-${block.startMin}-${block.endMin}-${block.activity}`;
                   return (
-                    <View key={block.id} style={styles.planBlock}>
+                    <View key={blockKey} style={styles.planBlock}>
                       <View style={[
                         styles.planDot,
                         isCalendar
@@ -263,11 +264,11 @@ export default function ReportScreen({
               <Text style={styles.emptyText}>No entries for this day</Text>
             </View>
           ) : (
-            entries.map(entry => {
+            entries.map((entry, index) => {
               const matched = planBlocks.length > 0 ? allMatchingBlocks(entry, planBlocks) : [];
               return (
                 <TouchableOpacity
-                  key={entry.id}
+                  key={entry.id ?? `entry-${index}-${entry.timestampStart}-${entry.timestampEnd}`}
                   style={styles.entryCard}
                   onPress={() => setSelectedEntry(entry)}>
                   <View style={styles.entryCardHeader}>
