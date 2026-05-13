@@ -116,7 +116,6 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false,
   const [blocks, setBlocks] = useState<EditBlock[]>([]);
   const [calendarBlocks, setCalendarBlocks] = useState<PlanBlock[]>([]);
   const [deletedBlockIds, setDeletedBlockIds] = useState<number[]>([]);
-  const [saving, setSaving] = useState(false);
   const [recording, setRecording] = useState<RecordingState>(null);
   const [activeTimePicker, setActiveTimePicker] = useState<ActiveTimePicker>(null);
   const [goals, setGoals] = useState<Goal[]>([]);
@@ -124,6 +123,9 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false,
   const [newGoalText, setNewGoalText] = useState('');
   const [addingGoal, setAddingGoal] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const suppressAutosaveRef = useRef(true);
+  const autosavingRef = useRef(false);
 
   const dateStr = toDateString(currentDate);
 
@@ -134,6 +136,7 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false,
 
   useEffect(() => {
     async function load() {
+      suppressAutosaveRef.current = true;
       setBlocks([]);
       setCalendarBlocks([]);
       setDeletedBlockIds([]);
@@ -149,6 +152,8 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false,
         setBlocks(existing.map(b => planBlockToEdit(b)));
       } catch (e: any) {
         Alert.alert('Load failed', String(e?.message ?? e));
+      } finally {
+        setTimeout(() => { suppressAutosaveRef.current = false; }, 0);
       }
     }
     load();
@@ -259,58 +264,50 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false,
     await loadGoals();
   }
 
-  async function handleSave() {
-    let currentBlocks = blocks;
-    if (rawInput.trim().length > 0) {
-      const autoParsed = parseDayPlan(rawInput);
-      if (autoParsed.length > 0) {
-        currentBlocks = [...currentBlocks, ...autoParsed.map(parsedToEdit)];
-        setBlocks(currentBlocks);
-        setRawInput('');
-      }
-    }
-
+  function parseBlocksForAutosave(currentBlocks: EditBlock[]): Array<ParsedBlock & { id?: number }> | null {
     const parsed: Array<ParsedBlock & { id?: number }> = [];
     for (const b of currentBlocks) {
       const startMin = parseTimeText(b.startText);
       const endMin = parseTimeText(b.endText);
-      if (startMin === null) {
-        Alert.alert('Invalid time', `"${b.startText}" is not a valid time (use HH:MM).`);
-        return;
-      }
-      if (endMin === null) {
-        Alert.alert('Invalid time', `"${b.endText}" is not a valid time (use HH:MM).`);
-        return;
-      }
-      if (endMin <= startMin) {
-        Alert.alert('Invalid range', `End time must be after start time for "${b.activity}".`);
-        return;
-      }
-      if (!b.activity.trim()) {
-        Alert.alert('Missing activity', 'Every block needs an activity description.');
-        return;
-      }
+      if (startMin === null || endMin === null || endMin <= startMin || !b.activity.trim()) return null;
       parsed.push({ startMin, endMin, activity: b.activity.trim(), id: b.id });
     }
-
-    if (parsed.length === 0 && deletedBlockIds.length === 0) {
-      onClose();
-      return;
-    }
-
-    setSaving(true);
-    try {
-      const plan = await StorageService.upsertDayPlan(dateStr);
-      await StorageService.upsertPlanBlocks(plan.id, parsed, deletedBlockIds);
-      setDeletedBlockIds([]);
-      CalendarSyncService.syncChanged().catch(() => {});
-      onClose();
-    } catch (e: any) {
-      Alert.alert('Save failed', String(e?.message ?? e));
-    } finally {
-      setSaving(false);
-    }
+    return parsed;
   }
+
+  useEffect(() => {
+    if (suppressAutosaveRef.current) return;
+    const parsed = parseBlocksForAutosave(blocks);
+    if (parsed === null) return;
+    if (parsed.length === 0 && deletedBlockIds.length === 0) return;
+
+    if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
+    autosaveTimerRef.current = setTimeout(async () => {
+      if (autosavingRef.current) return;
+      autosavingRef.current = true;
+      try {
+        const plan = await StorageService.upsertDayPlan(dateStr);
+        const saved = await StorageService.upsertPlanBlocks(plan.id, parsed, deletedBlockIds);
+        suppressAutosaveRef.current = true;
+        setBlocks(saved.map(b => planBlockToEdit(b)));
+        setDeletedBlockIds([]);
+        CalendarSyncService.syncChanged().catch(() => {});
+        setTimeout(() => { suppressAutosaveRef.current = false; }, 0);
+      } catch (e: any) {
+        Alert.alert('Autosave failed', String(e?.message ?? e));
+      } finally {
+        autosavingRef.current = false;
+      }
+    }, 700);
+
+    return () => {
+      if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
+    };
+  }, [blocks, deletedBlockIds, dateStr]);
+
+  useEffect(() => () => {
+    if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
+  }, []);
 
   const styles = makeStyles(colors, calendarColor);
 
@@ -322,9 +319,6 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false,
         title="Plans"
         onLeft={onClose}
         leftLabel="Cancel"
-        onRight={handleSave}
-        rightLabel={saving ? 'Saving...' : 'Save'}
-        rightColor={saving ? colors.placeholder : colors.accent}
       />
 
       <DateNavigator

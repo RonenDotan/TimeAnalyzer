@@ -63,6 +63,21 @@ function isToday(date: Date): boolean {
   );
 }
 
+function formatDayHeader(date: Date): string {
+  const today = new Date();
+  const todayStart = startOfDay(today).getTime();
+  const dateStart = startOfDay(date).getTime();
+  const diffDays = Math.round((dateStart - todayStart) / 86_400_000);
+  if (diffDays === 0) return 'Today';
+  if (diffDays === -1) return 'Yesterday';
+  if (diffDays === 1) return 'Tomorrow';
+  return date.toLocaleDateString('en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+  });
+}
+
 export default function ReportScreen({
   onStartCheckIn,
   onOpenMenu,
@@ -156,12 +171,13 @@ export default function ReportScreen({
     <KeyboardAvoidingView
       style={[styles.container, { paddingTop: insets.top }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <ScreenHeader title="TimeAnalyzer" onLeft={onOpenMenu} leftIcon="hamburger" leftLabel="Menu" />
+      <ScreenHeader title="Entries" onLeft={onOpenMenu} leftIcon="hamburger" leftLabel="Menu" />
 
       <DateNavigator
         date={currentDate}
         onPrev={goToPrevDay}
         onNext={goToNextDay}
+        formatLabel={formatDayHeader}
         disableNext={!canGoForward}
       />
 
