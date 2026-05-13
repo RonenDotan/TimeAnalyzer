@@ -104126,7 +104126,7 @@ __d(function(global, require, _importDefaultUnused, _importAllUnused, module, ex
     "major":  0,
     "minor":  0,
     "ticket_id":  40,
-    "sequence":  7
+    "sequence":  8
 }
 ;
 },638,[],"version.json");
@@ -112091,39 +112091,40 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingHorizontal: 16,
-        paddingVertical: 12,
+        paddingHorizontal: 12,
+        paddingVertical: 6,
         backgroundColor: colors.surface,
         borderBottomWidth: _reactNative.StyleSheet.hairlineWidth,
         borderBottomColor: colors.border
       },
       headerBtn: {
-        fontSize: 17,
+        fontSize: 15,
         color: colors.textSecondary
       },
       title: {
-        fontSize: 17,
+        fontSize: 16,
         fontWeight: '700',
         color: colors.text
       },
       headerSpacer: {
-        width: 48
+        width: 44
       },
       dayNav: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingHorizontal: 8,
-        paddingVertical: 12,
+        paddingHorizontal: 6,
+        paddingVertical: 6,
         backgroundColor: colors.surface,
         borderBottomWidth: _reactNative.StyleSheet.hairlineWidth,
         borderBottomColor: colors.border
       },
       navBtn: {
-        padding: 8
+        paddingHorizontal: 8,
+        paddingVertical: 3
       },
       navArrow: {
-        fontSize: 26,
+        fontSize: 22,
         color: SUMMARY_COLOR,
         fontWeight: '500'
       },
@@ -112131,7 +112132,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         color: colors.border
       },
       dayLabel: {
-        fontSize: 16,
+        fontSize: 14,
         fontWeight: '600',
         color: colors.text
       },
@@ -112887,23 +112888,23 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingHorizontal: 16,
-        paddingVertical: 12,
+        paddingHorizontal: 12,
+        paddingVertical: 6,
         backgroundColor: colors.surface,
         borderBottomWidth: _reactNative.StyleSheet.hairlineWidth,
         borderBottomColor: colors.border
       },
       title: {
-        fontSize: 17,
+        fontSize: 16,
         fontWeight: '600',
         color: colors.text
       },
       cancel: {
-        fontSize: 17,
+        fontSize: 15,
         color: colors.textSecondary
       },
       save: {
-        fontSize: 17,
+        fontSize: 15,
         color: colors.accent,
         fontWeight: '600'
       },
@@ -112914,22 +112915,23 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingHorizontal: 8,
-        paddingVertical: 12,
+        paddingHorizontal: 6,
+        paddingVertical: 6,
         backgroundColor: colors.surface,
         borderBottomWidth: _reactNative.StyleSheet.hairlineWidth,
         borderBottomColor: colors.border
       },
       navBtn: {
-        padding: 8
+        paddingHorizontal: 8,
+        paddingVertical: 3
       },
       navArrow: {
-        fontSize: 28,
+        fontSize: 24,
         color: colors.accent,
         fontWeight: '300'
       },
       dayLabel: {
-        fontSize: 16,
+        fontSize: 14,
         fontWeight: '600',
         color: colors.text
       },
@@ -113088,9 +113090,9 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       },
       goalsSectionCard: {
         backgroundColor: GOAL_COLOR + '10',
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-        gap: 10,
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        gap: 6,
         borderBottomWidth: _reactNative.StyleSheet.hairlineWidth,
         borderBottomColor: GOAL_COLOR + '40'
       },
@@ -113112,9 +113114,9 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       },
       goalsToggle: {
         alignSelf: 'flex-start',
-        minHeight: 28,
+        minHeight: 22,
         justifyContent: 'center',
-        paddingHorizontal: 6
+        paddingHorizontal: 4
       },
       goalsToggleText: {
         fontSize: 12,
@@ -113127,9 +113129,10 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         fontStyle: 'italic'
       },
       goalRow: {
-        gap: 4,
-        borderRadius: 8,
-        padding: 6
+        gap: 2,
+        borderRadius: 6,
+        paddingHorizontal: 4,
+        paddingVertical: 3
       },
       goalRowOverdue: {
         backgroundColor: OVERDUE_COLOR + '16'
@@ -113140,36 +113143,38 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         alignItems: 'center'
       },
       goalText: {
-        fontSize: 14,
+        fontSize: 12,
         color: colors.text,
         flex: 1,
-        lineHeight: 20
+        lineHeight: 16
       },
       goalPct: {
-        fontSize: 13,
+        fontSize: 12,
         fontWeight: '700',
         color: GOAL_COLOR,
-        marginLeft: 8
+        marginLeft: 6
       },
       goalProgressBg: {
-        height: 4,
+        height: 3,
         backgroundColor: colors.border,
         borderRadius: 2,
         overflow: 'hidden'
       },
       goalProgressFill: {
-        height: 4,
+        height: 3,
         backgroundColor: GOAL_COLOR,
         borderRadius: 2
       },
       goalTarget: {
-        fontSize: 11,
-        color: colors.textSecondary
+        fontSize: 10,
+        color: colors.textSecondary,
+        lineHeight: 13
       },
       goalOverdueText: {
-        fontSize: 11,
+        fontSize: 10,
         color: OVERDUE_COLOR,
-        fontWeight: '700'
+        fontWeight: '700',
+        lineHeight: 13
       },
       addGoalRow: {
         gap: 8
@@ -116253,9 +116258,9 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         backgroundColor: GOAL_COLOR + '12',
         borderBottomWidth: 2,
         borderBottomColor: GOAL_COLOR + '40',
-        paddingHorizontal: 16,
-        paddingVertical: 10,
-        gap: 8
+        paddingHorizontal: 12,
+        paddingVertical: 7,
+        gap: 5
       },
       pinnedGoalsTop: {
         flexDirection: 'row',
@@ -116271,9 +116276,9 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         letterSpacing: 0.8
       },
       pinnedGoalsToggle: {
-        minHeight: 28,
+        minHeight: 22,
         justifyContent: 'center',
-        paddingHorizontal: 8
+        paddingHorizontal: 4
       },
       pinnedGoalsToggleText: {
         fontSize: 12,
@@ -116283,47 +116288,51 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       pinnedGoalRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 10,
-        borderRadius: 8,
-        padding: 6
+        gap: 8,
+        borderRadius: 6,
+        paddingHorizontal: 4,
+        paddingVertical: 3
       },
       pinnedGoalRowOverdue: {
         backgroundColor: OVERDUE_COLOR + '16'
       },
       pinnedGoalInfo: {
         flex: 1,
-        gap: 3
+        gap: 2
       },
       pinnedGoalText: {
-        fontSize: 13,
+        fontSize: 12,
         color: colors.text,
-        fontWeight: '500'
+        fontWeight: '500',
+        lineHeight: 16
       },
       pinnedBarBg: {
-        height: 4,
+        height: 3,
         backgroundColor: colors.border,
         borderRadius: 2,
         overflow: 'hidden'
       },
       pinnedBarFill: {
-        height: 4,
+        height: 3,
         backgroundColor: GOAL_COLOR,
         borderRadius: 2
       },
       pinnedGoalDeadline: {
-        fontSize: 10,
-        color: colors.textSecondary
+        fontSize: 9,
+        color: colors.textSecondary,
+        lineHeight: 12
       },
       pinnedGoalOverdueText: {
-        fontSize: 10,
+        fontSize: 9,
         color: OVERDUE_COLOR,
-        fontWeight: '700'
+        fontWeight: '700',
+        lineHeight: 12
       },
       pinnedGoalPct: {
-        fontSize: 14,
+        fontSize: 12,
         fontWeight: '700',
         color: GOAL_COLOR,
-        minWidth: 38,
+        minWidth: 34,
         textAlign: 'right'
       },
       planSection: {
@@ -117889,38 +117898,38 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingHorizontal: 16,
-        paddingVertical: 10,
+        paddingHorizontal: 12,
+        paddingVertical: 6,
         backgroundColor: colors.surface,
         borderBottomWidth: _reactNative.StyleSheet.hairlineWidth,
         borderBottomColor: colors.border
       },
       menuBtn: {
-        padding: 4,
-        width: 36
+        padding: 3,
+        width: 32
       },
       menuIcon: {
-        fontSize: 22,
+        fontSize: 20,
         color: colors.accent
       },
       title: {
-        fontSize: 17,
+        fontSize: 16,
         fontWeight: '600',
         color: colors.text
       },
       modeRow: {
         flexDirection: 'row',
-        paddingHorizontal: 16,
-        paddingVertical: 8,
-        gap: 8,
+        paddingHorizontal: 12,
+        paddingVertical: 5,
+        gap: 6,
         backgroundColor: colors.surface,
         borderBottomWidth: _reactNative.StyleSheet.hairlineWidth,
         borderBottomColor: colors.border
       },
       modeBtn: {
-        paddingHorizontal: 18,
-        paddingVertical: 6,
-        borderRadius: 16,
+        paddingHorizontal: 14,
+        paddingVertical: 5,
+        borderRadius: 14,
         backgroundColor: colors.background
       },
       modeBtnActive: {
@@ -117938,22 +117947,23 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingHorizontal: 8,
-        paddingVertical: 10,
+        paddingHorizontal: 6,
+        paddingVertical: 6,
         backgroundColor: colors.surface,
         borderBottomWidth: _reactNative.StyleSheet.hairlineWidth,
         borderBottomColor: colors.border
       },
       navBtn: {
-        padding: 8
+        paddingHorizontal: 8,
+        paddingVertical: 3
       },
       navArrow: {
-        fontSize: 28,
+        fontSize: 24,
         color: colors.accent,
         fontWeight: '300'
       },
       dayLabel: {
-        fontSize: 14,
+        fontSize: 13,
         fontWeight: '600',
         color: colors.text
       },
