@@ -104126,7 +104126,7 @@ __d(function(global, require, _importDefaultUnused, _importAllUnused, module, ex
     "major":  0,
     "minor":  0,
     "ticket_id":  40,
-    "sequence":  5
+    "sequence":  8
 }
 ;
 },638,[],"version.json");
@@ -112091,39 +112091,40 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingHorizontal: 16,
-        paddingVertical: 12,
+        paddingHorizontal: 12,
+        paddingVertical: 6,
         backgroundColor: colors.surface,
         borderBottomWidth: _reactNative.StyleSheet.hairlineWidth,
         borderBottomColor: colors.border
       },
       headerBtn: {
-        fontSize: 17,
+        fontSize: 15,
         color: colors.textSecondary
       },
       title: {
-        fontSize: 17,
+        fontSize: 16,
         fontWeight: '700',
         color: colors.text
       },
       headerSpacer: {
-        width: 48
+        width: 44
       },
       dayNav: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingHorizontal: 8,
-        paddingVertical: 12,
+        paddingHorizontal: 6,
+        paddingVertical: 6,
         backgroundColor: colors.surface,
         borderBottomWidth: _reactNative.StyleSheet.hairlineWidth,
         borderBottomColor: colors.border
       },
       navBtn: {
-        padding: 8
+        paddingHorizontal: 8,
+        paddingVertical: 3
       },
       navArrow: {
-        fontSize: 26,
+        fontSize: 22,
         color: SUMMARY_COLOR,
         fontWeight: '500'
       },
@@ -112131,7 +112132,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         color: colors.border
       },
       dayLabel: {
-        fontSize: 16,
+        fontSize: 14,
         fontWeight: '600',
         color: colors.text
       },
@@ -112263,6 +112264,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
   function _interopRequireWildcard(e, t) { if ("function" == typeof WeakMap) var r = new WeakMap(), n = new WeakMap(); return (_interopRequireWildcard = function (e, t) { if (!t && e && e.__esModule) return e; var o, i, f = { __proto__: null, default: e }; if (null === e || "object" != typeof e && "function" != typeof e) return f; if (o = t ? n : r) { if (o.has(e)) return o.get(e); o.set(e, f); } for (var _t in e) "default" !== _t && {}.hasOwnProperty.call(e, _t) && ((i = (o = Object.defineProperty) && Object.getOwnPropertyDescriptor(e, _t)) && (i.get || i.set) ? o(f, _t, i) : f[_t] = e[_t]); return f; })(e, t); }
   var GOAL_COLOR = '#F97316';
   var OVERDUE_COLOR = '#DC2626';
+  var GOALS_COLLAPSED_COUNT = 2;
   function toDateString(d) {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   }
@@ -112370,14 +112372,18 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       _useState16 = (0, _slicedToArray2.default)(_useState15, 2),
       goals = _useState16[0],
       setGoals = _useState16[1];
-    var _useState17 = (0, _react.useState)(''),
+    var _useState17 = (0, _react.useState)(false),
       _useState18 = (0, _slicedToArray2.default)(_useState17, 2),
-      newGoalText = _useState18[0],
-      setNewGoalText = _useState18[1];
-    var _useState19 = (0, _react.useState)(false),
+      goalsExpanded = _useState18[0],
+      setGoalsExpanded = _useState18[1];
+    var _useState19 = (0, _react.useState)(''),
       _useState20 = (0, _slicedToArray2.default)(_useState19, 2),
-      addingGoal = _useState20[0],
-      setAddingGoal = _useState20[1];
+      newGoalText = _useState20[0],
+      setNewGoalText = _useState20[1];
+    var _useState21 = (0, _react.useState)(false),
+      _useState22 = (0, _slicedToArray2.default)(_useState21, 2),
+      addingGoal = _useState22[0],
+      setAddingGoal = _useState22[1];
     var timerRef = (0, _react.useRef)(null);
     var dateStr = toDateString(currentDate);
     function loadGoals() {
@@ -112417,6 +112423,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       }
       load();
       loadGoals();
+      setGoalsExpanded(false);
     }, [dateStr]);
     function goToPrevDay() {
       setCurrentDate(d => new Date(d.getTime() - 86_400_000));
@@ -112662,7 +112669,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
               children: addingGoal ? '\u{2715}' : '+ New goal'
             })
           })]
-        }), goals.map(goal => {
+        }), (goalsExpanded ? goals : goals.slice(0, GOALS_COLLAPSED_COUNT)).map(goal => {
           var overdue = (0, _$$_REQUIRE(_dependencyMap[15], "../types/Goal").isGoalOverdue)(goal);
           var goalColor = overdue ? OVERDUE_COLOR : GOAL_COLOR;
           return /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
@@ -112699,6 +112706,13 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
               children: "Overdue"
             })]
           }, goal.id);
+        }), goals.length > GOALS_COLLAPSED_COUNT && /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
+          style: styles.goalsToggle,
+          onPress: () => setGoalsExpanded(prev => !prev),
+          children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+            style: styles.goalsToggleText,
+            children: goalsExpanded ? 'Show less' : `Show ${goals.length - GOALS_COLLAPSED_COUNT} more`
+          })
         }), addingGoal && /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
           style: styles.addGoalRow,
           children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TextInput, {
@@ -112874,23 +112888,23 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingHorizontal: 16,
-        paddingVertical: 12,
+        paddingHorizontal: 12,
+        paddingVertical: 6,
         backgroundColor: colors.surface,
         borderBottomWidth: _reactNative.StyleSheet.hairlineWidth,
         borderBottomColor: colors.border
       },
       title: {
-        fontSize: 17,
+        fontSize: 16,
         fontWeight: '600',
         color: colors.text
       },
       cancel: {
-        fontSize: 17,
+        fontSize: 15,
         color: colors.textSecondary
       },
       save: {
-        fontSize: 17,
+        fontSize: 15,
         color: colors.accent,
         fontWeight: '600'
       },
@@ -112901,22 +112915,23 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingHorizontal: 8,
-        paddingVertical: 12,
+        paddingHorizontal: 6,
+        paddingVertical: 6,
         backgroundColor: colors.surface,
         borderBottomWidth: _reactNative.StyleSheet.hairlineWidth,
         borderBottomColor: colors.border
       },
       navBtn: {
-        padding: 8
+        paddingHorizontal: 8,
+        paddingVertical: 3
       },
       navArrow: {
-        fontSize: 28,
+        fontSize: 24,
         color: colors.accent,
         fontWeight: '300'
       },
       dayLabel: {
-        fontSize: 16,
+        fontSize: 14,
         fontWeight: '600',
         color: colors.text
       },
@@ -113075,9 +113090,9 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       },
       goalsSectionCard: {
         backgroundColor: GOAL_COLOR + '10',
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-        gap: 10,
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        gap: 6,
         borderBottomWidth: _reactNative.StyleSheet.hairlineWidth,
         borderBottomColor: GOAL_COLOR + '40'
       },
@@ -113097,15 +113112,27 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         color: GOAL_COLOR,
         fontWeight: '500'
       },
+      goalsToggle: {
+        alignSelf: 'flex-start',
+        minHeight: 22,
+        justifyContent: 'center',
+        paddingHorizontal: 4
+      },
+      goalsToggleText: {
+        fontSize: 12,
+        color: GOAL_COLOR,
+        fontWeight: '700'
+      },
       goalsEmpty: {
         fontSize: 14,
         color: colors.placeholder,
         fontStyle: 'italic'
       },
       goalRow: {
-        gap: 4,
-        borderRadius: 8,
-        padding: 6
+        gap: 2,
+        borderRadius: 6,
+        paddingHorizontal: 4,
+        paddingVertical: 3
       },
       goalRowOverdue: {
         backgroundColor: OVERDUE_COLOR + '16'
@@ -113116,36 +113143,38 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         alignItems: 'center'
       },
       goalText: {
-        fontSize: 14,
+        fontSize: 12,
         color: colors.text,
         flex: 1,
-        lineHeight: 20
+        lineHeight: 16
       },
       goalPct: {
-        fontSize: 13,
+        fontSize: 12,
         fontWeight: '700',
         color: GOAL_COLOR,
-        marginLeft: 8
+        marginLeft: 6
       },
       goalProgressBg: {
-        height: 4,
+        height: 3,
         backgroundColor: colors.border,
         borderRadius: 2,
         overflow: 'hidden'
       },
       goalProgressFill: {
-        height: 4,
+        height: 3,
         backgroundColor: GOAL_COLOR,
         borderRadius: 2
       },
       goalTarget: {
-        fontSize: 11,
-        color: colors.textSecondary
+        fontSize: 10,
+        color: colors.textSecondary,
+        lineHeight: 13
       },
       goalOverdueText: {
-        fontSize: 11,
+        fontSize: 10,
         color: OVERDUE_COLOR,
-        fontWeight: '700'
+        fontWeight: '700',
+        lineHeight: 13
       },
       addGoalRow: {
         gap: 8
@@ -115644,6 +115673,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
   var GOAL_COLOR = '#F97316';
   var OVERDUE_COLOR = '#DC2626';
   var SUMMARY_COLOR = '#F5A623';
+  var PINNED_GOALS_COLLAPSED_COUNT = 2;
   function startOfDay(date) {
     return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
   }
@@ -115706,14 +115736,18 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       _useState12 = (0, _slicedToArray2.default)(_useState11, 2),
       goals = _useState12[0],
       setGoals = _useState12[1];
-    var _useState13 = (0, _react.useState)({}),
+    var _useState13 = (0, _react.useState)(false),
       _useState14 = (0, _slicedToArray2.default)(_useState13, 2),
-      entryContributions = _useState14[0],
-      setEntryContributions = _useState14[1];
-    var _useState15 = (0, _react.useState)(null),
+      goalsExpanded = _useState14[0],
+      setGoalsExpanded = _useState14[1];
+    var _useState15 = (0, _react.useState)({}),
       _useState16 = (0, _slicedToArray2.default)(_useState15, 2),
-      summary = _useState16[0],
-      setSummary = _useState16[1];
+      entryContributions = _useState16[0],
+      setEntryContributions = _useState16[1];
+    var _useState17 = (0, _react.useState)(null),
+      _useState18 = (0, _slicedToArray2.default)(_useState17, 2),
+      summary = _useState18[0],
+      setSummary = _useState18[1];
     var loadEntries = (0, _react.useCallback)(/*#__PURE__*/function () {
       var _ref = (0, _asyncToGenerator2.default)(function* (date) {
         setLoading(true);
@@ -115759,12 +115793,16 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       loadEntries(currentDate);
     }, [currentDate, loadEntries]);
     function goToPrevDay() {
+      setGoalsExpanded(false);
       setCurrentDate(d => new Date(d.getTime() - 86_400_000));
     }
     function goToNextDay() {
+      setGoalsExpanded(false);
       setCurrentDate(d => new Date(d.getTime() + 86_400_000));
     }
     var canGoForward = !isToday(currentDate);
+    var visibleGoals = goalsExpanded ? goals : goals.slice(0, PINNED_GOALS_COLLAPSED_COUNT);
+    var hiddenGoalCount = Math.max(0, goals.length - PINNED_GOALS_COLLAPSED_COUNT);
     var styles = makeStyles(colors, calendarColor);
     function handleEntrySaved(updated) {
       setEntries(prev => prev.map(e => e.id === updated.id ? updated : e));
@@ -115820,10 +115858,20 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         })]
       }), !loading && goals.length > 0 && /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
         style: styles.pinnedGoals,
-        children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
-          style: styles.pinnedGoalsHeader,
-          children: "\uD83C\uDFAF  ACTIVE GOALS"
-        }), goals.map(goal => {
+        children: [/*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.View, {
+          style: styles.pinnedGoalsTop,
+          children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+            style: styles.pinnedGoalsHeader,
+            children: "\uD83C\uDFAF  ACTIVE GOALS"
+          }), hiddenGoalCount > 0 && /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
+            onPress: () => setGoalsExpanded(prev => !prev),
+            style: styles.pinnedGoalsToggle,
+            children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+              style: styles.pinnedGoalsToggleText,
+              children: goalsExpanded ? 'Show less' : `Show ${hiddenGoalCount} more`
+            })
+          })]
+        }), visibleGoals.map(goal => {
           var overdue = (0, _$$_REQUIRE(_dependencyMap[12], "../types/Goal").isGoalOverdue)(goal, endOfDay(currentDate).getTime());
           var goalColor = overdue ? OVERDUE_COLOR : GOAL_COLOR;
           return /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.TouchableOpacity, {
@@ -116000,43 +116048,44 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingHorizontal: 16,
-        paddingVertical: 10,
+        paddingHorizontal: 12,
+        paddingVertical: 6,
         backgroundColor: colors.surface,
         borderBottomWidth: _reactNative.StyleSheet.hairlineWidth,
         borderBottomColor: colors.border
       },
       menuBtn: {
-        padding: 4,
-        width: 36
+        padding: 3,
+        width: 32
       },
       menuIcon: {
-        fontSize: 22,
+        fontSize: 20,
         color: colors.accent
       },
       appTitle: {
-        fontSize: 18,
+        fontSize: 16,
         fontWeight: '700',
         color: colors.text
       },
       topBarSpacer: {
-        width: 36
+        width: 32
       },
       dayNav: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingHorizontal: 8,
-        paddingVertical: 12,
+        paddingHorizontal: 6,
+        paddingVertical: 6,
         backgroundColor: colors.surface,
         borderBottomWidth: _reactNative.StyleSheet.hairlineWidth,
         borderBottomColor: colors.border
       },
       navBtn: {
-        padding: 8
+        paddingHorizontal: 8,
+        paddingVertical: 3
       },
       navArrow: {
-        fontSize: 28,
+        fontSize: 24,
         color: colors.accent,
         fontWeight: '300'
       },
@@ -116044,7 +116093,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         color: colors.border
       },
       dayLabel: {
-        fontSize: 16,
+        fontSize: 14,
         fontWeight: '600',
         color: colors.text
       },
@@ -116209,61 +116258,81 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         backgroundColor: GOAL_COLOR + '12',
         borderBottomWidth: 2,
         borderBottomColor: GOAL_COLOR + '40',
-        paddingHorizontal: 16,
-        paddingVertical: 10,
-        gap: 8
+        paddingHorizontal: 12,
+        paddingVertical: 7,
+        gap: 5
+      },
+      pinnedGoalsTop: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 10
       },
       pinnedGoalsHeader: {
+        flex: 1,
         fontSize: 11,
         fontWeight: '700',
         color: GOAL_COLOR,
-        letterSpacing: 0.8,
-        marginBottom: 2
+        letterSpacing: 0.8
+      },
+      pinnedGoalsToggle: {
+        minHeight: 22,
+        justifyContent: 'center',
+        paddingHorizontal: 4
+      },
+      pinnedGoalsToggleText: {
+        fontSize: 12,
+        color: GOAL_COLOR,
+        fontWeight: '700'
       },
       pinnedGoalRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 10,
-        borderRadius: 8,
-        padding: 6
+        gap: 8,
+        borderRadius: 6,
+        paddingHorizontal: 4,
+        paddingVertical: 3
       },
       pinnedGoalRowOverdue: {
         backgroundColor: OVERDUE_COLOR + '16'
       },
       pinnedGoalInfo: {
         flex: 1,
-        gap: 3
+        gap: 2
       },
       pinnedGoalText: {
-        fontSize: 13,
+        fontSize: 12,
         color: colors.text,
-        fontWeight: '500'
+        fontWeight: '500',
+        lineHeight: 16
       },
       pinnedBarBg: {
-        height: 4,
+        height: 3,
         backgroundColor: colors.border,
         borderRadius: 2,
         overflow: 'hidden'
       },
       pinnedBarFill: {
-        height: 4,
+        height: 3,
         backgroundColor: GOAL_COLOR,
         borderRadius: 2
       },
       pinnedGoalDeadline: {
-        fontSize: 10,
-        color: colors.textSecondary
+        fontSize: 9,
+        color: colors.textSecondary,
+        lineHeight: 12
       },
       pinnedGoalOverdueText: {
-        fontSize: 10,
+        fontSize: 9,
         color: OVERDUE_COLOR,
-        fontWeight: '700'
+        fontWeight: '700',
+        lineHeight: 12
       },
       pinnedGoalPct: {
-        fontSize: 14,
+        fontSize: 12,
         fontWeight: '700',
         color: GOAL_COLOR,
-        minWidth: 38,
+        minWidth: 34,
         textAlign: 'right'
       },
       planSection: {
@@ -117829,38 +117898,38 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingHorizontal: 16,
-        paddingVertical: 10,
+        paddingHorizontal: 12,
+        paddingVertical: 6,
         backgroundColor: colors.surface,
         borderBottomWidth: _reactNative.StyleSheet.hairlineWidth,
         borderBottomColor: colors.border
       },
       menuBtn: {
-        padding: 4,
-        width: 36
+        padding: 3,
+        width: 32
       },
       menuIcon: {
-        fontSize: 22,
+        fontSize: 20,
         color: colors.accent
       },
       title: {
-        fontSize: 17,
+        fontSize: 16,
         fontWeight: '600',
         color: colors.text
       },
       modeRow: {
         flexDirection: 'row',
-        paddingHorizontal: 16,
-        paddingVertical: 8,
-        gap: 8,
+        paddingHorizontal: 12,
+        paddingVertical: 5,
+        gap: 6,
         backgroundColor: colors.surface,
         borderBottomWidth: _reactNative.StyleSheet.hairlineWidth,
         borderBottomColor: colors.border
       },
       modeBtn: {
-        paddingHorizontal: 18,
-        paddingVertical: 6,
-        borderRadius: 16,
+        paddingHorizontal: 14,
+        paddingVertical: 5,
+        borderRadius: 14,
         backgroundColor: colors.background
       },
       modeBtnActive: {
@@ -117878,22 +117947,23 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingHorizontal: 8,
-        paddingVertical: 10,
+        paddingHorizontal: 6,
+        paddingVertical: 6,
         backgroundColor: colors.surface,
         borderBottomWidth: _reactNative.StyleSheet.hairlineWidth,
         borderBottomColor: colors.border
       },
       navBtn: {
-        padding: 8
+        paddingHorizontal: 8,
+        paddingVertical: 3
       },
       navArrow: {
-        fontSize: 28,
+        fontSize: 24,
         color: colors.accent,
         fontWeight: '300'
       },
       dayLabel: {
-        fontSize: 14,
+        fontSize: 13,
         fontWeight: '600',
         color: colors.text
       },

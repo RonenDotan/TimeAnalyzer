@@ -25,6 +25,7 @@ import { ColorPalette, useTheme } from '../contexts/ThemeContext';
 
 const GOAL_COLOR = '#F97316';
 const OVERDUE_COLOR = '#DC2626';
+const GOALS_COLLAPSED_COUNT = 2;
 
 interface Props {
   initialDate?: Date;
@@ -116,6 +117,7 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false,
   const [recording, setRecording] = useState<RecordingState>(null);
   const [activeTimePicker, setActiveTimePicker] = useState<ActiveTimePicker>(null);
   const [goals, setGoals] = useState<Goal[]>([]);
+  const [goalsExpanded, setGoalsExpanded] = useState(false);
   const [newGoalText, setNewGoalText] = useState('');
   const [addingGoal, setAddingGoal] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -148,6 +150,7 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false,
     }
     load();
     loadGoals();
+    setGoalsExpanded(false);
   }, [dateStr]);
 
   function goToPrevDay() {
@@ -341,7 +344,7 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false,
             </TouchableOpacity>
           </View>
 
-          {goals.map(goal => {
+          {(goalsExpanded ? goals : goals.slice(0, GOALS_COLLAPSED_COUNT)).map(goal => {
             const overdue = isGoalOverdue(goal);
             const goalColor = overdue ? OVERDUE_COLOR : GOAL_COLOR;
             return (
@@ -362,6 +365,16 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false,
             </View>
             );
           })}
+
+          {goals.length > GOALS_COLLAPSED_COUNT && (
+            <TouchableOpacity
+              style={styles.goalsToggle}
+              onPress={() => setGoalsExpanded(prev => !prev)}>
+              <Text style={styles.goalsToggleText}>
+                {goalsExpanded ? 'Show less' : `Show ${goals.length - GOALS_COLLAPSED_COUNT} more`}
+              </Text>
+            </TouchableOpacity>
+          )}
 
           {addingGoal && (
             <View style={styles.addGoalRow}>
@@ -524,29 +537,29 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      paddingHorizontal: 16,
-      paddingVertical: 12,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
       backgroundColor: colors.surface,
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: colors.border,
     },
-    title: { fontSize: 17, fontWeight: '600', color: colors.text },
-    cancel: { fontSize: 17, color: colors.textSecondary },
-    save: { fontSize: 17, color: colors.accent, fontWeight: '600' },
+    title: { fontSize: 16, fontWeight: '600', color: colors.text },
+    cancel: { fontSize: 15, color: colors.textSecondary },
+    save: { fontSize: 15, color: colors.accent, fontWeight: '600' },
     saveDim: { opacity: 0.4 },
     dayNav: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      paddingHorizontal: 8,
-      paddingVertical: 12,
+      paddingHorizontal: 6,
+      paddingVertical: 6,
       backgroundColor: colors.surface,
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: colors.border,
     },
-    navBtn: { padding: 8 },
-    navArrow: { fontSize: 28, color: colors.accent, fontWeight: '300' },
-    dayLabel: { fontSize: 16, fontWeight: '600', color: colors.text },
+    navBtn: { paddingHorizontal: 8, paddingVertical: 3 },
+    navArrow: { fontSize: 24, color: colors.accent, fontWeight: '300' },
+    dayLabel: { fontSize: 14, fontWeight: '600', color: colors.text },
     body: { padding: 16, gap: 12, paddingBottom: 40 },
     inputCard: {
       backgroundColor: colors.surface,
@@ -664,9 +677,9 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
     debugText: { fontSize: 11, color: colors.textSecondary, fontFamily: 'monospace' },
     goalsSectionCard: {
       backgroundColor: GOAL_COLOR + '10',
-      paddingHorizontal: 16,
-      paddingVertical: 12,
-      gap: 10,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      gap: 6,
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: GOAL_COLOR + '40',
     },
@@ -686,24 +699,35 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
       color: GOAL_COLOR,
       fontWeight: '500',
     },
+    goalsToggle: {
+      alignSelf: 'flex-start',
+      minHeight: 22,
+      justifyContent: 'center',
+      paddingHorizontal: 4,
+    },
+    goalsToggleText: {
+      fontSize: 12,
+      color: GOAL_COLOR,
+      fontWeight: '700',
+    },
     goalsEmpty: {
       fontSize: 14,
       color: colors.placeholder,
       fontStyle: 'italic',
     },
-    goalRow: { gap: 4, borderRadius: 8, padding: 6 },
+    goalRow: { gap: 2, borderRadius: 6, paddingHorizontal: 4, paddingVertical: 3 },
     goalRowOverdue: { backgroundColor: OVERDUE_COLOR + '16' },
     goalRowTop: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
     },
-    goalText: { fontSize: 14, color: colors.text, flex: 1, lineHeight: 20 },
-    goalPct: { fontSize: 13, fontWeight: '700', color: GOAL_COLOR, marginLeft: 8 },
-    goalProgressBg: { height: 4, backgroundColor: colors.border, borderRadius: 2, overflow: 'hidden' },
-    goalProgressFill: { height: 4, backgroundColor: GOAL_COLOR, borderRadius: 2 },
-    goalTarget: { fontSize: 11, color: colors.textSecondary },
-    goalOverdueText: { fontSize: 11, color: OVERDUE_COLOR, fontWeight: '700' },
+    goalText: { fontSize: 12, color: colors.text, flex: 1, lineHeight: 16 },
+    goalPct: { fontSize: 12, fontWeight: '700', color: GOAL_COLOR, marginLeft: 6 },
+    goalProgressBg: { height: 3, backgroundColor: colors.border, borderRadius: 2, overflow: 'hidden' },
+    goalProgressFill: { height: 3, backgroundColor: GOAL_COLOR, borderRadius: 2 },
+    goalTarget: { fontSize: 10, color: colors.textSecondary, lineHeight: 13 },
+    goalOverdueText: { fontSize: 10, color: OVERDUE_COLOR, fontWeight: '700', lineHeight: 13 },
     addGoalRow: { gap: 8 },
     addGoalInput: {
       fontSize: 15,

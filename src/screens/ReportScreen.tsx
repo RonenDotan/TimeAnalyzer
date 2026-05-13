@@ -21,6 +21,7 @@ import { DailySummaryResult } from '../types/DailySummary';
 const GOAL_COLOR = '#F97316';
 const OVERDUE_COLOR = '#DC2626';
 const SUMMARY_COLOR = '#F5A623';
+const PINNED_GOALS_COLLAPSED_COUNT = 2;
 import { ColorPalette, useTheme } from '../contexts/ThemeContext';
 import { DayPlan, PlanBlock } from '../types/DayPlan';
 import { allMatchingBlocks, isCovered } from '../utils/planMatching';
@@ -86,6 +87,7 @@ export default function ReportScreen({
   const [dayPlan, setDayPlan] = useState<DayPlan | null>(null);
   const [planBlocks, setPlanBlocks] = useState<PlanBlock[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
+  const [goalsExpanded, setGoalsExpanded] = useState(false);
   const [entryContributions, setEntryContributions] = useState<Record<number, GoalEntryContribution[]>>({});
   const [summary, setSummary] = useState<DailySummaryResult | null>(null);
 
@@ -126,14 +128,18 @@ export default function ReportScreen({
   }, [currentDate, loadEntries]);
 
   function goToPrevDay() {
+    setGoalsExpanded(false);
     setCurrentDate(d => new Date(d.getTime() - 86_400_000));
   }
 
   function goToNextDay() {
+    setGoalsExpanded(false);
     setCurrentDate(d => new Date(d.getTime() + 86_400_000));
   }
 
   const canGoForward = !isToday(currentDate);
+  const visibleGoals = goalsExpanded ? goals : goals.slice(0, PINNED_GOALS_COLLAPSED_COUNT);
+  const hiddenGoalCount = Math.max(0, goals.length - PINNED_GOALS_COLLAPSED_COUNT);
   const styles = makeStyles(colors, calendarColor);
 
   function handleEntrySaved(updated: LogEntry) {
@@ -179,8 +185,17 @@ export default function ReportScreen({
       {/* Pinned active goals — always visible above plan/entries */}
       {!loading && goals.length > 0 && (
         <View style={styles.pinnedGoals}>
-          <Text style={styles.pinnedGoalsHeader}>🎯  ACTIVE GOALS</Text>
-          {goals.map(goal => {
+          <View style={styles.pinnedGoalsTop}>
+            <Text style={styles.pinnedGoalsHeader}>🎯  ACTIVE GOALS</Text>
+            {hiddenGoalCount > 0 && (
+              <TouchableOpacity onPress={() => setGoalsExpanded(prev => !prev)} style={styles.pinnedGoalsToggle}>
+                <Text style={styles.pinnedGoalsToggleText}>
+                  {goalsExpanded ? 'Show less' : `Show ${hiddenGoalCount} more`}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+          {visibleGoals.map(goal => {
             const overdue = isGoalOverdue(goal, endOfDay(currentDate).getTime());
             const goalColor = overdue ? OVERDUE_COLOR : GOAL_COLOR;
             return (
@@ -348,30 +363,30 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      paddingHorizontal: 16,
-      paddingVertical: 10,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
       backgroundColor: colors.surface,
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: colors.border,
     },
-    menuBtn: { padding: 4, width: 36 },
-    menuIcon: { fontSize: 22, color: colors.accent },
-    appTitle: { fontSize: 18, fontWeight: '700', color: colors.text },
-    topBarSpacer: { width: 36 },
+    menuBtn: { padding: 3, width: 32 },
+    menuIcon: { fontSize: 20, color: colors.accent },
+    appTitle: { fontSize: 16, fontWeight: '700', color: colors.text },
+    topBarSpacer: { width: 32 },
     dayNav: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      paddingHorizontal: 8,
-      paddingVertical: 12,
+      paddingHorizontal: 6,
+      paddingVertical: 6,
       backgroundColor: colors.surface,
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: colors.border,
     },
-    navBtn: { padding: 8 },
-    navArrow: { fontSize: 28, color: colors.accent, fontWeight: '300' },
+    navBtn: { paddingHorizontal: 8, paddingVertical: 3 },
+    navArrow: { fontSize: 24, color: colors.accent, fontWeight: '300' },
     navArrowDisabled: { color: colors.border },
-    dayLabel: { fontSize: 16, fontWeight: '600', color: colors.text },
+    dayLabel: { fontSize: 14, fontWeight: '600', color: colors.text },
     centeredFull: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     centered: { alignItems: 'center', justifyContent: 'center', paddingVertical: 48 },
     emptyText: { fontSize: 16, color: colors.textSecondary },
@@ -471,32 +486,49 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
       backgroundColor: GOAL_COLOR + '12',
       borderBottomWidth: 2,
       borderBottomColor: GOAL_COLOR + '40',
-      paddingHorizontal: 16,
-      paddingVertical: 10,
-      gap: 8,
+      paddingHorizontal: 12,
+      paddingVertical: 7,
+      gap: 5,
+    },
+    pinnedGoalsTop: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 10,
     },
     pinnedGoalsHeader: {
+      flex: 1,
       fontSize: 11,
       fontWeight: '700',
       color: GOAL_COLOR,
       letterSpacing: 0.8,
-      marginBottom: 2,
+    },
+    pinnedGoalsToggle: {
+      minHeight: 22,
+      justifyContent: 'center',
+      paddingHorizontal: 4,
+    },
+    pinnedGoalsToggleText: {
+      fontSize: 12,
+      color: GOAL_COLOR,
+      fontWeight: '700',
     },
     pinnedGoalRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 10,
-      borderRadius: 8,
-      padding: 6,
+      gap: 8,
+      borderRadius: 6,
+      paddingHorizontal: 4,
+      paddingVertical: 3,
     },
     pinnedGoalRowOverdue: { backgroundColor: OVERDUE_COLOR + '16' },
-    pinnedGoalInfo: { flex: 1, gap: 3 },
-    pinnedGoalText: { fontSize: 13, color: colors.text, fontWeight: '500' },
-    pinnedBarBg: { height: 4, backgroundColor: colors.border, borderRadius: 2, overflow: 'hidden' },
-    pinnedBarFill: { height: 4, backgroundColor: GOAL_COLOR, borderRadius: 2 },
-    pinnedGoalDeadline: { fontSize: 10, color: colors.textSecondary },
-    pinnedGoalOverdueText: { fontSize: 10, color: OVERDUE_COLOR, fontWeight: '700' },
-    pinnedGoalPct: { fontSize: 14, fontWeight: '700', color: GOAL_COLOR, minWidth: 38, textAlign: 'right' },
+    pinnedGoalInfo: { flex: 1, gap: 2 },
+    pinnedGoalText: { fontSize: 12, color: colors.text, fontWeight: '500', lineHeight: 16 },
+    pinnedBarBg: { height: 3, backgroundColor: colors.border, borderRadius: 2, overflow: 'hidden' },
+    pinnedBarFill: { height: 3, backgroundColor: GOAL_COLOR, borderRadius: 2 },
+    pinnedGoalDeadline: { fontSize: 9, color: colors.textSecondary, lineHeight: 12 },
+    pinnedGoalOverdueText: { fontSize: 9, color: OVERDUE_COLOR, fontWeight: '700', lineHeight: 12 },
+    pinnedGoalPct: { fontSize: 12, fontWeight: '700', color: GOAL_COLOR, minWidth: 34, textAlign: 'right' },
     planSection: {
       backgroundColor: '#039BE5' + '18',
       borderRadius: 12,
