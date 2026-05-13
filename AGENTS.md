@@ -187,10 +187,21 @@ Key notes:
 - **Timestamps:** always epoch ms (`Date.now()`), never text dates
 - **Soft delete:** set `status=0`; hard delete only after calendar cleanup
 - **Version:** `version.json` — `{ major, minor, ticket_id, sequence }`. Increment `sequence` per build. Change `ticket_id` + reset `sequence=1` when switching tickets.
-- **Build command:** `.\gradlew.bat app:installDebug` from `android/` with `JAVA_HOME` + `ANDROID_HOME` set
-- **Bundle command:** `npx react-native bundle --platform android --dev true --entry-file index.js --bundle-output android/app/src/main/assets/index.android.bundle --assets-dest android/app/src/main/res`
-- **Tests:** `npm test -- --watchAll=false`
 - **Type check:** `npx tsc --noEmit`
+- **Tests:** `npm test -- --watchAll=false`
+- **Bundle:** `npx react-native bundle --platform android --dev true --entry-file index.js --bundle-output android/app/src/main/assets/index.android.bundle --assets-dest android/app/src/main/res`
+- **Build + install** (PowerShell, from `android/` dir): `$env:JAVA_HOME = "C:\Program Files\Android\Android Studio\jbr"; $env:ANDROID_HOME = "C:\Users\ronen\AppData\Local\Android\Sdk"; .\gradlew.bat app:installDebug`
+
+### Full "build and sync" flow — follow this order every time
+1. Increment `sequence` in `version.json` (+1 only, keep other fields)
+2. Run tests — stop if any fail
+3. Bundle JS
+4. Build + install to emulator
+5. Delete Drive APKs older than 3 days: `Get-ChildItem "C:\Users\ronen\Desktop\TimeAnalyzer\apk\*.apk" | Where-Object { $_.LastWriteTime -lt (Get-Date).AddDays(-3) } | Remove-Item`
+6. Copy **arm64 only** to Drive — **no arch suffix** in filename:
+   `$date = Get-Date -Format "yyyy-MM-dd_HH-mm"; Copy-Item "C:\Users\ronen\TimeAnalyzer\android\app\build\outputs\apk\debug\app-arm64-v8a-debug.apk" "C:\Users\ronen\Desktop\TimeAnalyzer\apk\TimeAnalyzer_vX.X.X.X_$date.apk"`
+   Do NOT copy x86_64 APK to Drive — emulator only, stays local.
+7. Report APK synced — wait for user approval before committing
 
 ---
 

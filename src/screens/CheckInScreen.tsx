@@ -192,12 +192,12 @@ export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel
       const pct = parseInt(pctStr, 10);
       if (!isNaN(pct) && pct > 0) {
         const before = goal.progress;
-        const updated = await GoalsService.applyContribution(goal, pct, entry.id);
+        const updated = await GoalsService.applyContribution(goal, pct, entry.id, aiSuggestionReasons[goal.id] ?? null);
         moves.push({
           goalText: goal.text,
           before,
           after: updated.progress,
-          delta: pct,
+          delta: updated.progress - before,
           status: updated.status,
         });
       }

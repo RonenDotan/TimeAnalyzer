@@ -21,14 +21,17 @@ export interface GoalContribution {
   goalId: number;
   entryId: number | null;  // null = manual update not tied to a check-in
   contributionPct: number; // delta added in this session (e.g. 15 = +15%)
+  reason: string | null;    // optional AI/user-facing explanation
   createdAt: number;       // epoch ms
 }
 
 /** Lightweight summary used when showing what a single entry contributed to each goal. */
 export interface GoalEntryContribution {
+  id: number;
   goalId: number;
   goalText: string;
   contributionPct: number; // delta (e.g. +15)
+  reason: string | null;
 }
 
 export function isGoalOverdue(goal: Goal, asOf: number = Date.now()): boolean {

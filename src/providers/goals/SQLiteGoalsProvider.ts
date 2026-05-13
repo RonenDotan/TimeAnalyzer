@@ -23,6 +23,7 @@ function rowToContribution(row: Record<string, unknown>): GoalContribution {
     goalId:          row.goal_id as number,
     entryId:         (row.entry_id as number | null) ?? null,
     contributionPct: row.contribution_pct as number,
+    reason:          (row.reason as string | null) ?? null,
     createdAt:       row.created_at as number,
   };
 }
@@ -73,9 +74,9 @@ const SQLiteGoalsProvider: GoalsProvider = {
   async addContribution(contribution) {
     const now = Date.now();
     const result = getDb().executeSync(
-      `INSERT INTO goal_contributions (goal_id, entry_id, contribution_pct, created_at)
-       VALUES (?, ?, ?, ?)`,
-      [contribution.goalId, contribution.entryId ?? null, contribution.contributionPct, now],
+      `INSERT INTO goal_contributions (goal_id, entry_id, contribution_pct, reason, created_at)
+       VALUES (?, ?, ?, ?, ?)`,
+      [contribution.goalId, contribution.entryId ?? null, contribution.contributionPct, contribution.reason ?? null, now],
     );
     return { ...contribution, id: result.insertId as number, createdAt: now };
   },
@@ -90,7 +91,7 @@ const SQLiteGoalsProvider: GoalsProvider = {
 
   async getContributionsByEntryId(entryId) {
     const result = getDb().executeSync(
-      `SELECT gc.goal_id, g.text AS goal_text, gc.contribution_pct
+      `SELECT gc.id, gc.goal_id, g.text AS goal_text, gc.contribution_pct, gc.reason
        FROM goal_contributions gc
        JOIN goals g ON g.id = gc.goal_id
        WHERE gc.entry_id = ?
@@ -98,10 +99,19 @@ const SQLiteGoalsProvider: GoalsProvider = {
       [entryId],
     );
     return (result.rows ?? []).map(row => ({
+      id:              row.id as number,
       goalId:         row.goal_id as number,
       goalText:       row.goal_text as string,
       contributionPct: row.contribution_pct as number,
+      reason:          (row.reason as string | null) ?? null,
     })) as GoalEntryContribution[];
+  },
+
+  async updateContributionReason(id, reason) {
+    getDb().executeSync(
+      'UPDATE goal_contributions SET reason = ? WHERE id = ?',
+      [reason?.trim() || null, id],
+    );
   },
 };
 

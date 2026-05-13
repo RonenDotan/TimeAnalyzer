@@ -1,4 +1,4 @@
-import notifee from '@notifee/react-native';
+import notifee, { AlarmType, TriggerType } from '@notifee/react-native';
 import SchedulerService, { buildSchedule } from '../src/services/SchedulerService';
 import { DEFAULT_SETTINGS, Settings } from '../src/types/Settings';
 
@@ -63,6 +63,18 @@ test('each notification has unique ID and correct body format', async () => {
   const ids = calls.map((c: any) => c[0].id);
   expect(new Set(ids).size).toBe(50);
   expect(calls[0][0].body).toMatch(/What did you work on from \d{2}:\d{2} to \d{2}:\d{2}\?/);
+});
+
+test('timestamp notifications use exact AlarmManager scheduling', async () => {
+  await SchedulerService.start();
+  const calls = (notifee.createTriggerNotification as jest.Mock).mock.calls;
+  expect(calls[0][1]).toEqual(expect.objectContaining({
+    type: TriggerType.TIMESTAMP,
+    alarmManager: {
+      type: AlarmType.SET_EXACT_AND_ALLOW_WHILE_IDLE,
+      allowWhileIdle: true,
+    },
+  }));
 });
 
 test('stop() cancels all trigger notifications', async () => {

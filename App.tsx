@@ -12,6 +12,7 @@ import { ThemeProvider } from './src/contexts/ThemeContext';
 import AITestScreen from './src/screens/AITestScreen';
 import CheckInScreen from './src/screens/CheckInScreen';
 import DailySummariesScreen from './src/screens/DailySummariesScreen';
+import DailySummaryScreen from './src/screens/DailySummaryScreen';
 import DayPlanScreen from './src/screens/DayPlanScreen';
 import GoalsScreen from './src/screens/GoalsScreen';
 import PromptsScreen from './src/screens/PromptsScreen';
@@ -23,8 +24,17 @@ import { DEFAULT_CALENDAR_COLOR } from './src/services/SettingsService';
 
 export const version = `v${v.major}.${v.minor}.${v.ticket_id}.${v.sequence}`;
 
-type Screen = 'entries' | 'checkin' | 'settings' | 'reports' | 'dayplan' | 'goals' | 'aitest' | 'prompts' | 'dailySummaries';
+type Screen = 'entries' | 'checkin' | 'settings' | 'reports' | 'dayplan' | 'goals' | 'aitest' | 'prompts' | 'dailySummaries' | 'dailySummary';
 type Period = { periodStart: number; periodEnd: number };
+
+function startOfLocalDay(ts: number): number {
+  const d = new Date(ts);
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+}
+
+function workStartForToday(now: number, startHour: number): number {
+  return startOfLocalDay(now) + startHour * 60 * 60 * 1000;
+}
 
 // ID format: checkin-{periodStart}-{fireAt}
 function parsePeriodFromId(id: string): Period | null {
@@ -37,6 +47,8 @@ function AppContent(): React.JSX.Element {
   const [screen, setScreen] = useState<Screen>('entries');
   const [checkInPeriod, setCheckInPeriod] = useState<Period | null>(null);
   const [planDate, setPlanDate] = useState<Date | undefined>(undefined);
+  const [dailySummaryDate, setDailySummaryDate] = useState<Date | undefined>(undefined);
+  const [focusedGoalId, setFocusedGoalId] = useState<number | undefined>(undefined);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [themeSetting, setThemeSetting] = useState<Theme>('system');
   const [debugMode, setDebugMode] = useState(false);
@@ -148,11 +160,16 @@ function AppContent(): React.JSX.Element {
 
   async function handleStartCheckIn() {
     const now = Date.now();
-    const entries = await StorageService.getAll();
-    let periodStart = now - 2 * 60 * 60 * 1000;
+    const [entries, settings] = await Promise.all([
+      StorageService.getAll(),
+      SettingsService.load(),
+    ]);
+    const todayStart = startOfLocalDay(now);
+    const defaultPeriodStart = Math.min(workStartForToday(now, settings.startHour), now);
+    let periodStart = defaultPeriodStart;
     if (entries.length > 0) {
       const last = entries.reduce((a, b) => a.timestampEnd > b.timestampEnd ? a : b);
-      periodStart = last.timestampEnd;
+      periodStart = last.timestampEnd >= todayStart ? last.timestampEnd : defaultPeriodStart;
     }
     setCheckInPeriod({ periodStart, periodEnd: now });
     setScreen('checkin');
@@ -163,10 +180,23 @@ function AppContent(): React.JSX.Element {
     setScreen('dayplan');
   }
 
+  function handleOpenDailySummary(date: Date) {
+    setDailySummaryDate(date);
+    setScreen('dailySummary');
+  }
+
+  function handleOpenGoal(goalId: number) {
+    setFocusedGoalId(goalId);
+    setScreen('goals');
+  }
+
   function handleDrawerNavigate(dest: DrawerScreen) {
     if ((dest === 'prompts' || dest === 'aitest' || dest === 'dailySummaries') && !debugMode) return;
     if (dest === 'dayplan') {
       setPlanDate(undefined);
+    }
+    if (dest === 'goals') {
+      setFocusedGoalId(undefined);
     }
     setScreen(dest);
     setDrawerOpen(false);
@@ -189,12 +219,17 @@ function AppContent(): React.JSX.Element {
         <PromptsScreen onClose={() => setScreen('entries')} />
       ) : screen === 'dailySummaries' && debugMode ? (
         <DailySummariesScreen onClose={() => setScreen('entries')} />
+      ) : screen === 'dailySummary' ? (
+        <DailySummaryScreen
+          initialDate={dailySummaryDate ?? new Date()}
+          onClose={() => setScreen('entries')}
+        />
       ) : screen === 'settings' ? (
         <SettingsScreen onClose={handleSettingsClose} />
       ) : screen === 'dayplan' ? (
         <DayPlanScreen initialDate={planDate} onClose={() => setScreen('entries')} debugMode={debugMode} calendarColor={calendarColor} />
       ) : screen === 'goals' ? (
-        <GoalsScreen onClose={() => setScreen('entries')} />
+        <GoalsScreen initialGoalId={focusedGoalId} onClose={() => setScreen('entries')} />
       ) : screen === 'checkin' ? (
         <CheckInScreen
           periodStart={checkInPeriod?.periodStart ?? Date.now() - 2 * 60 * 60 * 1000}
@@ -211,6 +246,8 @@ function AppContent(): React.JSX.Element {
               onStartCheckIn={handleStartCheckIn}
               onOpenMenu={() => setDrawerOpen(true)}
               onEditPlan={handleEditPlan}
+              onOpenDailySummary={handleOpenDailySummary}
+              onOpenGoal={handleOpenGoal}
               debugMode={debugMode}
               calendarColor={calendarColor}
             />

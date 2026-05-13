@@ -1,9 +1,13 @@
-import notifee, { AndroidImportance, AndroidNotificationSetting, AndroidVisibility, TriggerType } from '@notifee/react-native';
+import notifee, { AlarmType, AndroidImportance, AndroidNotificationSetting, AndroidVisibility, TriggerType } from '@notifee/react-native';
 import config from '../config';
 import SettingsService from './SettingsService';
 import { Settings } from '../types/Settings';
 
 const BATCH_SIZE = 50;
+const EXACT_ALARM_TRIGGER = {
+  type: AlarmType.SET_EXACT_AND_ALLOW_WHILE_IDLE,
+  allowWhileIdle: true,
+};
 
 function formatTime(timestamp: number): string {
   const d = new Date(timestamp);
@@ -103,7 +107,11 @@ async function start(): Promise<void> {
           importance: AndroidImportance.HIGH,
         },
       },
-      { type: TriggerType.TIMESTAMP, timestamp: fireAt },
+      {
+        type: TriggerType.TIMESTAMP,
+        timestamp: fireAt,
+        alarmManager: EXACT_ALARM_TRIGGER,
+      },
     );
   }
 }
@@ -139,7 +147,11 @@ async function scheduleDailyPlan(settings: Settings, now: number): Promise<void>
           importance: AndroidImportance.HIGH,
         },
       },
-      { type: TriggerType.TIMESTAMP, timestamp: fireAt },
+      {
+        type: TriggerType.TIMESTAMP,
+        timestamp: fireAt,
+        alarmManager: EXACT_ALARM_TRIGGER,
+      },
     );
   }
 }
@@ -179,7 +191,11 @@ async function rescheduleWithReport(): Promise<string> {
             importance: AndroidImportance.HIGH,
           },
         },
-        { type: TriggerType.TIMESTAMP, timestamp: fireAt },
+        {
+          type: TriggerType.TIMESTAMP,
+          timestamp: fireAt,
+          alarmManager: EXACT_ALARM_TRIGGER,
+        },
       );
     }
     lines.push(`✓ Scheduled ${slots.length} check-ins`);
