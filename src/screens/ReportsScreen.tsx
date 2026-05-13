@@ -8,7 +8,9 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import DateNavigator from '../components/DateNavigator';
 import PieChart from '../components/PieChart';
+import ScreenHeader from '../components/ScreenHeader';
 import StorageService from '../services/StorageService';
 import { LogEntry } from '../types/LogEntry';
 import { PlanBlock } from '../types/DayPlan';
@@ -104,14 +106,7 @@ export default function ReportsScreen({ onOpenMenu }: Props) {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={onOpenMenu} style={styles.menuBtn}>
-          <Text style={styles.menuIcon}>☰</Text>
-        </TouchableOpacity>
-        <Text style={styles.title}>Reports</Text>
-        <View style={styles.menuBtn} />
-      </View>
+      <ScreenHeader title="Reports" onLeft={onOpenMenu} leftIcon="hamburger" leftLabel="Menu" />
 
       {/* Range toggle */}
       <View style={styles.modeRow}>
@@ -126,17 +121,12 @@ export default function ReportsScreen({ onOpenMenu }: Props) {
           <Text style={[styles.modeBtnText, mode === 'week' && styles.modeBtnTextActive]}>Week</Text>
         </TouchableOpacity>
       </View>
-
-      {/* Date nav */}
-      <View style={styles.dayNav}>
-        <TouchableOpacity onPress={goToPrev} style={styles.navBtn}>
-          <Text style={styles.navArrow}>{'‹'}</Text>
-        </TouchableOpacity>
-        <Text style={styles.dayLabel}>{renderRangeLabel()}</Text>
-        <TouchableOpacity onPress={goToNext} style={styles.navBtn}>
-          <Text style={styles.navArrow}>{'›'}</Text>
-        </TouchableOpacity>
-      </View>
+      <DateNavigator
+        date={currentDate}
+        onPrev={goToPrev}
+        onNext={goToNext}
+        formatLabel={renderRangeLabel}
+      />
 
       {loading ? (
         <View style={styles.centeredFull}>

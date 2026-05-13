@@ -13,6 +13,7 @@ import {
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import DictateBar from '../components/DictateBar';
+import ScreenHeader from '../components/ScreenHeader';
 import TranscriptionService from '../services/TranscriptionService';
 import GoalsService from '../services/GoalsService';
 import { Goal, GoalStatus, isGoalOverdue } from '../types/Goal';
@@ -376,14 +377,7 @@ export default function GoalsScreen({ onClose, initialGoalId }: Props) {
       style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
 
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={onClose}>
-          <Text style={styles.cancel}>Close</Text>
-        </TouchableOpacity>
-        <Text style={styles.title}>Goals</Text>
-        <View style={styles.headerSpacer} />
-      </View>
+      <ScreenHeader title="Goals" onLeft={onClose} />
 
       {/* Filter tabs */}
       <View style={styles.filterRow}>
@@ -565,15 +559,6 @@ export default function GoalsScreen({ onClose, initialGoalId }: Props) {
 function makeStyles(colors: ColorPalette) {
   return StyleSheet.create({
     container:      { flex: 1, backgroundColor: colors.background },
-    header: {
-      flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-      paddingHorizontal: 16, paddingVertical: 12,
-      backgroundColor: colors.surface,
-      borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border,
-    },
-    title:          { fontSize: 17, fontWeight: '600', color: colors.text },
-    cancel:         { fontSize: 17, color: colors.textSecondary },
-    headerSpacer:   { width: 50 },
     filterRow: {
       flexDirection: 'row', backgroundColor: colors.surface,
       borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border,

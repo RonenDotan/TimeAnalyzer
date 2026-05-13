@@ -12,13 +12,16 @@ import {
 } from 'react-native';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import DateNavigator from '../components/DateNavigator';
 import DictateBar from '../components/DictateBar';
+import GoalCard from '../components/GoalCard';
+import ScreenHeader from '../components/ScreenHeader';
 import TranscriptionService from '../services/TranscriptionService';
 import StorageService from '../services/StorageService';
 import GoalsService from '../services/GoalsService';
 import CalendarSyncService from '../services/CalendarSyncService';
 import { ParsedBlock, PlanBlock } from '../types/DayPlan';
-import { Goal, isGoalOverdue } from '../types/Goal';
+import { Goal } from '../types/Goal';
 import { applyTranscription } from '../utils/parseTranscript';
 import { formatMin, parseDayPlan } from '../utils/parseDayPlan';
 import { ColorPalette, useTheme } from '../contexts/ThemeContext';
@@ -315,25 +318,21 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false,
     <KeyboardAvoidingView
       style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={onClose}>
-          <Text style={styles.cancel}>Cancel</Text>
-        </TouchableOpacity>
-        <Text style={styles.title}>Plans</Text>
-        <TouchableOpacity onPress={handleSave} disabled={saving}>
-          <Text style={[styles.save, saving && styles.saveDim]}>Save</Text>
-        </TouchableOpacity>
-      </View>
+      <ScreenHeader
+        title="Plans"
+        onLeft={onClose}
+        leftLabel="Cancel"
+        onRight={handleSave}
+        rightLabel={saving ? 'Saving...' : 'Save'}
+        rightColor={saving ? colors.placeholder : colors.accent}
+      />
 
-      <View style={styles.dayNav}>
-        <TouchableOpacity onPress={goToPrevDay} style={styles.navBtn}>
-          <Text style={styles.navArrow}>{'‹'}</Text>
-        </TouchableOpacity>
-        <Text style={styles.dayLabel}>{formatHeader(dateStr)}</Text>
-        <TouchableOpacity onPress={goToNextDay} style={styles.navBtn}>
-          <Text style={styles.navArrow}>{'›'}</Text>
-        </TouchableOpacity>
-      </View>
+      <DateNavigator
+        date={currentDate}
+        onPrev={goToPrevDay}
+        onNext={goToNextDay}
+        formatLabel={() => formatHeader(dateStr)}
+      />
 
       {(goals.length > 0 || addingGoal) && (
         <View style={styles.goalsSectionCard}>
@@ -344,27 +343,9 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false,
             </TouchableOpacity>
           </View>
 
-          {(goalsExpanded ? goals : goals.slice(0, GOALS_COLLAPSED_COUNT)).map(goal => {
-            const overdue = isGoalOverdue(goal);
-            const goalColor = overdue ? OVERDUE_COLOR : GOAL_COLOR;
-            return (
-            <View key={goal.id} style={[styles.goalRow, overdue && styles.goalRowOverdue]}>
-              <View style={styles.goalRowTop}>
-                <Text style={styles.goalText} numberOfLines={1}>{goal.text}</Text>
-                <Text style={[styles.goalPct, { color: goalColor }]}>{goal.progress}%</Text>
-              </View>
-              <View style={styles.goalProgressBg}>
-                <View style={[styles.goalProgressFill, { width: `${goal.progress}%` as any, backgroundColor: goalColor }]} />
-              </View>
-              {goal.targetAt !== null && (
-                <Text style={[styles.goalTarget, overdue && styles.goalOverdueText]}>
-                  {'\u{1F4C5} '}{new Date(goal.targetAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                </Text>
-              )}
-              {overdue && <Text style={styles.goalOverdueText}>Overdue</Text>}
-            </View>
-            );
-          })}
+          {(goalsExpanded ? goals : goals.slice(0, GOALS_COLLAPSED_COUNT)).map(goal => (
+            <GoalCard key={goal.id} goal={goal} />
+          ))}
 
           {goals.length > GOALS_COLLAPSED_COUNT && (
             <TouchableOpacity

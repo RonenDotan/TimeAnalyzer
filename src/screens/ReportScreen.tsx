@@ -14,8 +14,11 @@ import EntryDetailScreen from './EntryDetailScreen';
 import StorageService from '../services/StorageService';
 import GoalsService from '../services/GoalsService';
 import DailySummaryService from '../services/DailySummaryService';
+import DateNavigator from '../components/DateNavigator';
+import GoalCard from '../components/GoalCard';
+import ScreenHeader from '../components/ScreenHeader';
 import { LogEntry } from '../types/LogEntry';
-import { Goal, GoalEntryContribution, isGoalOverdue } from '../types/Goal';
+import { Goal, GoalEntryContribution } from '../types/Goal';
 import { DailySummaryResult } from '../types/DailySummary';
 
 const GOAL_COLOR = '#F97316';
@@ -44,14 +47,6 @@ function startOfDay(date: Date): Date {
 
 function endOfDay(date: Date): Date {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
-}
-
-function formatDayHeader(date: Date): string {
-  return date.toLocaleDateString('en-US', {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-  });
 }
 
 function formatTime(ts: number): string {
@@ -161,26 +156,14 @@ export default function ReportScreen({
     <KeyboardAvoidingView
       style={[styles.container, { paddingTop: insets.top }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <View style={styles.topBar}>
-        <TouchableOpacity onPress={onOpenMenu} style={styles.menuBtn}>
-          <Text style={styles.menuIcon}>☰</Text>
-        </TouchableOpacity>
-        <Text style={styles.appTitle}>TimeAnalyzer</Text>
-        <View style={styles.topBarSpacer} />
-      </View>
+      <ScreenHeader title="TimeAnalyzer" onLeft={onOpenMenu} leftIcon="hamburger" leftLabel="Menu" />
 
-      <View style={styles.dayNav}>
-        <TouchableOpacity onPress={goToPrevDay} style={styles.navBtn}>
-          <Text style={styles.navArrow}>{'‹'}</Text>
-        </TouchableOpacity>
-        <Text style={styles.dayLabel}>{formatDayHeader(currentDate)}</Text>
-        <TouchableOpacity
-          onPress={goToNextDay}
-          style={styles.navBtn}
-          disabled={!canGoForward}>
-          <Text style={[styles.navArrow, !canGoForward && styles.navArrowDisabled]}>{'›'}</Text>
-        </TouchableOpacity>
-      </View>
+      <DateNavigator
+        date={currentDate}
+        onPrev={goToPrevDay}
+        onNext={goToNextDay}
+        disableNext={!canGoForward}
+      />
 
       {/* Pinned active goals — always visible above plan/entries */}
       {!loading && goals.length > 0 && (
@@ -195,31 +178,14 @@ export default function ReportScreen({
               </TouchableOpacity>
             )}
           </View>
-          {visibleGoals.map(goal => {
-            const overdue = isGoalOverdue(goal, endOfDay(currentDate).getTime());
-            const goalColor = overdue ? OVERDUE_COLOR : GOAL_COLOR;
-            return (
-            <TouchableOpacity
+          {visibleGoals.map(goal => (
+            <GoalCard
               key={goal.id}
-              style={[styles.pinnedGoalRow, overdue && styles.pinnedGoalRowOverdue]}
+              goal={goal}
+              asOf={endOfDay(currentDate).getTime()}
               onPress={() => onOpenGoal?.(goal.id)}
-              activeOpacity={0.85}>
-              <View style={styles.pinnedGoalInfo}>
-                <Text style={styles.pinnedGoalText} numberOfLines={1}>{goal.text}</Text>
-                <View style={styles.pinnedBarBg}>
-                  <View style={[styles.pinnedBarFill, { width: `${goal.progress}%` as any, backgroundColor: goalColor }]} />
-                </View>
-                {goal.targetAt !== null && (
-                  <Text style={[styles.pinnedGoalDeadline, overdue && styles.pinnedGoalOverdueText]}>
-                    📅 {new Date(goal.targetAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                  </Text>
-                )}
-                {overdue && <Text style={styles.pinnedGoalOverdueText}>Overdue</Text>}
-              </View>
-              <Text style={[styles.pinnedGoalPct, { color: goalColor }]}>{goal.progress}%</Text>
-            </TouchableOpacity>
-            );
-          })}
+            />
+          ))}
         </View>
       )}
 
@@ -338,7 +304,8 @@ export default function ReportScreen({
                 </TouchableOpacity>
               );
             })
-          )}
+          )}
+
         </ScrollView>
       )}
 
