@@ -1,13 +1,11 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -32,6 +30,8 @@ interface Props {
   onStartCheckIn: () => void;
   onOpenMenu: () => void;
   onEditPlan?: (date: Date) => void;
+  onOpenDailySummary?: (date: Date) => void;
+  onOpenGoal?: (goalId: number) => void;
   initialDate?: Date;
   debugMode?: boolean;
   calendarColor?: string;
@@ -67,7 +67,16 @@ function isToday(date: Date): boolean {
   );
 }
 
-export default function ReportScreen({ onStartCheckIn, onOpenMenu, onEditPlan, initialDate, debugMode = false, calendarColor = '#7986CB' }: Props) {
+export default function ReportScreen({
+  onStartCheckIn,
+  onOpenMenu,
+  onEditPlan,
+  onOpenDailySummary,
+  onOpenGoal,
+  initialDate,
+  debugMode = false,
+  calendarColor = '#7986CB',
+}: Props) {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const [currentDate, setCurrentDate] = useState<Date>(initialDate ?? new Date());
@@ -79,9 +88,6 @@ export default function ReportScreen({ onStartCheckIn, onOpenMenu, onEditPlan, i
   const [goals, setGoals] = useState<Goal[]>([]);
   const [entryContributions, setEntryContributions] = useState<Record<number, GoalEntryContribution[]>>({});
   const [summary, setSummary] = useState<DailySummaryResult | null>(null);
-  const [summaryDraft, setSummaryDraft] = useState('');
-  const [summaryEditing, setSummaryEditing] = useState(false);
-  const [summaryGenerating, setSummaryGenerating] = useState(false);
 
   const loadEntries = useCallback(async (date: Date) => {
     setLoading(true);
@@ -99,8 +105,6 @@ export default function ReportScreen({ onStartCheckIn, onOpenMenu, onEditPlan, i
     const savedSummary = await DailySummaryService.getSummary(dateStr);
     const parsedSummary = DailySummaryService.parseSummary(savedSummary);
     setSummary(parsedSummary);
-    setSummaryDraft(parsedSummary?.debrief ?? '');
-    setSummaryEditing(false);
     // Load goal contributions for each entry (to show 🎯 tag)
     const contribMap: Record<number, GoalEntryContribution[]> = {};
     await Promise.all(sorted.map(async e => {
@@ -135,44 +139,6 @@ export default function ReportScreen({ onStartCheckIn, onOpenMenu, onEditPlan, i
   function handleEntrySaved(updated: LogEntry) {
     setEntries(prev => prev.map(e => e.id === updated.id ? updated : e));
     setSelectedEntry(null);
-  }
-
-  async function handleGenerateSummary() {
-    if (summaryGenerating) return;
-    setSummaryGenerating(true);
-    try {
-      const saved = await DailySummaryService.generateSummary(currentDate);
-      const parsedSummary = DailySummaryService.parseSummary(saved);
-      setSummary(parsedSummary);
-      setSummaryDraft(parsedSummary?.debrief ?? '');
-      setSummaryEditing(true);
-    } catch (e: any) {
-      Alert.alert('Summary failed', String(e?.message ?? e));
-    } finally {
-      setSummaryGenerating(false);
-    }
-  }
-
-  function handleEditSummary() {
-    setSummaryDraft(summary?.debrief ?? '');
-    setSummaryEditing(true);
-  }
-
-  async function handleSaveSummary() {
-    try {
-      const saved = await DailySummaryService.saveSummaryText(currentDate, summaryDraft);
-      const parsedSummary = DailySummaryService.parseSummary(saved);
-      setSummary(parsedSummary);
-      setSummaryDraft(parsedSummary?.debrief ?? '');
-      setSummaryEditing(false);
-    } catch (e: any) {
-      Alert.alert('Save failed', String(e?.message ?? e));
-    }
-  }
-
-  function handleCancelSummary() {
-    setSummaryDraft(summary?.debrief ?? '');
-    setSummaryEditing(false);
   }
 
   if (selectedEntry) {
@@ -218,7 +184,11 @@ export default function ReportScreen({ onStartCheckIn, onOpenMenu, onEditPlan, i
             const overdue = isGoalOverdue(goal, endOfDay(currentDate).getTime());
             const goalColor = overdue ? OVERDUE_COLOR : GOAL_COLOR;
             return (
-            <View key={goal.id} style={[styles.pinnedGoalRow, overdue && styles.pinnedGoalRowOverdue]}>
+            <TouchableOpacity
+              key={goal.id}
+              style={[styles.pinnedGoalRow, overdue && styles.pinnedGoalRowOverdue]}
+              onPress={() => onOpenGoal?.(goal.id)}
+              activeOpacity={0.85}>
               <View style={styles.pinnedGoalInfo}>
                 <Text style={styles.pinnedGoalText} numberOfLines={1}>{goal.text}</Text>
                 <View style={styles.pinnedBarBg}>
@@ -232,7 +202,7 @@ export default function ReportScreen({ onStartCheckIn, onOpenMenu, onEditPlan, i
                 {overdue && <Text style={styles.pinnedGoalOverdueText}>Overdue</Text>}
               </View>
               <Text style={[styles.pinnedGoalPct, { color: goalColor }]}>{goal.progress}%</Text>
-            </View>
+            </TouchableOpacity>
             );
           })}
         </View>
@@ -245,6 +215,18 @@ export default function ReportScreen({ onStartCheckIn, onOpenMenu, onEditPlan, i
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.list}>
+          <TouchableOpacity
+            style={styles.summaryDebugCard}
+            onPress={() => onOpenDailySummary?.(currentDate)}
+            activeOpacity={0.85}>
+            <View style={styles.summaryDebugHeader}>
+              <Text style={styles.summaryDebugTitle}>DAILY SUMMARY</Text>
+              <Text style={styles.summaryDebugLink}>Open</Text>
+            </View>
+            <Text style={[styles.summaryReadOnly, !summary && styles.summaryPlaceholder]} numberOfLines={3}>
+              {summary?.debrief || 'No summary yet'}
+            </Text>
+          </TouchableOpacity>
           {/* Plan section — always shown if plan exists */}
           {planBlocks.length > 0 && (() => {
             const coveredCount = planBlocks.filter(b => isCovered(b, entries)).length;
@@ -306,11 +288,17 @@ export default function ReportScreen({ onStartCheckIn, onOpenMenu, onEditPlan, i
                   {entryContributions[entry.id] && entryContributions[entry.id].length > 0 && (
                     <View style={styles.goalTagRow}>
                       {entryContributions[entry.id].map((c, i) => (
-                        <View key={i} style={styles.goalTag}>
+                        <TouchableOpacity
+                          key={i}
+                          style={styles.goalTag}
+                          onPress={event => {
+                            event.stopPropagation();
+                            onOpenGoal?.(c.goalId);
+                          }}>
                           <Text style={styles.goalTagText} numberOfLines={1}>
                             🎯 {c.goalText}  +{c.contributionPct}%
                           </Text>
-                        </View>
+                        </TouchableOpacity>
                       ))}
                     </View>
                   )}
@@ -335,62 +323,7 @@ export default function ReportScreen({ onStartCheckIn, onOpenMenu, onEditPlan, i
                 </TouchableOpacity>
               );
             })
-          )}
-          {debugMode && (
-            <View style={styles.summaryDebugCard}>
-              <View style={styles.summaryDebugHeader}>
-                <Text style={styles.summaryDebugTitle}>DAILY SUMMARY</Text>
-                {!summaryEditing && (
-                  <TouchableOpacity onPress={handleEditSummary}>
-                    <Text style={styles.summaryDebugLink}>Edit</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-              {summaryEditing ? (
-                <>
-                  <TextInput
-                    style={styles.summaryInput}
-                    value={summaryDraft}
-                    onChangeText={setSummaryDraft}
-                    multiline
-                    textAlignVertical="top"
-                    placeholder="Write a summary..."
-                    placeholderTextColor={colors.placeholder}
-                  />
-                  <View style={styles.summaryActions}>
-                    <TouchableOpacity
-                      style={[styles.summaryButton, summaryGenerating && styles.summaryButtonDisabled]}
-                      onPress={handleGenerateSummary}
-                      disabled={summaryGenerating}>
-                      <Text style={styles.summaryButtonText}>
-                        {summaryGenerating ? 'Generating...' : '✨ Generate with AI'}
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.summarySaveButton} onPress={handleSaveSummary}>
-                      <Text style={styles.summaryButtonText}>Save</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.summaryCancelButton} onPress={handleCancelSummary}>
-                      <Text style={styles.summaryCancelText}>Cancel</Text>
-                    </TouchableOpacity>
-                  </View>
-                </>
-              ) : (
-                <>
-                  <Text style={[styles.summaryReadOnly, !summary && styles.summaryPlaceholder]}>
-                    {summary?.debrief || 'No summary yet'}
-                  </Text>
-                  <TouchableOpacity
-                    style={[styles.summaryButton, summaryGenerating && styles.summaryButtonDisabled]}
-                    onPress={handleGenerateSummary}
-                    disabled={summaryGenerating}>
-                    <Text style={styles.summaryButtonText}>
-                      {summaryGenerating ? 'Generating...' : '✨ Generate with AI'}
-                    </Text>
-                  </TouchableOpacity>
-                </>
-              )}
-            </View>
-          )}
+          )}
         </ScrollView>
       )}
 

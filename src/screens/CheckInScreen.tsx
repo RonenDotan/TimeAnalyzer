@@ -197,7 +197,7 @@ export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel
           goalText: goal.text,
           before,
           after: updated.progress,
-          delta: pct,
+          delta: updated.progress - before,
           status: updated.status,
         });
       }

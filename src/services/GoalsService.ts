@@ -42,8 +42,8 @@ async function updateContributionReason(id: number, reason: string | null): Prom
 
 /**
  * Apply a session contribution to a goal:
- * - Adds contributionPct to goal.progress (capped at 100)
- * - Auto-sets status = 'done' if progress reaches 100
+ * - Adds contributionPct to goal.progress (capped at 99)
+ * - Keeps status unchanged so automatic contributions never close a goal
  * - Saves a goal_contributions record linked to the entry
  * - Returns the updated goal
  */
@@ -53,17 +53,19 @@ async function applyContribution(
   entryId: number | null,
   reason?: string | null,
 ): Promise<Goal> {
-  const newProgress = Math.min(100, goal.progress + contributionPct);
-  const newStatus = newProgress >= 100 ? 'done' : goal.status;
-  const updated: Goal = { ...goal, progress: newProgress, status: newStatus, updatedAt: Date.now() };
+  const newProgress = Math.min(99, goal.progress + contributionPct);
+  const appliedContributionPct = newProgress - goal.progress;
+  const updated: Goal = { ...goal, progress: newProgress, updatedAt: Date.now() };
   await activeProvider.updateGoal(updated);
-  await activeProvider.addContribution({
-    goalId: goal.id,
-    entryId,
-    contributionPct,
-    reason: reason?.trim() || null,
-    createdAt: Date.now(),
-  });
+  if (appliedContributionPct !== 0) {
+    await activeProvider.addContribution({
+      goalId: goal.id,
+      entryId,
+      contributionPct: appliedContributionPct,
+      reason: reason?.trim() || null,
+      createdAt: Date.now(),
+    });
+  }
   return updated;
 }
 

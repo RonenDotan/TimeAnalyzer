@@ -21,6 +21,7 @@ import { ColorPalette, useTheme } from '../contexts/ThemeContext';
 
 interface Props {
   onClose: () => void;
+  initialGoalId?: number;
 }
 
 type RecordingTarget = { type: 'new' } | { type: 'edit'; id: number } | null;
@@ -172,7 +173,7 @@ const STATUS_LABELS: Record<GoalStatus, string> = {
   canceled: 'Canceled',
 };
 
-export default function GoalsScreen({ onClose }: Props) {
+export default function GoalsScreen({ onClose, initialGoalId }: Props) {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const [goals, setGoals] = useState<Goal[]>([]);
@@ -190,12 +191,19 @@ export default function GoalsScreen({ onClose }: Props) {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [filter, setFilter] = useState<GoalStatus | 'all'>('active');
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [initialGoalId]);
 
   async function load() {
     try {
       const all = await GoalsService.getAllGoals();
       setGoals(all);
+      if (initialGoalId !== undefined) {
+        const focused = all.find(goal => goal.id === initialGoalId);
+        if (focused) {
+          setFilter('all');
+          startEdit(focused);
+        }
+      }
     } catch (e: any) {
       Alert.alert('Load failed', String(e?.message ?? e));
     }
@@ -247,12 +255,18 @@ export default function GoalsScreen({ onClose }: Props) {
       Alert.alert('Invalid dates', 'Finish must be the same as or later than Start.');
       return;
     }
-    const progress = Math.max(0, Math.min(100, parseInt(editProgress, 10) || goal.progress));
-    const status: GoalStatus = progress >= 100 ? 'done' : goal.status === 'done' && progress < 100 ? 'active' : goal.status;
-    const updated: Goal = { ...goal, text, startAt: editStartAt, targetAt: editTargetAt, progress, status, updatedAt: Date.now() };
+    const parsedProgress = editProgress.trim() === '' ? goal.progress : Number(editProgress);
+    if (!Number.isFinite(parsedProgress)) {
+      Alert.alert('Invalid progress', 'Progress must be a number from 0 to 100.');
+      return;
+    }
+    const progress = Math.max(0, Math.min(100, Math.round(parsedProgress)));
+    const status: GoalStatus = progress >= 100 ? 'done' : goal.status === 'done' ? 'active' : goal.status;
+    const updated: Goal = { ...goal, text, startAt: editStartAt, targetAt: editTargetAt, status, updatedAt: Date.now() };
     try {
       await GoalsService.updateGoal(updated);
-      setGoals(prev => prev.map(g => g.id === updated.id ? updated : g));
+      const saved = await GoalsService.setProgress(updated, progress);
+      setGoals(prev => prev.map(g => g.id === saved.id ? saved : g));
     } catch (e: any) {
       Alert.alert('Failed to save', String(e?.message ?? e));
     } finally {
