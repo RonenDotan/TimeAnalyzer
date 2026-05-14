@@ -9,7 +9,7 @@ See `AGENTS.md` for full architecture reference, `CLAUDE.md` for Claude-specific
 
 - **Date:** 2026-05-14
 - **Updated by:** Claude
-- **Switching to:** Codex
+- **Switching to:** (next ticket)
 
 ---
 
@@ -17,19 +17,16 @@ See `AGENTS.md` for full architecture reference, `CLAUDE.md` for Claude-specific
 
 `main`
 
-Ticket #41 (`ticket-41-unify-ui`) was fully merged to main and pushed.
-Tag `v0.0.40-pre-ui-unify` marks the last commit on main *before* the UI unification work — use it to restore the old look if needed.
+`language` branch was merged to main and pushed. All tickets #41–#44 closed.
 
 ---
 
 ## Current ticket
 
-**#41 — Unify UI elements across all screens** — **DONE, merged to main**
+**None** — pick the next from the project board.
 
-- GitHub: https://github.com/RonenDotan/TimeAnalyzer/issues/41
-- Status: should be closed on GitHub (set to Closed / Pending Closure)
-- Version: `v0.0.41.14`
-- `version.json`: `major=0`, `minor=0`, `ticket_id=41`, `sequence=14`
+- Version: `v0.0.41.20`
+- `version.json`: `major=0`, `minor=0`, `ticket_id=41`, `sequence=20`
 
 ---
 
@@ -101,11 +98,10 @@ The emulator was also asked to install the APK eleven times in a single session.
 
 ## Next steps
 
-1. **Close ticket #41** on GitHub — set status to Closed.
-2. **Pick the next ticket** from the project board: https://github.com/users/RonenDotan/projects/1
-3. Branch from `main` as `ticket-{id}-{short-title}`.
-4. Update `version.json`: set `ticket_id` to new ticket number, reset `sequence=1`.
-5. If seeding mock data for testing, use the debug drawer → "Seed Mock Data" button (debug mode must be on).
+1. **Pick the next ticket** from the project board: https://github.com/users/RonenDotan/projects/1
+2. Branch from `main` as `ticket-{id}-{short-title}`.
+3. Update `version.json`: set `ticket_id` to new ticket number, reset `sequence=1`.
+4. To test Hebrew RTL: Settings → language → עברית, then Debug → "נתוני דמה עברית" to seed Hebrew mock data.
 
 ---
 
