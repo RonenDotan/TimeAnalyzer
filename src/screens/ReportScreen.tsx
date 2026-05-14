@@ -97,8 +97,11 @@ export default function ReportScreen({
   const [dayPlan, setDayPlan] = useState<DayPlan | null>(null);
   const [planBlocks, setPlanBlocks] = useState<PlanBlock[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
+  const [goalsOpen, setGoalsOpen] = useState(false);
   const [goalsExpanded, setGoalsExpanded] = useState(false);
+  const [planOpen, setPlanOpen] = useState(false);
   const [planExpanded, setPlanExpanded] = useState(false);
+  const [entriesOpen, setEntriesOpen] = useState(false);
   const [entriesExpanded, setEntriesExpanded] = useState(false);
   const [entryContributions, setEntryContributions] = useState<Record<number, GoalEntryContribution[]>>({});
   const [summary, setSummary] = useState<DailySummaryResult | null>(null);
@@ -140,21 +143,22 @@ export default function ReportScreen({
   }, [currentDate, loadEntries]);
 
   function goToPrevDay() {
-    setGoalsExpanded(false);
-    setPlanExpanded(false);
-    setEntriesExpanded(false);
+    setGoalsOpen(false); setGoalsExpanded(false);
+    setPlanOpen(false); setPlanExpanded(false);
+    setEntriesOpen(false); setEntriesExpanded(false);
     setCurrentDate(d => new Date(d.getTime() - 86_400_000));
   }
 
   function goToNextDay() {
-    setGoalsExpanded(false);
-    setPlanExpanded(false);
-    setEntriesExpanded(false);
+    setGoalsOpen(false); setGoalsExpanded(false);
+    setPlanOpen(false); setPlanExpanded(false);
+    setEntriesOpen(false); setEntriesExpanded(false);
     setCurrentDate(d => new Date(d.getTime() + 86_400_000));
   }
 
   const ENTRIES_COLLAPSED_COUNT = 2;
   const PLAN_COLLAPSED_COUNT = 2;
+  const coveredCount = planBlocks.filter(b => isCovered(b, entries)).length;
   const canGoForward = !isToday(currentDate);
   const visibleGoals = goalsExpanded ? goals : goals.slice(0, PINNED_GOALS_COLLAPSED_COUNT);
   const hiddenGoalCount = Math.max(0, goals.length - PINNED_GOALS_COLLAPSED_COUNT);
@@ -175,6 +179,7 @@ export default function ReportScreen({
         entry={selectedEntry}
         onSave={handleEntrySaved}
         onClose={() => setSelectedEntry(null)}
+        debugMode={debugMode}
       />
     );
   }
@@ -202,69 +207,79 @@ export default function ReportScreen({
           {/* Active Goals */}
           {goals.length > 0 && (
             <View style={styles.pinnedGoals}>
-              <View style={styles.pinnedGoalsTop}>
+              <TouchableOpacity style={styles.sectionStripRow} onPress={() => setGoalsOpen(prev => !prev)} activeOpacity={0.85}>
                 <Text style={styles.pinnedGoalsHeader}>🎯  ACTIVE GOALS</Text>
-                {hiddenGoalCount > 0 && (
-                  <TouchableOpacity onPress={() => setGoalsExpanded(prev => !prev)} style={styles.pinnedGoalsToggle}>
-                    <Text style={styles.pinnedGoalsToggleText}>
-                      {goalsExpanded ? 'Show less' : `Show ${hiddenGoalCount} more`}
-                    </Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-              {visibleGoals.map((goal, index) => (
-                <GoalCard
-                  key={goal.id ?? `goal-${index}-${goal.text}`}
-                  goal={goal}
-                  asOf={endOfDay(currentDate).getTime()}
-                  onPress={() => onOpenGoal?.(goal.id)}
-                />
-              ))}
+                <Text style={styles.goalsStripCount}>{goals.length}</Text>
+                <Text style={styles.goalsStripChevron}>{goalsOpen ? '⌄' : '›'}</Text>
+              </TouchableOpacity>
+              {goalsOpen && (
+                <>
+                  {visibleGoals.map((goal, index) => (
+                    <GoalCard
+                      key={goal.id ?? `goal-${index}-${goal.text}`}
+                      goal={goal}
+                      asOf={endOfDay(currentDate).getTime()}
+                      onPress={() => onOpenGoal?.(goal.id)}
+                    />
+                  ))}
+                  {hiddenGoalCount > 0 && (
+                    <TouchableOpacity onPress={() => setGoalsExpanded(prev => !prev)} style={styles.pinnedGoalsToggle}>
+                      <Text style={styles.pinnedGoalsToggleText}>
+                        {goalsExpanded ? 'Show less' : `Show ${hiddenGoalCount} more`}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </>
+              )}
             </View>
           )}
 
-          {/* Plan section — always shown if plan exists */}
-          {planBlocks.length > 0 && (() => {
-            const coveredCount = planBlocks.filter(b => isCovered(b, entries)).length;
-            return (
-              <TouchableOpacity
-                style={styles.planSection}
-                onPress={() => onEditPlan?.(currentDate)}
-                activeOpacity={0.85}>
-                <Text style={styles.planHeader}>PLAN  ›</Text>
-                {visiblePlanBlocks.map(block => {
-                  const covered = isCovered(block, entries);
-                  const isCalendar = block.source === 'calendar';
-                  const blockKey = block.id ?? `${block.source}-${block.startMin}-${block.endMin}-${block.activity}`;
-                  return (
-                    <View key={blockKey} style={styles.planBlock}>
-                      <View style={[
-                        styles.planDot,
-                        isCalendar
-                          ? styles.planDotCalendar
-                          : covered ? styles.planDotCovered : styles.planDotMissed,
-                      ]} />
-                      <Text style={styles.planTime}>{formatMin(block.startMin)}–{formatMin(block.endMin)}</Text>
-                      <Text style={[styles.planActivity, !covered && styles.planActivityMissed]}>
-                        {block.activity}{isCalendar ? ' 🗓' : ''}
-                      </Text>
-                    </View>
-                  );
-                })}
-                {hiddenPlanCount > 0 && (
-                  <TouchableOpacity onPress={e => { e.stopPropagation?.(); setPlanExpanded(prev => !prev); }} style={styles.pinnedGoalsToggle}>
-                    <Text style={styles.pinnedGoalsToggleText}>
-                      {planExpanded ? 'Show less' : `Show ${hiddenPlanCount} more`}
-                    </Text>
-                  </TouchableOpacity>
-                )}
-                <Text style={styles.planCoverage}>
-                  {coveredCount}/{planBlocks.length} blocks covered
-                  {coveredCount < planBlocks.length ? `  ·  ${planBlocks.length - coveredCount} missed` : '  ✓'}
-                </Text>
+          {/* Plan section */}
+          {planBlocks.length > 0 && (
+            <View style={styles.planSection}>
+              <TouchableOpacity style={styles.sectionStripRow} onPress={() => setPlanOpen(prev => !prev)} activeOpacity={0.85}>
+                <Text style={styles.planHeader}>📅  PLAN</Text>
+                <Text style={styles.planStripCount}>{coveredCount}/{planBlocks.length}</Text>
+                <TouchableOpacity onPress={() => onEditPlan?.(currentDate)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                  <Text style={styles.planEditLink}>Edit ›</Text>
+                </TouchableOpacity>
               </TouchableOpacity>
-            );
-          })()}
+              {planOpen && (
+                <>
+                  {visiblePlanBlocks.map(block => {
+                    const covered = isCovered(block, entries);
+                    const isCalendar = block.source === 'calendar';
+                    const blockKey = block.id ?? `${block.source}-${block.startMin}-${block.endMin}-${block.activity}`;
+                    return (
+                      <View key={blockKey} style={styles.planBlock}>
+                        <View style={[
+                          styles.planDot,
+                          isCalendar
+                            ? styles.planDotCalendar
+                            : covered ? styles.planDotCovered : styles.planDotMissed,
+                        ]} />
+                        <Text style={styles.planTime}>{formatMin(block.startMin)}–{formatMin(block.endMin)}</Text>
+                        <Text style={[styles.planActivity, !covered && styles.planActivityMissed]}>
+                          {block.activity}{isCalendar ? ' 🗓' : ''}
+                        </Text>
+                      </View>
+                    );
+                  })}
+                  {hiddenPlanCount > 0 && (
+                    <TouchableOpacity onPress={() => setPlanExpanded(prev => !prev)} style={styles.pinnedGoalsToggle}>
+                      <Text style={styles.pinnedGoalsToggleText}>
+                        {planExpanded ? 'Show less' : `Show ${hiddenPlanCount} more`}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                  <Text style={styles.planCoverage}>
+                    {coveredCount}/{planBlocks.length} blocks covered
+                    {coveredCount < planBlocks.length ? `  ·  ${planBlocks.length - coveredCount} missed` : '  ✓'}
+                  </Text>
+                </>
+              )}
+            </View>
+          )}
 
           {/* Check-in Entries */}
           {entries.length === 0 ? (
@@ -272,72 +287,79 @@ export default function ReportScreen({
               <Text style={styles.emptyText}>No entries for this day</Text>
             </View>
           ) : (
-            <>
-              {visibleEntries.map((entry, index) => {
-                const matched = planBlocks.length > 0 ? allMatchingBlocks(entry, planBlocks) : [];
-                return (
-                  <TouchableOpacity
-                    key={entry.id ?? `entry-${index}-${entry.timestampStart}-${entry.timestampEnd}`}
-                    style={styles.entryCard}
-                    onPress={() => setSelectedEntry(entry)}>
-                    <View style={styles.entryCardHeader}>
-                      <Text style={styles.timeRange}>
-                        {formatTime(entry.timestampStart)} – {formatTime(entry.timestampEnd)}
-                      </Text>
-                      <Text style={styles.entryId}>#{entry.id}</Text>
-                    </View>
-                    <Text style={styles.transcript}>{entry.transcript}</Text>
-                    {matched.length > 0 && (
-                      <Text style={styles.planTag}>→ {matched.map(b => b.activity).join(', ')}</Text>
-                    )}
-                    {entryContributions[entry.id] && entryContributions[entry.id].length > 0 && (
-                      <View style={styles.goalTagRow}>
-                        {entryContributions[entry.id].map((c, i) => (
-                          <TouchableOpacity
-                            key={i}
-                            style={styles.goalTag}
-                            onPress={event => {
-                              event.stopPropagation();
-                              onOpenGoal?.(c.goalId);
-                            }}>
-                            <Text style={styles.goalTagText} numberOfLines={1}>
-                              🎯 {c.goalText}  +{c.contributionPct}%
-                            </Text>
-                          </TouchableOpacity>
-                        ))}
-                      </View>
-                    )}
-                    {debugMode && (
-                      <View style={styles.debugRow}>
-                        <Text style={styles.debugText}>
-                          synced: {entry.syncedAt !== null && entry.syncedAt >= entry.updatedAt ? 'yes' : 'no'}
-                        </Text>
-                        <Text style={styles.debugText}>
-                          upd: {new Date(entry.updatedAt).toLocaleTimeString()}
-                        </Text>
-                        {entry.syncedAt !== null && (
-                          <Text style={styles.debugText}>
-                            sync_at: {new Date(entry.syncedAt).toLocaleTimeString()}
+            <View style={styles.entriesSection}>
+              <TouchableOpacity style={styles.sectionStripRow} onPress={() => setEntriesOpen(prev => !prev)} activeOpacity={0.85}>
+                <Text style={styles.entriesHeader}>📋  ENTRIES</Text>
+                <Text style={styles.entriesStripCount}>{entries.length}</Text>
+                <Text style={styles.entriesStripChevron}>{entriesOpen ? '⌄' : '›'}</Text>
+              </TouchableOpacity>
+              {entriesOpen && (
+                <>
+                  {visibleEntries.map((entry, index) => {
+                    const matched = planBlocks.length > 0 ? allMatchingBlocks(entry, planBlocks) : [];
+                    return (
+                      <TouchableOpacity
+                        key={entry.id ?? `entry-${index}-${entry.timestampStart}-${entry.timestampEnd}`}
+                        style={styles.entryCard}
+                        onPress={() => setSelectedEntry(entry)}>
+                        <View style={styles.entryCardHeader}>
+                          <Text style={styles.timeRange}>
+                            {formatTime(entry.timestampStart)} – {formatTime(entry.timestampEnd)}
                           </Text>
+                          {debugMode && <Text style={styles.entryId}>#{entry.id}</Text>}
+                        </View>
+                        <Text style={styles.transcript}>{entry.transcript}</Text>
+                        {matched.length > 0 && (
+                          <Text style={styles.planTag}>→ {matched.map(b => b.activity).join(', ')}</Text>
                         )}
-                        <Text style={styles.debugText}>
-                          status: {entry.status === 1 ? 'active' : 'del'}
-                        </Text>
-                      </View>
-                    )}
-                  </TouchableOpacity>
-                );
-              })}
-              {hiddenEntryCount > 0 && (
-                <TouchableOpacity
-                  onPress={() => setEntriesExpanded(prev => !prev)}
-                  style={styles.entriesToggle}>
-                  <Text style={styles.entriesToggleText}>
-                    {entriesExpanded ? 'Show less' : `Show ${hiddenEntryCount} more`}
-                  </Text>
-                </TouchableOpacity>
+                        {entryContributions[entry.id] && entryContributions[entry.id].length > 0 && (
+                          <View style={styles.goalTagRow}>
+                            {entryContributions[entry.id].map((c, i) => (
+                              <TouchableOpacity
+                                key={i}
+                                style={styles.goalTag}
+                                onPress={event => {
+                                  event.stopPropagation();
+                                  onOpenGoal?.(c.goalId);
+                                }}>
+                                <Text style={styles.goalTagText} numberOfLines={1}>
+                                  🎯 {c.goalText}  +{c.contributionPct}%
+                                </Text>
+                              </TouchableOpacity>
+                            ))}
+                          </View>
+                        )}
+                        {debugMode && (
+                          <View style={styles.debugRow}>
+                            <Text style={styles.debugText}>
+                              synced: {entry.syncedAt !== null && entry.syncedAt >= entry.updatedAt ? 'yes' : 'no'}
+                            </Text>
+                            <Text style={styles.debugText}>
+                              upd: {new Date(entry.updatedAt).toLocaleTimeString()}
+                            </Text>
+                            {entry.syncedAt !== null && (
+                              <Text style={styles.debugText}>
+                                sync_at: {new Date(entry.syncedAt).toLocaleTimeString()}
+                              </Text>
+                            )}
+                            <Text style={styles.debugText}>
+                              status: {entry.status === 1 ? 'active' : 'del'}
+                            </Text>
+                          </View>
+                        )}
+                      </TouchableOpacity>
+                    );
+                  })}
+                  {hiddenEntryCount > 0 && (
+                    <TouchableOpacity onPress={() => setEntriesExpanded(prev => !prev)} style={styles.entriesToggle}>
+                      <Text style={styles.entriesToggleText}>
+                        {entriesExpanded ? 'Show less' : `Show ${hiddenEntryCount} more`}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </>
               )}
-            </>
+            </View>
           )}
 
           {/* Daily Summary — bottom */}
@@ -496,6 +518,32 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
       elevation: 8,
     },
     fabIcon: { fontSize: 32, color: '#fff', lineHeight: 36 },
+    sectionStripRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    goalsStripCount: { fontSize: 12, fontWeight: '700', color: GOAL_COLOR },
+    goalsStripChevron: { fontSize: 20, color: GOAL_COLOR, lineHeight: 22 },
+    planStripCount: { fontSize: 12, fontWeight: '700', color: '#039BE5' },
+    planEditLink: { fontSize: 13, color: '#039BE5', fontWeight: '600' },
+    entriesSection: {
+      backgroundColor: colors.accent + '18',
+      borderRadius: 8,
+      padding: 12,
+      gap: 8,
+      borderLeftWidth: 4,
+      borderLeftColor: colors.accent,
+    },
+    entriesHeader: {
+      flex: 1,
+      fontSize: 11,
+      fontWeight: '700',
+      color: colors.accent,
+      letterSpacing: 0.8,
+    },
+    entriesStripCount: { fontSize: 12, fontWeight: '700', color: colors.accent },
+    entriesStripChevron: { fontSize: 20, color: colors.accent, lineHeight: 22 },
     pinnedGoals: {
       backgroundColor: GOAL_COLOR + '10',
       borderRadius: 8,
@@ -503,12 +551,6 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
       gap: 8,
       borderLeftWidth: 4,
       borderLeftColor: GOAL_COLOR,
-    },
-    pinnedGoalsTop: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      gap: 10,
     },
     pinnedGoalsHeader: {
       flex: 1,

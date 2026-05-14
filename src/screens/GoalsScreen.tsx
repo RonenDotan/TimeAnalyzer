@@ -571,12 +571,10 @@ function makeStyles(colors: ColorPalette) {
     goalCard: {
       backgroundColor: GOAL_COLOR + '10', borderRadius: 8, padding: 12, gap: 8,
       borderLeftWidth: 4,
-      borderWidth: 1,
-      borderColor: GOAL_COLOR + '60',
+      borderLeftColor: GOAL_COLOR,
     },
     goalCardOverdue: {
       backgroundColor: OVERDUE_COLOR + '16',
-      borderColor: OVERDUE_COLOR + '60',
     },
     goalMain:       { gap: 6 },
     goalText:       { fontSize: 15, color: colors.text, lineHeight: 22 },

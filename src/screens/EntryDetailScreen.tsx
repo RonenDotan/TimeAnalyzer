@@ -33,6 +33,7 @@ interface Props {
   entry: LogEntry;
   onSave: (updated: LogEntry) => void;
   onClose: () => void;
+  debugMode?: boolean;
 }
 
 type ActiveTimePicker = 'start' | 'end' | null;
@@ -58,7 +59,7 @@ function timeStringToDate(timeStr: string, fallbackTs: number): Date {
   return new Date(ts ?? fallbackTs);
 }
 
-export default function EntryDetailScreen({ entry, onSave, onClose }: Props) {
+export default function EntryDetailScreen({ entry, onSave, onClose, debugMode = false }: Props) {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const [editing, setEditing] = useState(false);
@@ -271,16 +272,19 @@ export default function EntryDetailScreen({ entry, onSave, onClose }: Props) {
       style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <ScreenHeader
-        title={`Entry #${entry.id}`}
+        title={`${tsToTimeString(entry.timestampStart)} – ${tsToTimeString(entry.timestampEnd)}`}
         onLeft={editing ? handleCancel : onClose}
         leftLabel={editing ? 'Cancel' : 'Back'}
         onRight={editing ? handleSave : () => setEditing(true)}
         rightLabel={editing ? 'Save' : 'Edit'}
         rightColor={editing ? colors.accent : undefined}
       />
+      {debugMode && (
+        <Text style={styles.debugEntryId}>#{entry.id}</Text>
+      )}
 
       <ScrollView contentContainerStyle={styles.body}>
-        {/* Time range */}
+        {/* Time range + Transcript — combined green box */}
         <View style={styles.section}>
           <Text style={styles.label}>TIME RANGE</Text>
           <View style={styles.timeRow}>
@@ -300,10 +304,9 @@ export default function EntryDetailScreen({ entry, onSave, onClose }: Props) {
               </Text>
             )}
           </View>
-        </View>
 
-        {/* Transcript */}
-        <View style={styles.section}>
+          <View style={styles.sectionDivider} />
+
           <Text style={styles.label}>TRANSCRIPT</Text>
           {editing ? (
             <>
@@ -508,7 +511,19 @@ function makeStyles(colors: ColorPalette) {
       flex: 1,
       backgroundColor: colors.background,
     },
+    debugEntryId: {
+      fontSize: 11,
+      color: colors.border,
+      textAlign: 'center',
+      paddingVertical: 3,
+      backgroundColor: colors.surface,
+    },
     body: { padding: 16, gap: 20, paddingBottom: 40 },
+    sectionDivider: {
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: colors.accent + '40',
+      marginVertical: 12,
+    },
     section: {
       backgroundColor: colors.surface,
       borderRadius: 12,
