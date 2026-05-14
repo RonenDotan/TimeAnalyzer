@@ -1,4 +1,4 @@
-export type FrequencyMinutes = 1 | 2 | 30 | 60 | 120 | 240 | 480 | 1440;
+export type FrequencyMinutes = number;
 export type SyncIntervalMinutes = 0 | 1 | 5 | 15 | 30 | 60;
 export type TranscriptionProvider = 'groq';
 export type AnalysisProvider = 'claude' | 'openai';
@@ -42,17 +42,6 @@ export const THEME_OPTIONS: { label: string; sublabel: string; value: Theme }[] 
   { label: 'System', sublabel: 'Follow device setting', value: 'system' },
   { label: 'Light', sublabel: 'Always light', value: 'light' },
   { label: 'Dark', sublabel: 'Always dark', value: 'dark' },
-];
-
-export const FREQUENCY_OPTIONS: { label: string; value: FrequencyMinutes }[] = [
-  { label: '1 min', value: 1 },
-  { label: '2 min', value: 2 },
-  { label: '30 min', value: 30 },
-  { label: '1 hour', value: 60 },
-  { label: '2 hours', value: 120 },
-  { label: '4 hours', value: 240 },
-  { label: '8 hours', value: 480 },
-  { label: '1 day', value: 1440 },
 ];
 
 export const SYNC_INTERVAL_OPTIONS: { label: string; sublabel: string; value: SyncIntervalMinutes }[] = [

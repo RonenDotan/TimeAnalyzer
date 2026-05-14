@@ -244,28 +244,25 @@ export default function ReportScreen({
               </TouchableOpacity>
               {planOpen && (
                 <TouchableOpacity onPress={() => onEditPlan?.(currentDate)} activeOpacity={0.85}>
-                  {visiblePlanBlocks.map(block => {
+                  {visiblePlanBlocks.map((block, index) => {
                     const covered = isCovered(block, entries);
                     const isCalendar = block.source === 'calendar';
                     const blockKey = block.id ?? `${block.source}-${block.startMin}-${block.endMin}-${block.activity}`;
                     return (
-                      <View key={blockKey} style={styles.planBlock}>
-                        <View style={[
-                          styles.planDot,
-                          isCalendar
-                            ? styles.planDotCalendar
-                            : covered ? styles.planDotCovered : styles.planDotMissed,
-                        ]} />
-                        <Text style={styles.planTime}>{formatMin(block.startMin)}–{formatMin(block.endMin)}</Text>
-                        <Text style={[styles.planActivity, !covered && styles.planActivityMissed]}>
-                          {block.activity}{isCalendar ? ' 🗓' : ''}
-                        </Text>
-                      </View>
+                      <React.Fragment key={blockKey}>
+                        <View style={styles.planBlock}>
+                          <Text style={styles.planTime}>{formatMin(block.startMin)}–{formatMin(block.endMin)}</Text>
+                          <Text style={[styles.planActivity, !covered && styles.planActivityMissed]}>
+                            {block.activity}{isCalendar ? ' 🗓' : ''}
+                          </Text>
+                        </View>
+                        {index < visiblePlanBlocks.length - 1 && <View style={styles.itemSeparator} />}
+                      </React.Fragment>
                     );
                   })}
                   {hiddenPlanCount > 0 && (
                     <TouchableOpacity onPress={e => { e.stopPropagation?.(); setPlanExpanded(prev => !prev); }} style={styles.pinnedGoalsToggle}>
-                      <Text style={styles.pinnedGoalsToggleText}>
+                      <Text style={styles.planToggleText}>
                         {planExpanded ? 'Show less' : `Show ${hiddenPlanCount} more`}
                       </Text>
                     </TouchableOpacity>
@@ -295,9 +292,10 @@ export default function ReportScreen({
                 <>
                   {visibleEntries.map((entry, index) => {
                     const matched = planBlocks.length > 0 ? allMatchingBlocks(entry, planBlocks) : [];
+                    const entryKey = entry.id ?? `entry-${index}-${entry.timestampStart}-${entry.timestampEnd}`;
                     return (
+                      <React.Fragment key={entryKey}>
                       <TouchableOpacity
-                        key={entry.id ?? `entry-${index}-${entry.timestampStart}-${entry.timestampEnd}`}
                         style={styles.entryCard}
                         onPress={() => setSelectedEntry(entry)}>
                         <View style={styles.entryCardHeader}>
@@ -346,6 +344,8 @@ export default function ReportScreen({
                           </View>
                         )}
                       </TouchableOpacity>
+                      {index < visibleEntries.length - 1 && <View style={styles.itemSeparator} />}
+                      </React.Fragment>
                     );
                   })}
                   {hiddenEntryCount > 0 && (
@@ -485,22 +485,14 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      marginBottom: 8,
+      marginBottom: 2,
     },
     entryId: { fontSize: 11, color: colors.border, fontWeight: '500' },
     entryCard: {
-      backgroundColor: '#33B679' + '18',
-      borderRadius: 8,
-      padding: 12,
-      borderLeftWidth: 4,
-      borderLeftColor: '#33B679',
-      shadowColor: '#000',
-      shadowOpacity: 0.05,
-      shadowRadius: 4,
-      elevation: 2,
+      paddingVertical: 10,
     },
-    timeRange: { fontSize: 14, fontWeight: '700', color: colors.accent },
-    transcript: { fontSize: 15, color: colors.text, lineHeight: 22 },
+    timeRange: { fontSize: 13, fontWeight: '600', color: '#33B679' },
+    transcript: { fontSize: 14, color: colors.text, lineHeight: 20 },
     fab: {
       position: 'absolute',
       right: 24,
@@ -567,6 +559,11 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
       color: GOAL_COLOR,
       fontWeight: '700',
     },
+    planToggleText: {
+      fontSize: 12,
+      color: '#039BE5',
+      fontWeight: '700',
+    },
     pinnedGoalRow: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -592,15 +589,15 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
       borderLeftColor: '#039BE5',
     },
     planHeader: {
-      fontSize: 11, fontWeight: '700', color: '#039BE5', letterSpacing: 0.5, marginBottom: 2,
+      flex: 1,
+      fontSize: 11, fontWeight: '700', color: '#039BE5', letterSpacing: 0.5,
     },
-    planBlock: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-    planDot: { width: 10, height: 10, borderRadius: 5 },
-    planDotCovered: { backgroundColor: '#039BE5' },
-    planDotMissed: { backgroundColor: colors.border },
-    planDotCalendar: { backgroundColor: calendarColor },
-    planTime: { fontSize: 13, fontWeight: '600', color: colors.textSecondary, width: 100 },
-    planActivity: { fontSize: 14, color: colors.text, flex: 1 },
+    planBlock: {
+      paddingVertical: 10,
+      gap: 2,
+    },
+    planTime: { fontSize: 13, fontWeight: '600', color: '#039BE5' },
+    planActivity: { fontSize: 14, color: colors.text, lineHeight: 20 },
     planActivityMissed: { color: colors.textSecondary },
     planCoverage: {
       fontSize: 12, color: colors.textSecondary, marginTop: 4,
@@ -639,6 +636,10 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
       fontSize: 12,
       color: '#33B679',
       fontWeight: '700',
+    },
+    itemSeparator: {
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: colors.border,
     },
   });
 }
