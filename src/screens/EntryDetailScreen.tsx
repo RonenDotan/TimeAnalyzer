@@ -23,6 +23,7 @@ import { Goal, GoalEntryContribution } from '../types/Goal';
 
 const GOAL_COLOR = '#F97316';
 import DictateBar from '../components/DictateBar';
+import ScreenHeader from '../components/ScreenHeader';
 import SettingsService from '../services/SettingsService';
 import NoteDetailScreen from './NoteDetailScreen';
 import { applyTranscription } from '../utils/parseTranscript';
@@ -269,23 +270,14 @@ export default function EntryDetailScreen({ entry, onSave, onClose }: Props) {
     <KeyboardAvoidingView
       style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={editing ? handleCancel : onClose}>
-          <Text style={styles.headerBtn}>{editing ? 'Cancel' : 'Back'}</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>
-          Entry <Text style={styles.headerId}>#{entry.id}</Text>
-        </Text>
-        {editing ? (
-          <TouchableOpacity onPress={handleSave}>
-            <Text style={[styles.headerBtn, styles.saveBtn]}>Save</Text>
-          </TouchableOpacity>
-        ) : (
-          <TouchableOpacity onPress={() => setEditing(true)}>
-            <Text style={[styles.headerBtn, styles.editBtn]}>Edit</Text>
-          </TouchableOpacity>
-        )}
-      </View>
+      <ScreenHeader
+        title={`Entry #${entry.id}`}
+        onLeft={editing ? handleCancel : onClose}
+        leftLabel={editing ? 'Cancel' : 'Back'}
+        onRight={editing ? handleSave : () => setEditing(true)}
+        rightLabel={editing ? 'Save' : 'Edit'}
+        rightColor={editing ? colors.accent : undefined}
+      />
 
       <ScrollView contentContainerStyle={styles.body}>
         {/* Time range */}
@@ -515,36 +507,19 @@ function makeStyles(colors: ColorPalette) {
     container: {
       flex: 1,
       backgroundColor: colors.background,
-      borderLeftWidth: 4,
-      borderLeftColor: '#33B679',
     },
-    header: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      paddingHorizontal: 16,
-      paddingVertical: 12,
-      backgroundColor: '#33B679' + '18',
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: '#33B679',
-    },
-    headerTitle: { fontSize: 17, fontWeight: '600', color: colors.text },
-    headerId: { fontSize: 13, fontWeight: '400', color: colors.border },
-    headerBtn: { fontSize: 17, color: '#33B679' },
-    editBtn: { color: '#33B679' },
-    saveBtn: { fontWeight: '600' },
     body: { padding: 16, gap: 20, paddingBottom: 40 },
     section: {
-      backgroundColor: '#33B679' + '18',
+      backgroundColor: colors.surface,
       borderRadius: 12,
       padding: 16,
       borderLeftWidth: 4,
-      borderLeftColor: '#33B679',
+      borderLeftColor: colors.accent,
     },
     label: {
       fontSize: 11,
       fontWeight: '600',
-      color: '#33B679',
+      color: colors.accent,
       letterSpacing: 0.5,
       marginBottom: 10,
     },
@@ -552,7 +527,7 @@ function makeStyles(colors: ColorPalette) {
     timeDisplay: { fontSize: 18, fontWeight: '600', color: colors.text },
     timeInput: {
       borderBottomWidth: 1.5,
-      borderBottomColor: '#33B679',
+      borderBottomColor: colors.accent,
       paddingVertical: 4,
       minWidth: 60,
       alignItems: 'center',
@@ -570,7 +545,7 @@ function makeStyles(colors: ColorPalette) {
       lineHeight: 24,
       minHeight: 120,
       borderWidth: 1.5,
-      borderColor: '#33B679',
+      borderColor: colors.accent,
       borderRadius: 8,
       padding: 10,
       backgroundColor: colors.surface,
@@ -579,14 +554,14 @@ function makeStyles(colors: ColorPalette) {
     notesGroupLabel: {
       fontSize: 11,
       fontWeight: '600',
-      color: '#33B679',
+      color: colors.accent,
       letterSpacing: 0.5,
       marginLeft: 4,
       marginBottom: 8,
     },
     emptyNotes: { fontSize: 14, color: colors.placeholder, marginLeft: 4 },
     noteCard: {
-      backgroundColor: '#33B679' + '12',
+      backgroundColor: colors.surface,
       borderRadius: 12,
       padding: 14,
       shadowColor: '#000',
@@ -594,7 +569,7 @@ function makeStyles(colors: ColorPalette) {
       shadowRadius: 3,
       elevation: 1,
       borderLeftWidth: 4,
-      borderLeftColor: '#33B679',
+      borderLeftColor: colors.accent,
     },
     noteCardHeader: {
       flexDirection: 'row',
@@ -610,7 +585,7 @@ function makeStyles(colors: ColorPalette) {
       color: colors.text,
       lineHeight: 22,
       borderWidth: 1,
-      borderColor: '#33B679',
+      borderColor: colors.accent,
       borderRadius: 8,
       padding: 8,
       minHeight: 60,
@@ -618,14 +593,14 @@ function makeStyles(colors: ColorPalette) {
       backgroundColor: colors.surface + 'cc',
     },
     addNoteCard: {
-      backgroundColor: '#33B679' + '12',
+      backgroundColor: colors.surface,
       borderRadius: 12,
       padding: 14,
       flexDirection: 'row',
       alignItems: 'flex-end',
       gap: 10,
       borderWidth: StyleSheet.hairlineWidth,
-      borderColor: '#33B679',
+      borderColor: colors.border,
       borderStyle: 'dashed',
     },
     addNoteInput: {
@@ -638,7 +613,7 @@ function makeStyles(colors: ColorPalette) {
     addNoteBtn: {
       paddingHorizontal: 14,
       paddingVertical: 8,
-      backgroundColor: '#33B679',
+      backgroundColor: colors.accent,
       borderRadius: 8,
     },
     addNoteBtnDisabled: { backgroundColor: colors.placeholder },
