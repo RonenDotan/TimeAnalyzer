@@ -256,16 +256,18 @@ export default function ReportScreen({
                             ? styles.planDotCalendar
                             : covered ? styles.planDotCovered : styles.planDotMissed,
                         ]} />
-                        <Text style={styles.planTime}>{formatMin(block.startMin)}–{formatMin(block.endMin)}</Text>
-                        <Text style={[styles.planActivity, !covered && styles.planActivityMissed]}>
-                          {block.activity}{isCalendar ? ' 🗓' : ''}
-                        </Text>
+                        <View style={styles.planBlockContent}>
+                          <Text style={styles.planTime}>{formatMin(block.startMin)}–{formatMin(block.endMin)}</Text>
+                          <Text style={[styles.planActivity, !covered && styles.planActivityMissed]}>
+                            {block.activity}{isCalendar ? ' 🗓' : ''}
+                          </Text>
+                        </View>
                       </View>
                     );
                   })}
                   {hiddenPlanCount > 0 && (
                     <TouchableOpacity onPress={e => { e.stopPropagation?.(); setPlanExpanded(prev => !prev); }} style={styles.pinnedGoalsToggle}>
-                      <Text style={styles.pinnedGoalsToggleText}>
+                      <Text style={styles.planToggleText}>
                         {planExpanded ? 'Show less' : `Show ${hiddenPlanCount} more`}
                       </Text>
                     </TouchableOpacity>
@@ -499,7 +501,7 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
       shadowRadius: 4,
       elevation: 2,
     },
-    timeRange: { fontSize: 14, fontWeight: '700', color: colors.accent },
+    timeRange: { fontSize: 14, fontWeight: '700', color: '#33B679' },
     transcript: { fontSize: 15, color: colors.text, lineHeight: 22 },
     fab: {
       position: 'absolute',
@@ -530,8 +532,6 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
       borderRadius: 8,
       padding: 12,
       gap: 8,
-      borderLeftWidth: 4,
-      borderLeftColor: '#33B679',
     },
     entriesHeader: {
       flex: 1,
@@ -567,6 +567,11 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
       color: GOAL_COLOR,
       fontWeight: '700',
     },
+    planToggleText: {
+      fontSize: 12,
+      color: '#039BE5',
+      fontWeight: '700',
+    },
     pinnedGoalRow: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -592,15 +597,17 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
       borderLeftColor: '#039BE5',
     },
     planHeader: {
-      fontSize: 11, fontWeight: '700', color: '#039BE5', letterSpacing: 0.5, marginBottom: 2,
+      flex: 1,
+      fontSize: 11, fontWeight: '700', color: '#039BE5', letterSpacing: 0.5,
     },
-    planBlock: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+    planBlock: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+    planBlockContent: { flex: 1, gap: 2 },
     planDot: { width: 10, height: 10, borderRadius: 5 },
     planDotCovered: { backgroundColor: '#039BE5' },
     planDotMissed: { backgroundColor: colors.border },
     planDotCalendar: { backgroundColor: calendarColor },
-    planTime: { fontSize: 13, fontWeight: '600', color: colors.textSecondary, width: 100 },
-    planActivity: { fontSize: 14, color: colors.text, flex: 1 },
+    planTime: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
+    planActivity: { fontSize: 14, color: colors.text, lineHeight: 20 },
     planActivityMissed: { color: colors.textSecondary },
     planCoverage: {
       fontSize: 12, color: colors.textSecondary, marginTop: 4,

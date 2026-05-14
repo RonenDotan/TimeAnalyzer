@@ -22,7 +22,6 @@ import {
   ANALYSIS_PROVIDERS,
   DAY_LABELS,
   DEFAULT_SETTINGS,
-  FREQUENCY_OPTIONS,
   Settings,
   SYNC_INTERVAL_OPTIONS,
   THEME_OPTIONS,
@@ -34,7 +33,7 @@ interface Props {
   onClose: (saved: boolean) => void;
 }
 
-type SectionKey = 'schedule' | 'providers' | 'keywords' | 'theme' | 'notifications' | 'integrations' | 'debug';
+type SectionKey = 'providers' | 'keywords' | 'theme' | 'notifications' | 'integrations' | 'debug' | 'debugNotifications';
 
 export default function SettingsScreen({ onClose }: Props) {
   const insets = useSafeAreaInsets();
@@ -83,6 +82,16 @@ export default function SettingsScreen({ onClose }: Props) {
     const days = [...settings.checkInDays] as Settings['checkInDays'];
     days[i] = !days[i];
     setSettings({ ...settings, checkInDays: days });
+  }
+
+  function setFrequencyHours(value: string) {
+    const numeric = value.replace(/[^0-9]/g, '');
+    const hours = Number(numeric);
+    if (!numeric || !Number.isFinite(hours) || hours < 1) {
+      set({ frequencyMinutes: 60 });
+      return;
+    }
+    set({ frequencyMinutes: hours * 60 });
   }
 
   async function handleGoogleSignIn() {
@@ -156,8 +165,9 @@ export default function SettingsScreen({ onClose }: Props) {
 
   async function handleSave() {
     if (!settings) return;
+    const settingsToSave = { ...settings, dailyPlanEnabled: true };
     await Promise.all([
-      SettingsService.save(settings),
+      SettingsService.save(settingsToSave),
       SettingsService.setGroqApiKey(groqKey.trim()),
       SettingsService.setClaudeApiKey(claudeKey.trim()),
       SettingsService.setOpenAIApiKey(openaiKey.trim()),
@@ -221,94 +231,7 @@ export default function SettingsScreen({ onClose }: Props) {
 
       <ScrollView contentContainerStyle={styles.body}>
 
-        {/* ── SCHEDULE ─────────────────────────────────────────── */}
-        <SectionHeader sectionKey="schedule" title="SCHEDULE" />
-        {expanded.has('schedule') && (
-          <>
-            <Text style={styles.sectionLabel}>FREQUENCY</Text>
-            <View style={styles.card}>
-              {FREQUENCY_OPTIONS.map((opt, i) => (
-                <TouchableOpacity
-                  key={opt.value}
-                  style={[styles.row, i > 0 && styles.rowBorder]}
-                  onPress={() => set({ frequencyMinutes: opt.value })}>
-                  <Text style={styles.rowLabel}>{opt.label}</Text>
-                  {settings.frequencyMinutes === opt.value && <Text style={styles.checkmark}>✓</Text>}
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            <Text style={styles.sectionLabel}>WORKING HOURS</Text>
-            <View style={styles.card}>
-              <View style={styles.row}>
-                <Text style={styles.rowLabel}>All day</Text>
-                <Switch value={settings.everyHour} onValueChange={v => set({ everyHour: v })} />
-              </View>
-              {!settings.everyHour && (
-                <>
-                  <View style={[styles.row, styles.rowBorder]}>
-                    <Text style={styles.rowLabel}>Start</Text>
-                    <View style={styles.stepper}>
-                      <TouchableOpacity onPress={() => set({ startHour: Math.max(0, settings.startHour - 1) })}>
-                        <Text style={styles.stepperBtn}>−</Text>
-                      </TouchableOpacity>
-                      <Text style={styles.stepperVal}>{settings.startHour.toString().padStart(2, '0')}:00</Text>
-                      <TouchableOpacity onPress={() => set({ startHour: Math.min(settings.endHour - 1, settings.startHour + 1) })}>
-                        <Text style={styles.stepperBtn}>+</Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                  <View style={[styles.row, styles.rowBorder]}>
-                    <Text style={styles.rowLabel}>End</Text>
-                    <View style={styles.stepper}>
-                      <TouchableOpacity onPress={() => set({ endHour: Math.max(settings.startHour + 1, settings.endHour - 1) })}>
-                        <Text style={styles.stepperBtn}>−</Text>
-                      </TouchableOpacity>
-                      <Text style={styles.stepperVal}>{settings.endHour.toString().padStart(2, '0')}:00</Text>
-                      <TouchableOpacity onPress={() => set({ endHour: Math.min(24, settings.endHour + 1) })}>
-                        <Text style={styles.stepperBtn}>+</Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                </>
-              )}
-            </View>
-
-            <Text style={styles.sectionLabel}>DAILY PLAN</Text>
-            <View style={styles.card}>
-              <View style={styles.row}>
-                <Text style={styles.rowLabel}>Daily plan reminder</Text>
-                <Switch value={settings.dailyPlanEnabled} onValueChange={v => set({ dailyPlanEnabled: v })} />
-              </View>
-              {settings.dailyPlanEnabled && (
-                <View style={[styles.row, styles.rowBorder]}>
-                  <Text style={styles.rowLabel}>Reminder time</Text>
-                  <View style={styles.stepper}>
-                    <TouchableOpacity onPress={() => set({ dailyPlanHour: Math.max(0, settings.dailyPlanHour - 1) })}>
-                      <Text style={styles.stepperBtn}>−</Text>
-                    </TouchableOpacity>
-                    <Text style={styles.stepperVal}>{settings.dailyPlanHour.toString().padStart(2, '0')}:00</Text>
-                    <TouchableOpacity onPress={() => set({ dailyPlanHour: Math.min(23, settings.dailyPlanHour + 1) })}>
-                      <Text style={styles.stepperBtn}>+</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              )}
-            </View>
-
-            <Text style={styles.sectionLabel}>CHECK-IN DAYS</Text>
-            <View style={styles.card}>
-              {DAY_LABELS.map((label, i) => (
-                <View key={label} style={[styles.row, i > 0 && styles.rowBorder]}>
-                  <Text style={styles.rowLabel}>{label}</Text>
-                  <Switch value={settings.checkInDays[i]} onValueChange={() => toggleDay(i)} />
-                </View>
-              ))}
-            </View>
-          </>
-        )}
-
-        {/* ── PROVIDERS ────────────────────────────────────────── */}
+{/* ── PROVIDERS ────────────────────────────────────────── */}
         <SectionHeader sectionKey="providers" title="PROVIDERS" />
         {expanded.has('providers') && (
           <>
@@ -645,6 +568,94 @@ export default function SettingsScreen({ onClose }: Props) {
           </View>
         )}
 
+        {settings.debugMode && (
+          <>
+            <SectionHeader sectionKey="debugNotifications" title="DEBUG NOTIFICATIONS" />
+            {expanded.has('debugNotifications') && (
+              <>
+                <Text style={styles.sectionLabel}>NOTIFICATION DAYS</Text>
+                <View style={styles.card}>
+                  {DAY_LABELS.map((label, i) => (
+                    <View key={label} style={[styles.row, i > 0 && styles.rowBorder]}>
+                      <Text style={styles.rowLabel}>{label}</Text>
+                      <Switch value={settings.checkInDays[i]} onValueChange={() => toggleDay(i)} />
+                    </View>
+                  ))}
+                </View>
+
+                <Text style={styles.sectionLabel}>NOTIFICATION HOURS</Text>
+                <View style={styles.card}>
+                  <View style={styles.row}>
+                    <Text style={styles.rowLabel}>All day</Text>
+                    <Switch value={settings.everyHour} onValueChange={v => set({ everyHour: v })} />
+                  </View>
+                  {!settings.everyHour && (
+                    <>
+                      <View style={[styles.row, styles.rowBorder]}>
+                        <Text style={styles.rowLabel}>Start</Text>
+                        <View style={styles.stepper}>
+                          <TouchableOpacity onPress={() => set({ startHour: Math.max(0, settings.startHour - 1) })}>
+                            <Text style={styles.stepperBtn}>-</Text>
+                          </TouchableOpacity>
+                          <Text style={styles.stepperVal}>{settings.startHour.toString().padStart(2, '0')}:00</Text>
+                          <TouchableOpacity onPress={() => set({ startHour: Math.min(settings.endHour - 1, settings.startHour + 1) })}>
+                            <Text style={styles.stepperBtn}>+</Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                      <View style={[styles.row, styles.rowBorder]}>
+                        <Text style={styles.rowLabel}>End</Text>
+                        <View style={styles.stepper}>
+                          <TouchableOpacity onPress={() => set({ endHour: Math.max(settings.startHour + 1, settings.endHour - 1) })}>
+                            <Text style={styles.stepperBtn}>-</Text>
+                          </TouchableOpacity>
+                          <Text style={styles.stepperVal}>{settings.endHour.toString().padStart(2, '0')}:00</Text>
+                          <TouchableOpacity onPress={() => set({ endHour: Math.min(24, settings.endHour + 1) })}>
+                            <Text style={styles.stepperBtn}>+</Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    </>
+                  )}
+                </View>
+
+                <Text style={styles.sectionLabel}>CHECK-IN FREQUENCY</Text>
+                <View style={styles.card}>
+                  <View style={styles.row}>
+                    <Text style={styles.rowLabel}>Check-in frequency</Text>
+                    <View style={styles.numericInputGroup}>
+                      <TextInput
+                        style={styles.numericInput}
+                        value={String(Math.max(1, Math.round(settings.frequencyMinutes / 60)))}
+                        onChangeText={setFrequencyHours}
+                        keyboardType="number-pad"
+                        returnKeyType="done"
+                      />
+                      <Text style={styles.rowSub}>hours</Text>
+                    </View>
+                  </View>
+                </View>
+
+                <Text style={styles.sectionLabel}>DAILY PLAN</Text>
+                <View style={styles.card}>
+                  <View style={styles.row}>
+                    <Text style={styles.rowLabel}>Plan notification time</Text>
+                    <View style={styles.stepper}>
+                      <TouchableOpacity onPress={() => set({ dailyPlanHour: Math.max(0, settings.dailyPlanHour - 1) })}>
+                        <Text style={styles.stepperBtn}>-</Text>
+                      </TouchableOpacity>
+                      <Text style={styles.stepperVal}>{settings.dailyPlanHour.toString().padStart(2, '0')}:00</Text>
+                      <TouchableOpacity onPress={() => set({ dailyPlanHour: Math.min(23, settings.dailyPlanHour + 1) })}>
+                        <Text style={styles.stepperBtn}>+</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </View>
+              </>
+            )}
+          </>
+        )}
+
         <Text style={styles.versionText}>{version}</Text>
       </ScrollView>
     </View>
@@ -762,6 +773,21 @@ function makeStyles(colors: ColorPalette) {
       color: colors.accent,
       fontWeight: '500',
       minWidth: 80,
+      textAlign: 'right',
+      borderBottomWidth: 1,
+      borderBottomColor: colors.accent,
+      paddingVertical: 2,
+    },
+    numericInputGroup: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    numericInput: {
+      fontSize: 16,
+      color: colors.accent,
+      fontWeight: '600',
+      minWidth: 48,
       textAlign: 'right',
       borderBottomWidth: 1,
       borderBottomColor: colors.accent,
