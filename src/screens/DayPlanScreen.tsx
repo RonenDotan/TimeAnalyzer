@@ -25,6 +25,7 @@ import { Goal } from '../types/Goal';
 import { applyTranscription } from '../utils/parseTranscript';
 import { formatMin, parseDayPlan } from '../utils/parseDayPlan';
 import { ColorPalette, useTheme } from '../contexts/ThemeContext';
+import { useTranslation } from '../i18n/LanguageContext';
 
 const GOAL_COLOR = '#F97316';
 const OVERDUE_COLOR = '#DC2626';
@@ -111,6 +112,7 @@ function formatHeader(dateStr: string): string {
 export default function DayPlanScreen({ initialDate, onClose, debugMode = false, calendarColor = '#7986CB' }: Props) {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
+  const { t, direction } = useTranslation();
   const [currentDate, setCurrentDate] = useState<Date>(initialDate ?? new Date());
   const [rawInput, setRawInput] = useState('');
   const [blocks, setBlocks] = useState<EditBlock[]>([]);
@@ -153,7 +155,7 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false,
         const existing = await StorageService.getPlanBlocks(plan.id);
         setBlocks(existing.map(b => planBlockToEdit(b)));
       } catch (e: any) {
-        Alert.alert('Load failed', String(e?.message ?? e));
+        Alert.alert(t('Load failed'), String(e?.message ?? e));
       } finally {
         setTimeout(() => { suppressAutosaveRef.current = false; }, 0);
       }
@@ -174,7 +176,7 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false,
   function handleParse() {
     const parsed = parseDayPlan(rawInput);
     if (parsed.length === 0) {
-      Alert.alert('Nothing parsed', 'Try: "from 8 to 10 backend work, 10 to 12 meetings"');
+      Alert.alert(t('Nothing parsed'), t('Try: "from 8 to 10 backend work, 10 to 12 meetings"'));
       return;
     }
     setBlocks(parsed.map(parsedToEdit));
@@ -230,7 +232,7 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false,
       );
       setRecording({ index, ms: 0 });
     } catch (e: any) {
-      Alert.alert('Recording failed', String(e?.message ?? e));
+      Alert.alert(t('Recording failed'), String(e?.message ?? e));
     }
   }
 
@@ -247,7 +249,7 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false,
         }
       }
     } catch (e: any) {
-      Alert.alert('Transcription failed', String(e?.message ?? e));
+      Alert.alert(t('Transcription failed'), String(e?.message ?? e));
     }
   }
 
@@ -306,7 +308,7 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false,
         CalendarSyncService.syncChanged().catch(() => {});
         setTimeout(() => { suppressAutosaveRef.current = false; }, 0);
       } catch (e: any) {
-        Alert.alert('Autosave failed', String(e?.message ?? e));
+        Alert.alert(t('Autosave failed'), String(e?.message ?? e));
       } finally {
         autosavingRef.current = false;
       }
@@ -321,7 +323,7 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false,
     if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
   }, []);
 
-  const styles = makeStyles(colors, calendarColor);
+  const styles = makeStyles(colors, calendarColor, direction);
 
   return (
     <KeyboardAvoidingView
@@ -337,16 +339,16 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false,
         date={currentDate}
         onPrev={goToPrevDay}
         onNext={goToNextDay}
-        formatLabel={() => formatHeader(dateStr)}
+        formatLabel={() => t(formatHeader(dateStr))}
       />
 
       <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
         {(goals.length > 0 || addingGoal) && (
           <View style={styles.goalsSectionCard}>
             <View style={styles.goalsSectionHeader}>
-              <Text style={styles.goalsSectionTitle}>{'\u{1F3AF}  ACTIVE GOALS'}</Text>
+              <Text style={styles.goalsSectionTitle}>{t('🎯  ACTIVE GOALS')}</Text>
               <TouchableOpacity onPress={() => setAddingGoal(v => !v)}>
-                <Text style={styles.goalsSectionAdd}>{addingGoal ? '\u{2715}' : '+ New goal'}</Text>
+                <Text style={styles.goalsSectionAdd}>{addingGoal ? '\u{2715}' : t('+ New goal')}</Text>
               </TouchableOpacity>
             </View>
 
@@ -359,7 +361,7 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false,
                 style={styles.goalsToggle}
                 onPress={() => setGoalsExpanded(prev => !prev)}>
                 <Text style={styles.goalsToggleText}>
-                  {goalsExpanded ? 'Show less' : `Show ${goals.length - GOALS_COLLAPSED_COUNT} more`}
+                  {goalsExpanded ? t('Show less') : t('Show {n} more', { n: goals.length - GOALS_COLLAPSED_COUNT })}
                 </Text>
               </TouchableOpacity>
             )}
@@ -370,7 +372,7 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false,
                   style={styles.addGoalInput}
                   value={newGoalText}
                   onChangeText={setNewGoalText}
-                  placeholder="Describe your goal..."
+                  placeholder={t('Describe your goal...')}
                   placeholderTextColor={colors.placeholder}
                   multiline
                   textAlignVertical="top"
@@ -380,7 +382,7 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false,
                   style={[styles.addGoalBtn, !newGoalText.trim() && styles.addGoalBtnDisabled]}
                   onPress={handleAddGoal}
                   disabled={!newGoalText.trim()}>
-                  <Text style={styles.addGoalBtnText}>Add</Text>
+                  <Text style={styles.addGoalBtnText}>{t('Add')}</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -402,7 +404,7 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false,
             <DictateBar onResult={raw => setRawInput(prev => applyTranscription(prev, raw))} />
             {rawInput.trim().length > 0 && (
               <TouchableOpacity style={styles.parseBtn} onPress={handleParse}>
-                <Text style={styles.parseBtnText}>Parse into blocks</Text>
+                <Text style={styles.parseBtnText}>{t('Parse into blocks')}</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -410,7 +412,7 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false,
 
         {/* Block list */}
         {(blocks.length > 0 || calendarBlocks.length > 0) && (
-          <Text style={styles.sectionLabel}>PLAN BLOCKS</Text>
+          <Text style={styles.sectionLabel}>{t('PLAN BLOCKS')}</Text>
         )}
         {blocks.map((block, i) => {
           const isEditing = editingBlockIndex === i;
@@ -422,11 +424,11 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false,
               <View key={i} style={styles.blockCard}>
                 <View style={styles.blockTimes}>
                   <TouchableOpacity style={styles.timeInput} onPress={() => setActiveTimePicker({ index: i, field: 'start' })}>
-                    <Text style={styles.timeInputText}>{normalizeTimeText(editingBlockDraft.startText) || 'Start'}</Text>
+                    <Text style={styles.timeInputText}>{normalizeTimeText(editingBlockDraft.startText) || t('Start')}</Text>
                   </TouchableOpacity>
                   <Text style={styles.timeDash}>–</Text>
                   <TouchableOpacity style={styles.timeInput} onPress={() => setActiveTimePicker({ index: i, field: 'end' })}>
-                    <Text style={styles.timeInputText}>{normalizeTimeText(editingBlockDraft.endText) || 'End'}</Text>
+                    <Text style={styles.timeInputText}>{normalizeTimeText(editingBlockDraft.endText) || t('End')}</Text>
                   </TouchableOpacity>
                 </View>
                 <View style={styles.activityRow}>
@@ -434,7 +436,7 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false,
                     style={styles.activityInput}
                     value={editingBlockDraft.activity}
                     onChangeText={v => setEditingBlockDraft(prev => prev ? { ...prev, activity: v } : prev)}
-                    placeholder="Activity description…"
+                    placeholder={t('Activity description…')}
                     placeholderTextColor={colors.placeholder}
                     editable={!isRecording}
                     multiline
@@ -460,7 +462,7 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false,
                       setEditingBlockIndex(null);
                       setEditingBlockDraft(null);
                     }}>
-                    <Text style={styles.blockSaveBtnText}>Save</Text>
+                    <Text style={styles.blockSaveBtnText}>{t('Save')}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={styles.blockCancelBtn}
@@ -468,7 +470,7 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false,
                       setEditingBlockIndex(null);
                       setEditingBlockDraft(null);
                     }}>
-                    <Text style={styles.blockCancelBtnText}>Cancel</Text>
+                    <Text style={styles.blockCancelBtnText}>{t('Cancel')}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={styles.blockDeleteBtn}
@@ -477,7 +479,7 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false,
                       setEditingBlockIndex(null);
                       setEditingBlockDraft(null);
                     }}>
-                    <Text style={styles.blockDeleteBtnText}>Delete</Text>
+                    <Text style={styles.blockDeleteBtnText}>{t('Delete')}</Text>
                   </TouchableOpacity>
                 </View>
                 {debugMode && block.id !== undefined && (
@@ -512,9 +514,9 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false,
                 <Text style={styles.blockCardTime}>
                   {normalizeTimeText(block.startText) || '??'} – {normalizeTimeText(block.endText) || '??'}
                 </Text>
-                <Text style={styles.blockCardEdit}>Edit</Text>
+                <Text style={styles.blockCardEdit}>{t('Edit')}</Text>
               </View>
-              <Text style={styles.blockCardActivity}>{block.activity || 'No activity set'}</Text>
+              <Text style={styles.blockCardActivity}>{block.activity || t('No activity set')}</Text>
               {debugMode && block.id !== undefined && (
                 <View style={styles.debugRow}>
                   <Text style={styles.debugText}>
@@ -561,7 +563,7 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false,
           ))}
 
         <TouchableOpacity style={styles.addBtn} onPress={addBlock}>
-          <Text style={styles.addBtnText}>+ Add block manually</Text>
+          <Text style={styles.addBtnText}>{t('+ Add block manually')}</Text>
         </TouchableOpacity>
 
       </ScrollView>
@@ -578,11 +580,12 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false,
   );
 }
 
-function makeStyles(colors: ColorPalette, calendarColor: string) {
+function makeStyles(colors: ColorPalette, calendarColor: string, direction: 'ltr' | 'rtl') {
+  const isRTL = direction === 'rtl';
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
     header: {
-      flexDirection: 'row',
+      flexDirection: isRTL ? 'row-reverse' : 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
       paddingHorizontal: 12,
@@ -596,7 +599,7 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
     save: { fontSize: 15, color: colors.accent, fontWeight: '600' },
     saveDim: { opacity: 0.4 },
     dayNav: {
-      flexDirection: 'row',
+      flexDirection: isRTL ? 'row-reverse' : 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
       paddingHorizontal: 6,
@@ -642,10 +645,12 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
       borderRadius: 8,
       padding: 12,
       gap: 8,
-      borderLeftWidth: 4,
-      borderLeftColor: '#039BE5',
+      borderLeftWidth: isRTL ? 0 : 4,
+      borderRightWidth: isRTL ? 4 : 0,
+      borderLeftColor: isRTL ? 'transparent' : '#039BE5',
+      borderRightColor: isRTL ? '#039BE5' : 'transparent',
     },
-    blockTimes: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    blockTimes: { flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8 },
     timeInput: {
       borderBottomWidth: 1.5,
       borderBottomColor: '#039BE5',
@@ -661,7 +666,7 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
     timeDash: { fontSize: 16, color: colors.textSecondary },
     removeBtn: { marginLeft: 'auto', paddingHorizontal: 4 },
     removeBtnText: { fontSize: 16, color: colors.placeholder },
-    activityRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
+    activityRow: { flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'flex-start', gap: 8 },
     activityInput: {
       flex: 1,
       fontSize: 15,
@@ -693,8 +698,10 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
       borderRadius: 8,
       padding: 12,
       gap: 6,
-      borderLeftWidth: 4,
-      borderLeftColor: calendarColor,
+      borderLeftWidth: isRTL ? 0 : 4,
+      borderRightWidth: isRTL ? 4 : 0,
+      borderLeftColor: isRTL ? 'transparent' : calendarColor,
+      borderRightColor: isRTL ? calendarColor : 'transparent',
       borderStyle: 'dashed',
     },
     calendarBlockTime: {
@@ -714,7 +721,7 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
       fontWeight: '600',
     },
     debugRow: {
-      flexDirection: 'row',
+      flexDirection: isRTL ? 'row-reverse' : 'row',
       flexWrap: 'wrap',
       gap: 10,
       marginTop: 4,
@@ -728,11 +735,13 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
       borderRadius: 8,
       padding: 12,
       gap: 8,
-      borderLeftWidth: 4,
-      borderLeftColor: GOAL_COLOR,
+      borderLeftWidth: isRTL ? 0 : 4,
+      borderRightWidth: isRTL ? 4 : 0,
+      borderLeftColor: isRTL ? 'transparent' : GOAL_COLOR,
+      borderRightColor: isRTL ? GOAL_COLOR : 'transparent',
     },
     goalsSectionHeader: {
-      flexDirection: 'row',
+      flexDirection: isRTL ? 'row-reverse' : 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
     },
@@ -766,7 +775,7 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
     goalRow: { gap: 2, borderRadius: 6, paddingHorizontal: 4, paddingVertical: 3 },
     goalRowOverdue: { backgroundColor: OVERDUE_COLOR + '16' },
     goalRowTop: {
-      flexDirection: 'row',
+      flexDirection: isRTL ? 'row-reverse' : 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
     },
@@ -798,7 +807,7 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
     addGoalBtnDisabled: { backgroundColor: colors.placeholder },
     addGoalBtnText: { fontSize: 14, color: '#fff', fontWeight: '600' },
     blockCardRow: {
-      flexDirection: 'row',
+      flexDirection: isRTL ? 'row-reverse' : 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
       marginBottom: 4,
@@ -819,7 +828,7 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
       lineHeight: 22,
     },
     blockEditActions: {
-      flexDirection: 'row',
+      flexDirection: isRTL ? 'row-reverse' : 'row',
       gap: 8,
       marginTop: 4,
     },

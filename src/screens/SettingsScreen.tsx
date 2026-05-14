@@ -28,6 +28,8 @@ import {
   TRANSCRIPTION_PROVIDERS,
 } from '../types/Settings';
 import { ColorPalette, useTheme } from '../contexts/ThemeContext';
+import { useTranslation } from '../i18n/LanguageContext';
+import { Language } from '../types/Settings';
 
 interface Props {
   onClose: (saved: boolean) => void;
@@ -38,6 +40,7 @@ type SectionKey = 'providers' | 'keywords' | 'theme' | 'notificationSchedule' | 
 export default function SettingsScreen({ onClose }: Props) {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
+  const { t, direction, language, setLanguage: persistLanguage } = useTranslation();
   const [settings, setSettings] = useState<Settings | null>(null);
   const [groqKey, setGroqKey] = useState('');
   const [claudeKey, setClaudeKey] = useState('');
@@ -101,7 +104,7 @@ export default function SettingsScreen({ onClose }: Props) {
       setGoogleState(state);
       CalendarSyncService.hardSync().catch(() => {});
     } catch (e: any) {
-      Alert.alert('Sign-in failed', getSignInErrorMessage(e));
+      Alert.alert(t('Sign-in failed'), getSignInErrorMessage(e));
     } finally {
       setSigningIn(false);
     }
@@ -109,19 +112,19 @@ export default function SettingsScreen({ onClose }: Props) {
 
   async function handleGoogleSignOut() {
     Alert.alert(
-      'Disconnect Google',
-      'Check-ins and plans will no longer sync to Google Calendar.',
+      t('Disconnect Google'),
+      t('Check-ins and plans will no longer sync to Google Calendar.'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('Cancel'), style: 'cancel' },
         {
-          text: 'Disconnect',
+          text: t('Disconnect'),
           style: 'destructive',
           onPress: async () => {
             try {
               await GoogleAuthService.signOut();
               setGoogleState({ connected: false, email: null, displayName: null, scopes: [] });
             } catch (e: any) {
-              Alert.alert('Sign-out failed', e?.message ?? String(e));
+              Alert.alert(t('Sign-out failed'), e?.message ?? String(e));
             }
           },
         },
@@ -134,7 +137,7 @@ export default function SettingsScreen({ onClose }: Props) {
     try {
       await CalendarSyncService.syncChanged();
     } catch (e: any) {
-      Alert.alert('Sync failed', e?.message ?? String(e));
+      Alert.alert(t('Sync failed'), e?.message ?? String(e));
     } finally {
       setSyncing(false);
     }
@@ -142,18 +145,18 @@ export default function SettingsScreen({ onClose }: Props) {
 
   async function handleHardSync() {
     Alert.alert(
-      'Hard Sync',
-      'Re-push all check-ins and plans to Google Calendar. Continue?',
+      t('Hard Sync'),
+      t('Re-push all check-ins and plans to Google Calendar. Continue?'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('Cancel'), style: 'cancel' },
         {
-          text: 'Sync All',
+          text: t('Sync All'),
           onPress: async () => {
             setSyncing(true);
             try {
               await CalendarSyncService.hardSync();
             } catch (e: any) {
-              Alert.alert('Sync failed', e?.message ?? String(e));
+              Alert.alert(t('Sync failed'), e?.message ?? String(e));
             } finally {
               setSyncing(false);
             }
@@ -178,23 +181,23 @@ export default function SettingsScreen({ onClose }: Props) {
   async function handleSeedDemoData() {
     if (!settings) return;
     Alert.alert(
-      'Seed Mock Data',
-      'This clears existing entries, goals, plans, notes, and daily summaries, then inserts a software engineer demo day.',
+      t('Seed Mock Data'),
+      t('This clears existing entries, goals, plans, notes, and daily summaries, then inserts a software engineer demo day.'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('Cancel'), style: 'cancel' },
         {
-          text: 'Clear and Seed',
+          text: t('Clear and Seed'),
           style: 'destructive',
           onPress: async () => {
             setSeeding(true);
             try {
               const result = await DevSeedService.seedSoftwareEngineerDemo(settings.debugMode);
               Alert.alert(
-                result.seeded ? 'Seed complete' : 'Seed skipped',
-                result.seeded ? 'Mock software engineer data was added.' : (result.reason ?? 'No data was added.'),
+                result.seeded ? t('Seed complete') : t('Seed skipped'),
+                result.seeded ? t('Mock software engineer data was added.') : (result.reason ?? t('No data was added.')),
               );
             } catch (e: any) {
-              Alert.alert('Seed failed', e?.message ?? String(e));
+              Alert.alert(t('Seed failed'), e?.message ?? String(e));
             } finally {
               setSeeding(false);
             }
@@ -205,13 +208,18 @@ export default function SettingsScreen({ onClose }: Props) {
   }
 
   const set = (patch: Partial<Settings>) => setSettings(s => ({ ...(s ?? DEFAULT_SETTINGS), ...patch }));
-  const styles = makeStyles(colors);
+  const styles = makeStyles(colors, direction);
+
+  async function handleLanguageChange(nextLanguage: Language) {
+    set({ language: nextLanguage });
+    await persistLanguage(nextLanguage);
+  }
 
   function SectionHeader({ sectionKey, title }: { sectionKey: SectionKey; title: string }) {
     const open = expanded.has(sectionKey);
     return (
       <TouchableOpacity style={styles.sectionHeader} onPress={() => toggleSection(sectionKey)}>
-        <Text style={styles.sectionHeaderText}>{title}</Text>
+        <Text style={styles.sectionHeaderText}>{t(title)}</Text>
         <Text style={styles.chevron}>{open ? '▲' : '▼'}</Text>
       </TouchableOpacity>
     );
@@ -221,39 +229,54 @@ export default function SettingsScreen({ onClose }: Props) {
     <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => onClose(false)}>
-          <Text style={styles.cancel}>Cancel</Text>
+          <Text style={styles.cancel}>{t('Cancel')}</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>Settings</Text>
+        <Text style={styles.title}>{t('Settings')}</Text>
         <TouchableOpacity onPress={handleSave}>
-          <Text style={styles.save}>Save</Text>
+          <Text style={styles.save}>{t('Save')}</Text>
         </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={styles.body}>
+        <Text style={styles.sectionLabel}>{t('LANGUAGE')}</Text>
+        <View style={styles.card}>
+          {([
+            { value: 'en' as const, label: 'English' },
+            { value: 'he' as const, label: 'עברית' },
+          ]).map((option, i) => (
+            <TouchableOpacity
+              key={option.value}
+              style={[styles.row, i > 0 && styles.rowBorder]}
+              onPress={() => handleLanguageChange(option.value)}>
+              <Text style={styles.rowLabel}>{option.label}</Text>
+              {(settings.language ?? language) === option.value && <Text style={styles.checkmark}>✓</Text>}
+            </TouchableOpacity>
+          ))}
+        </View>
 
         <SectionHeader sectionKey="notificationSchedule" title="NOTIFICATION SCHEDULE" />
         {expanded.has('notificationSchedule') && (
           <>
-            <Text style={styles.sectionLabel}>NOTIFICATION DAYS</Text>
+            <Text style={styles.sectionLabel}>{t('NOTIFICATION DAYS')}</Text>
             <View style={styles.card}>
               {DAY_LABELS.map((label, i) => (
                 <View key={label} style={[styles.row, i > 0 && styles.rowBorder]}>
-                  <Text style={styles.rowLabel}>{label}</Text>
+                  <Text style={styles.rowLabel}>{t(label)}</Text>
                   <Switch value={settings.checkInDays[i]} onValueChange={() => toggleDay(i)} />
                 </View>
               ))}
             </View>
 
-            <Text style={styles.sectionLabel}>NOTIFICATION HOURS</Text>
+            <Text style={styles.sectionLabel}>{t('NOTIFICATION HOURS')}</Text>
             <View style={styles.card}>
               <View style={styles.row}>
-                <Text style={styles.rowLabel}>All day</Text>
+                <Text style={styles.rowLabel}>{t('All day')}</Text>
                 <Switch value={settings.everyHour} onValueChange={v => set({ everyHour: v })} />
               </View>
               {!settings.everyHour && (
                 <>
                   <View style={[styles.row, styles.rowBorder]}>
-                    <Text style={styles.rowLabel}>Start</Text>
+                    <Text style={styles.rowLabel}>{t('Start')}</Text>
                     <View style={styles.stepper}>
                       <TouchableOpacity onPress={() => set({ startHour: Math.max(0, settings.startHour - 1) })}>
                         <Text style={styles.stepperBtn}>-</Text>
@@ -265,7 +288,7 @@ export default function SettingsScreen({ onClose }: Props) {
                     </View>
                   </View>
                   <View style={[styles.row, styles.rowBorder]}>
-                    <Text style={styles.rowLabel}>End</Text>
+                    <Text style={styles.rowLabel}>{t('End')}</Text>
                     <View style={styles.stepper}>
                       <TouchableOpacity onPress={() => set({ endHour: Math.max(settings.startHour + 1, settings.endHour - 1) })}>
                         <Text style={styles.stepperBtn}>-</Text>
@@ -280,10 +303,10 @@ export default function SettingsScreen({ onClose }: Props) {
               )}
             </View>
 
-            <Text style={styles.sectionLabel}>CHECK-IN FREQUENCY</Text>
+            <Text style={styles.sectionLabel}>{t('CHECK-IN FREQUENCY')}</Text>
             <View style={styles.card}>
               <View style={styles.row}>
-                <Text style={styles.rowLabel}>Check-in frequency</Text>
+                <Text style={styles.rowLabel}>{t('Check-in frequency')}</Text>
                 <View style={styles.numericInputGroup}>
                   <TextInput
                     style={styles.numericInput}
@@ -292,15 +315,15 @@ export default function SettingsScreen({ onClose }: Props) {
                     keyboardType="number-pad"
                     returnKeyType="done"
                   />
-                  <Text style={styles.rowSub}>hours</Text>
+                  <Text style={styles.rowSub}>{t('hours')}</Text>
                 </View>
               </View>
             </View>
 
-            <Text style={styles.sectionLabel}>DAILY PLAN</Text>
+            <Text style={styles.sectionLabel}>{t('DAILY PLAN')}</Text>
             <View style={styles.card}>
               <View style={styles.row}>
-                <Text style={styles.rowLabel}>Plan notification time</Text>
+                <Text style={styles.rowLabel}>{t('Plan notification time')}</Text>
                 <View style={styles.stepper}>
                   <TouchableOpacity onPress={() => set({ dailyPlanHour: Math.max(0, settings.dailyPlanHour - 1) })}>
                     <Text style={styles.stepperBtn}>-</Text>
@@ -319,7 +342,7 @@ export default function SettingsScreen({ onClose }: Props) {
         <SectionHeader sectionKey="providers" title="PROVIDERS" />
         {expanded.has('providers') && (
           <>
-            <Text style={styles.sectionLabel}>TRANSCRIPTION</Text>
+            <Text style={styles.sectionLabel}>{t('TRANSCRIPTION')}</Text>
             <View style={styles.card}>
               {TRANSCRIPTION_PROVIDERS.map((p, i) => (
                 <TouchableOpacity
@@ -327,15 +350,15 @@ export default function SettingsScreen({ onClose }: Props) {
                   style={[styles.row, i > 0 && styles.rowBorder]}
                   onPress={() => set({ transcriptionProvider: p.value })}>
                   <View>
-                    <Text style={styles.rowLabel}>{p.label}</Text>
-                    <Text style={styles.rowSub}>{p.sublabel}</Text>
+                    <Text style={styles.rowLabel}>{t(p.label)}</Text>
+                    <Text style={styles.rowSub}>{t(p.sublabel)}</Text>
                   </View>
                   {settings.transcriptionProvider === p.value && <Text style={styles.checkmark}>✓</Text>}
                 </TouchableOpacity>
               ))}
               {settings.transcriptionProvider === 'groq' && (
                 <View style={[styles.row, styles.rowBorder]}>
-                  <Text style={styles.keyLabel}>API Key</Text>
+                  <Text style={styles.keyLabel}>{t('API Key')}</Text>
                   <TextInput
                     style={styles.keyInput}
                     value={groqKey}
@@ -350,7 +373,7 @@ export default function SettingsScreen({ onClose }: Props) {
               )}
             </View>
 
-            <Text style={styles.sectionLabel}>ANALYSIS</Text>
+            <Text style={styles.sectionLabel}>{t('ANALYSIS')}</Text>
             <View style={styles.card}>
               {ANALYSIS_PROVIDERS.map((p, i) => (
                 <TouchableOpacity
@@ -358,8 +381,8 @@ export default function SettingsScreen({ onClose }: Props) {
                   style={[styles.row, i > 0 && styles.rowBorder]}
                   onPress={() => set({ analysisProvider: p.value })}>
                   <View>
-                    <Text style={styles.rowLabel}>{p.label}</Text>
-                    <Text style={styles.rowSub}>{p.sublabel}</Text>
+                    <Text style={styles.rowLabel}>{t(p.label)}</Text>
+                    <Text style={styles.rowSub}>{t(p.sublabel)}</Text>
                   </View>
                   {settings.analysisProvider === p.value && <Text style={styles.checkmark}>✓</Text>}
                 </TouchableOpacity>
@@ -367,7 +390,7 @@ export default function SettingsScreen({ onClose }: Props) {
               <View style={styles.rowBorder}>
                 {settings.analysisProvider === 'claude' && (
                   <View style={styles.row}>
-                    <Text style={styles.keyLabel}>API Key</Text>
+                    <Text style={styles.keyLabel}>{t('API Key')}</Text>
                     <TextInput
                       style={styles.keyInput}
                       value={claudeKey}
@@ -382,7 +405,7 @@ export default function SettingsScreen({ onClose }: Props) {
                 )}
                 {settings.analysisProvider === 'openai' && (
                   <View style={styles.row}>
-                    <Text style={styles.keyLabel}>API Key</Text>
+                    <Text style={styles.keyLabel}>{t('API Key')}</Text>
                     <TextInput
                       style={styles.keyInput}
                       value={openaiKey}
@@ -404,12 +427,12 @@ export default function SettingsScreen({ onClose }: Props) {
         <SectionHeader sectionKey="keywords" title="KEYWORDS" />
         {expanded.has('keywords') && (
           <>
-            <Text style={styles.sectionLabel}>VOICE COMMANDS</Text>
+            <Text style={styles.sectionLabel}>{t('VOICE COMMANDS')}</Text>
             <View style={styles.card}>
               <View style={styles.row}>
                 <View>
-                  <Text style={styles.rowLabel}>Note keyword</Text>
-                  <Text style={styles.rowSub}>Splits speech into a new note</Text>
+                  <Text style={styles.rowLabel}>{t('Note keyword')}</Text>
+                  <Text style={styles.rowSub}>{t('Splits speech into a new note')}</Text>
                 </View>
                 <TextInput
                   style={styles.keywordInput}
@@ -422,8 +445,8 @@ export default function SettingsScreen({ onClose }: Props) {
               </View>
               <View style={[styles.row, styles.rowBorder]}>
                 <View>
-                  <Text style={styles.rowLabel}>Append keyword</Text>
-                  <Text style={styles.rowSub}>Appends dictation to existing text</Text>
+                  <Text style={styles.rowLabel}>{t('Append keyword')}</Text>
+                  <Text style={styles.rowSub}>{t('Appends dictation to existing text')}</Text>
                 </View>
                 <TextInput
                   style={styles.keywordInput}
@@ -442,7 +465,7 @@ export default function SettingsScreen({ onClose }: Props) {
         <SectionHeader sectionKey="theme" title="THEME" />
         {expanded.has('theme') && (
           <>
-            <Text style={styles.sectionLabel}>APPEARANCE</Text>
+            <Text style={styles.sectionLabel}>{t('APPEARANCE')}</Text>
             <View style={styles.card}>
               {THEME_OPTIONS.map((opt, i) => (
                 <TouchableOpacity
@@ -450,8 +473,8 @@ export default function SettingsScreen({ onClose }: Props) {
                   style={[styles.row, i > 0 && styles.rowBorder]}
                   onPress={() => set({ theme: opt.value })}>
                   <View>
-                    <Text style={styles.rowLabel}>{opt.label}</Text>
-                    <Text style={styles.rowSub}>{opt.sublabel}</Text>
+                    <Text style={styles.rowLabel}>{t(opt.label)}</Text>
+                    <Text style={styles.rowSub}>{t(opt.sublabel)}</Text>
                   </View>
                   {settings.theme === opt.value && <Text style={styles.checkmark}>✓</Text>}
                 </TouchableOpacity>
@@ -463,11 +486,11 @@ export default function SettingsScreen({ onClose }: Props) {
         <SectionHeader sectionKey="integrations" title="INTEGRATIONS" />
         {expanded.has('integrations') && (
           <>
-            <Text style={styles.sectionLabel}>GOOGLE CALENDAR</Text>
+            <Text style={styles.sectionLabel}>{t('GOOGLE CALENDAR')}</Text>
             <View style={styles.card}>
               <View style={styles.row}>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.rowLabel}>Google Calendar</Text>
+                  <Text style={styles.rowLabel}>{t('Google Calendar')}</Text>
                   {googleState?.email && (
                     <Text style={styles.rowSub}>{googleState.email}</Text>
                   )}
@@ -476,10 +499,10 @@ export default function SettingsScreen({ onClose }: Props) {
                   <ActivityIndicator size="small" color={colors.accent} />
                 ) : googleState.connected ? (
                   <View style={styles.connectedBadge}>
-                    <Text style={styles.connectedBadgeText}>Connected</Text>
+                    <Text style={styles.connectedBadgeText}>{t('Connected')}</Text>
                   </View>
                 ) : (
-                  <Text style={[styles.rowSub, { color: colors.placeholder }]}>Not connected</Text>
+                  <Text style={[styles.rowSub, { color: colors.placeholder }]}>{t('Not connected')}</Text>
                 )}
               </View>
               {googleState?.connected && (
@@ -491,18 +514,18 @@ export default function SettingsScreen({ onClose }: Props) {
                       disabled={syncing}>
                       {syncing
                         ? <ActivityIndicator size="small" color={colors.accent} />
-                        : <Text style={styles.syncActionBtnText}>Sync now</Text>}
+                        : <Text style={styles.syncActionBtnText}>{t('Sync now')}</Text>}
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={[styles.syncActionBtn, syncing && styles.syncActionBtnDim]}
                       onPress={handleHardSync}
                       disabled={syncing}>
-                      <Text style={styles.syncActionBtnText}>Hard sync</Text>
+                      <Text style={styles.syncActionBtnText}>{t('Hard sync')}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={styles.disconnectBtn}
                       onPress={handleGoogleSignOut}>
-                      <Text style={styles.disconnectBtnText}>Disconnect</Text>
+                      <Text style={styles.disconnectBtnText}>{t('Disconnect')}</Text>
                     </TouchableOpacity>
                   </View>
                 </>
@@ -515,13 +538,13 @@ export default function SettingsScreen({ onClose }: Props) {
                     disabled={signingIn}>
                     {signingIn
                       ? <ActivityIndicator size="small" color="#fff" />
-                      : <Text style={styles.connectBtnText}>Sign in with Google</Text>}
+                      : <Text style={styles.connectBtnText}>{t('Sign in with Google')}</Text>}
                   </TouchableOpacity>
                 </View>
               )}
             </View>
 
-            <Text style={styles.sectionLabel}>SYNC INTERVAL</Text>
+            <Text style={styles.sectionLabel}>{t('SYNC INTERVAL')}</Text>
             <View style={styles.card}>
               {SYNC_INTERVAL_OPTIONS.map((opt, i) => (
                 <TouchableOpacity
@@ -529,8 +552,8 @@ export default function SettingsScreen({ onClose }: Props) {
                   style={[styles.row, i > 0 && styles.rowBorder]}
                   onPress={() => set({ calendarSyncIntervalMinutes: opt.value })}>
                   <View>
-                    <Text style={styles.rowLabel}>{opt.label}</Text>
-                    <Text style={styles.rowSub}>{opt.sublabel}</Text>
+                    <Text style={styles.rowLabel}>{t(opt.label)}</Text>
+                    <Text style={styles.rowSub}>{t(opt.sublabel)}</Text>
                   </View>
                   {settings.calendarSyncIntervalMinutes === opt.value && (
                     <Text style={styles.checkmark}>✓</Text>
@@ -550,8 +573,8 @@ export default function SettingsScreen({ onClose }: Props) {
                 style={styles.row}
                 onPress={() => set({ debugMode: !settings.debugMode })}>
                 <View>
-                  <Text style={styles.rowLabel}>Debug mode</Text>
-                  <Text style={styles.rowSub}>Show sync fields on each entry</Text>
+                  <Text style={styles.rowLabel}>{t('Debug mode')}</Text>
+                  <Text style={styles.rowSub}>{t('Show sync fields on each entry')}</Text>
                 </View>
                 {settings.debugMode && <Text style={styles.checkmark}>✓</Text>}
               </TouchableOpacity>
@@ -561,8 +584,8 @@ export default function SettingsScreen({ onClose }: Props) {
                   onPress={handleSeedDemoData}
                   disabled={seeding}>
                   <View>
-                    <Text style={styles.rowLabel}>Seed Mock Data</Text>
-                    <Text style={styles.rowSub}>Emulator-only software engineer dataset</Text>
+                    <Text style={styles.rowLabel}>{t('Seed Mock Data')}</Text>
+                    <Text style={styles.rowSub}>{t('Emulator-only software engineer dataset')}</Text>
                   </View>
                   {seeding
                     ? <ActivityIndicator size="small" color={colors.accent} />
@@ -572,7 +595,7 @@ export default function SettingsScreen({ onClose }: Props) {
             </View>
             {settings.debugMode && (
               <>
-                <Text style={styles.sectionLabel}>NOTIFICATIONS DIAGNOSTICS</Text>
+                <Text style={styles.sectionLabel}>{t('NOTIFICATIONS DIAGNOSTICS')}</Text>
                 <View style={styles.card}>
                   <TouchableOpacity
                     style={styles.row}
@@ -580,19 +603,19 @@ export default function SettingsScreen({ onClose }: Props) {
                       try {
                         const ns = await SchedulerService.getNotificationDiagnostics();
                         Alert.alert(
-                          'Notification Status',
+                          t('Notification Status'),
                           ns,
                           [
                             { text: 'OK' },
-                            { text: 'Open Alarm Settings', onPress: () => SchedulerService.openAlarmSettings() },
-                            { text: 'Open App Settings', onPress: () => SchedulerService.openAppSettings() },
+                            { text: t('Open Alarm Settings'), onPress: () => SchedulerService.openAlarmSettings() },
+                            { text: t('Open App Settings'), onPress: () => SchedulerService.openAppSettings() },
                           ],
                         );
                       } catch (e: any) {
-                        Alert.alert('Error', String(e?.message ?? e));
+                        Alert.alert(t('Error'), String(e?.message ?? e));
                       }
                     }}>
-                    <Text style={styles.rowLabel}>Run full diagnostic</Text>
+                    <Text style={styles.rowLabel}>{t('Run full diagnostic')}</Text>
                     <Text style={styles.chevron}>›</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
@@ -600,12 +623,12 @@ export default function SettingsScreen({ onClose }: Props) {
                     onPress={async () => {
                       try {
                         const report = await SchedulerService.rescheduleWithReport();
-                        Alert.alert('Reschedule result', report);
+                        Alert.alert(t('Reschedule result'), report);
                       } catch (e: any) {
-                        Alert.alert('Failed', String(e?.message ?? e));
+                        Alert.alert(t('Failed'), String(e?.message ?? e));
                       }
                     }}>
-                    <Text style={styles.rowLabel}>Reschedule now</Text>
+                    <Text style={styles.rowLabel}>{t('Reschedule now')}</Text>
                     <Text style={styles.chevron}>›</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
@@ -613,12 +636,12 @@ export default function SettingsScreen({ onClose }: Props) {
                     onPress={async () => {
                       try {
                         await SchedulerService.sendTestNotification();
-                        Alert.alert('Fired', 'Check your notification shade (pull down from top).');
+                        Alert.alert(t('Fired'), t('Check your notification shade (pull down from top).'));
                       } catch (e: any) {
-                        Alert.alert('Failed', String(e?.message ?? e));
+                        Alert.alert(t('Failed'), String(e?.message ?? e));
                       }
                     }}>
-                    <Text style={styles.rowLabel}>Send test notification</Text>
+                    <Text style={styles.rowLabel}>{t('Send test notification')}</Text>
                     <Text style={styles.chevron}>›</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
@@ -627,21 +650,21 @@ export default function SettingsScreen({ onClose }: Props) {
                       const count = await SchedulerService.getPendingCount();
                       setPendingCount(count);
                     }}>
-                    <Text style={styles.rowLabel}>Scheduled notifications</Text>
+                    <Text style={styles.rowLabel}>{t('Scheduled notifications')}</Text>
                     <Text style={[styles.rowLabel, { color: colors.accent }]}>
-                      {pendingCount === null ? 'tap to check' : `${pendingCount} pending`}
+                      {pendingCount === null ? t('tap to check') : t('{n} pending', { n: pendingCount })}
                     </Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[styles.row, styles.rowBorder]}
                     onPress={() => SchedulerService.openAlarmSettings()}>
-                    <Text style={styles.rowLabel}>Open alarm settings</Text>
+                    <Text style={styles.rowLabel}>{t('Open alarm settings')}</Text>
                     <Text style={styles.chevron}>›</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[styles.row, styles.rowBorder]}
                     onPress={() => SchedulerService.openAppSettings()}>
-                    <Text style={styles.rowLabel}>Open app notification settings</Text>
+                    <Text style={styles.rowLabel}>{t('Open app notification settings')}</Text>
                     <Text style={styles.chevron}>›</Text>
                   </TouchableOpacity>
                 </View>
@@ -655,11 +678,12 @@ export default function SettingsScreen({ onClose }: Props) {
   );
 }
 
-function makeStyles(colors: ColorPalette) {
+function makeStyles(colors: ColorPalette, direction: 'ltr' | 'rtl') {
+  const isRTL = direction === 'rtl';
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
     header: {
-      flexDirection: 'row',
+      flexDirection: isRTL ? 'row-reverse' : 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
       paddingHorizontal: 16,
@@ -673,7 +697,7 @@ function makeStyles(colors: ColorPalette) {
     save: { fontSize: 17, color: colors.accent, fontWeight: '600' },
     body: { paddingVertical: 8, paddingHorizontal: 16, gap: 6, paddingBottom: 40 },
     sectionHeader: {
-      flexDirection: 'row',
+      flexDirection: isRTL ? 'row-reverse' : 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
       paddingVertical: 14,
@@ -693,12 +717,13 @@ function makeStyles(colors: ColorPalette) {
       color: colors.textSecondary,
       marginBottom: 4,
       marginTop: 6,
-      marginLeft: 4,
+      marginLeft: isRTL ? 0 : 4,
+      marginRight: isRTL ? 4 : 0,
       letterSpacing: 0.3,
     },
     card: { backgroundColor: colors.surface, borderRadius: 10, overflow: 'hidden' },
     row: {
-      flexDirection: 'row',
+      flexDirection: isRTL ? 'row-reverse' : 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
       paddingHorizontal: 16,
@@ -709,7 +734,7 @@ function makeStyles(colors: ColorPalette) {
     rowLabel: { fontSize: 16, color: colors.text },
     rowSub: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
     checkmark: { fontSize: 18, color: colors.accent },
-    stepper: { flexDirection: 'row', alignItems: 'center', gap: 16 },
+    stepper: { flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 16 },
     stepperBtn: { fontSize: 22, color: colors.accent, width: 28, textAlign: 'center' },
     stepperVal: { fontSize: 16, fontWeight: '500', width: 52, textAlign: 'center', color: colors.text },
     keyLabel: { fontSize: 15, color: colors.textSecondary, width: 64 },
@@ -719,7 +744,7 @@ function makeStyles(colors: ColorPalette) {
       color: colors.text,
       fontFamily: 'monospace',
       paddingVertical: 4,
-      textAlign: 'right',
+      textAlign: isRTL ? 'left' : 'right',
     },
     connectedBadge: {
       backgroundColor: colors.accent + '22',
@@ -766,13 +791,13 @@ function makeStyles(colors: ColorPalette) {
       color: colors.accent,
       fontWeight: '500',
       minWidth: 80,
-      textAlign: 'right',
+      textAlign: isRTL ? 'left' : 'right',
       borderBottomWidth: 1,
       borderBottomColor: colors.accent,
       paddingVertical: 2,
     },
     numericInputGroup: {
-      flexDirection: 'row',
+      flexDirection: isRTL ? 'row-reverse' : 'row',
       alignItems: 'center',
       gap: 8,
     },
@@ -781,7 +806,7 @@ function makeStyles(colors: ColorPalette) {
       color: colors.accent,
       fontWeight: '600',
       minWidth: 48,
-      textAlign: 'right',
+      textAlign: isRTL ? 'left' : 'right',
       borderBottomWidth: 1,
       borderBottomColor: colors.accent,
       paddingVertical: 2,

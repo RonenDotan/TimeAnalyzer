@@ -17,6 +17,7 @@ import ScreenHeader from '../components/ScreenHeader';
 import DailySummaryService from '../services/DailySummaryService';
 import { DailySummaryResult } from '../types/DailySummary';
 import { ColorPalette, useTheme } from '../contexts/ThemeContext';
+import { useTranslation } from '../i18n/LanguageContext';
 
 interface Props {
   initialDate: Date;
@@ -46,7 +47,8 @@ function isToday(date: Date): boolean {
 export default function DailySummaryScreen({ initialDate, onClose }: Props) {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
-  const styles = makeStyles(colors);
+  const { t, direction } = useTranslation();
+  const styles = makeStyles(colors, direction);
   const [currentDate, setCurrentDate] = useState(startOfDay(initialDate));
   const [summary, setSummary] = useState<DailySummaryResult | null>(null);
   const [generatedAt, setGeneratedAt] = useState<number | null>(null);
@@ -69,7 +71,7 @@ export default function DailySummaryScreen({ initialDate, onClose }: Props) {
       setDraft(parsed?.debrief ?? '');
       setEditing(false);
     } catch (e: any) {
-      Alert.alert('Load failed', String(e?.message ?? e));
+      Alert.alert(t('Load failed'), String(e?.message ?? e));
     } finally {
       setLoading(false);
     }
@@ -94,7 +96,7 @@ export default function DailySummaryScreen({ initialDate, onClose }: Props) {
       setDraft(parsed?.debrief ?? '');
       setEditing(false);
     } catch (e: any) {
-      Alert.alert('Summary failed', String(e?.message ?? e));
+      Alert.alert(t('Summary failed'), String(e?.message ?? e));
     } finally {
       setGenerating(false);
     }
@@ -109,7 +111,7 @@ export default function DailySummaryScreen({ initialDate, onClose }: Props) {
       setDraft(parsed?.debrief ?? '');
       setEditing(false);
     } catch (e: any) {
-      Alert.alert('Save failed', String(e?.message ?? e));
+      Alert.alert(t('Save failed'), String(e?.message ?? e));
     }
   }
 
@@ -141,9 +143,9 @@ export default function DailySummaryScreen({ initialDate, onClose }: Props) {
         <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
           <View style={styles.summaryCard}>
             <View style={styles.summaryHeader}>
-              <Text style={styles.summaryLabel}>SUMMARY</Text>
+              <Text style={styles.summaryLabel}>{t('SUMMARY')}</Text>
               {generatedAt !== null && (
-                <Text style={styles.generatedText}>Updated {formatGeneratedAt(generatedAt)}</Text>
+                <Text style={styles.generatedText}>{t('Updated {time}', { time: formatGeneratedAt(generatedAt) })}</Text>
               )}
             </View>
 
@@ -155,27 +157,27 @@ export default function DailySummaryScreen({ initialDate, onClose }: Props) {
                   onChangeText={setDraft}
                   multiline
                   textAlignVertical="top"
-                  placeholder="Write a summary..."
+                  placeholder={t('Write a summary...')}
                   placeholderTextColor={colors.placeholder}
                   autoFocus
                 />
                 <View style={styles.actions}>
                   <TouchableOpacity style={styles.primaryBtn} onPress={handleSave}>
-                    <Text style={styles.primaryBtnText}>Save</Text>
+                    <Text style={styles.primaryBtnText}>{t('Save')}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.secondaryBtn} onPress={handleCancelEdit}>
-                    <Text style={styles.secondaryBtnText}>Cancel</Text>
+                    <Text style={styles.secondaryBtnText}>{t('Cancel')}</Text>
                   </TouchableOpacity>
                 </View>
               </>
             ) : (
               <>
                 <Text style={[styles.debriefText, !summary && styles.placeholderText]}>
-                  {summary?.debrief || 'No summary yet'}
+                  {summary?.debrief || t('No summary yet')}
                 </Text>
                 {summary?.keyInsights && summary.keyInsights.length > 0 && (
                   <View style={styles.section}>
-                    <Text style={styles.sectionLabel}>KEY INSIGHTS</Text>
+                    <Text style={styles.sectionLabel}>{t('KEY INSIGHTS')}</Text>
                     {summary.keyInsights.map((insight, i) => (
                       <Text key={i} style={styles.bulletText}>- {insight.text}</Text>
                     ))}
@@ -183,13 +185,13 @@ export default function DailySummaryScreen({ initialDate, onClose }: Props) {
                 )}
                 {!!summary?.momentum && (
                   <View style={styles.section}>
-                    <Text style={styles.sectionLabel}>MOMENTUM</Text>
+                    <Text style={styles.sectionLabel}>{t('MOMENTUM')}</Text>
                     <Text style={styles.bulletText}>{summary.momentum}</Text>
                   </View>
                 )}
                 {summary?.gaps && summary.gaps.length > 0 && (
                   <View style={styles.section}>
-                    <Text style={styles.sectionLabel}>GAPS</Text>
+                    <Text style={styles.sectionLabel}>{t('GAPS')}</Text>
                     {summary.gaps.map((gap, i) => (
                       <Text key={i} style={styles.bulletText}>- {gap}</Text>
                     ))}
@@ -202,14 +204,14 @@ export default function DailySummaryScreen({ initialDate, onClose }: Props) {
           {!editing && (
             <View style={styles.actions}>
               <TouchableOpacity style={styles.primaryBtn} onPress={() => setEditing(true)}>
-                <Text style={styles.primaryBtnText}>{summary ? 'Edit' : 'Write summary'}</Text>
+                <Text style={styles.primaryBtnText}>{summary ? t('Edit') : t('Write summary')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.aiBtn, generating && styles.disabledBtn]}
                 onPress={handleGenerate}
                 disabled={generating}>
                 <Text style={styles.primaryBtnText}>
-                  {generating ? 'Generating...' : 'Generate with AI'}
+                  {generating ? t('Generating...') : t('Generate with AI')}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -220,7 +222,8 @@ export default function DailySummaryScreen({ initialDate, onClose }: Props) {
   );
 }
 
-function makeStyles(colors: ColorPalette) {
+function makeStyles(colors: ColorPalette, direction: 'ltr' | 'rtl') {
+  const isRTL = direction === 'rtl';
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
     centeredFull: { flex: 1, alignItems: 'center', justifyContent: 'center' },
@@ -230,8 +233,10 @@ function makeStyles(colors: ColorPalette) {
       borderRadius: 8,
       padding: 14,
       gap: 12,
-      borderLeftWidth: 4,
-      borderLeftColor: SUMMARY_COLOR,
+      borderLeftWidth: isRTL ? 0 : 4,
+      borderRightWidth: isRTL ? 4 : 0,
+      borderLeftColor: isRTL ? 'transparent' : SUMMARY_COLOR,
+      borderRightColor: isRTL ? SUMMARY_COLOR : 'transparent',
     },
     summaryHeader: { gap: 3 },
     summaryLabel: { fontSize: 11, fontWeight: '700', color: SUMMARY_COLOR, letterSpacing: 0.5 },
@@ -253,7 +258,7 @@ function makeStyles(colors: ColorPalette) {
     section: { gap: 4 },
     sectionLabel: { fontSize: 11, fontWeight: '700', color: SUMMARY_COLOR, letterSpacing: 0.5 },
     bulletText: { fontSize: 13, color: colors.textSecondary, lineHeight: 19 },
-    actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, alignItems: 'center' },
+    actions: { flexDirection: isRTL ? 'row-reverse' : 'row', flexWrap: 'wrap', gap: 8, alignItems: 'center' },
     primaryBtn: {
       backgroundColor: SUMMARY_COLOR,
       borderRadius: 8,

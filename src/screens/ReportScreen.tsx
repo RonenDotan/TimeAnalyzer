@@ -29,6 +29,7 @@ import { ColorPalette, useTheme } from '../contexts/ThemeContext';
 import { DayPlan, PlanBlock } from '../types/DayPlan';
 import { allMatchingBlocks, isCovered } from '../utils/planMatching';
 import { formatMin } from '../utils/parseDayPlan';
+import { useTranslation } from '../i18n/LanguageContext';
 
 interface Props {
   onStartCheckIn: () => void;
@@ -90,6 +91,7 @@ export default function ReportScreen({
 }: Props) {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
+  const { t, direction } = useTranslation();
   const [currentDate, setCurrentDate] = useState<Date>(initialDate ?? new Date());
   const [entries, setEntries] = useState<LogEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -166,7 +168,7 @@ export default function ReportScreen({
   const hiddenPlanCount = Math.max(0, planBlocks.length - PLAN_COLLAPSED_COUNT);
   const visibleEntries = entriesExpanded ? entries : entries.slice(0, ENTRIES_COLLAPSED_COUNT);
   const hiddenEntryCount = Math.max(0, entries.length - ENTRIES_COLLAPSED_COUNT);
-  const styles = makeStyles(colors, calendarColor);
+  const styles = makeStyles(colors, calendarColor, direction);
 
   function handleEntrySaved(updated: LogEntry) {
     setEntries(prev => prev.map(e => e.id === updated.id ? updated : e));
@@ -194,7 +196,7 @@ export default function ReportScreen({
         date={currentDate}
         onPrev={goToPrevDay}
         onNext={goToNextDay}
-        formatLabel={formatDayHeader}
+        formatLabel={date => t(formatDayHeader(date))}
         disableNext={!canGoForward}
       />
 
@@ -208,7 +210,7 @@ export default function ReportScreen({
           {goals.length > 0 && (
             <View style={styles.pinnedGoals}>
               <TouchableOpacity style={styles.sectionStripRow} onPress={() => setGoalsOpen(prev => !prev)} activeOpacity={0.85}>
-                <Text style={styles.pinnedGoalsHeader}>🎯  ACTIVE GOALS</Text>
+                <Text style={styles.pinnedGoalsHeader}>{t('🎯  ACTIVE GOALS')}</Text>
                 <Text style={styles.goalsStripCount}>{goals.length}</Text>
                 <Text style={styles.goalsStripChevron}>{goalsOpen ? '⌄' : '›'}</Text>
               </TouchableOpacity>
@@ -225,7 +227,7 @@ export default function ReportScreen({
                   {hiddenGoalCount > 0 && (
                     <TouchableOpacity onPress={() => setGoalsExpanded(prev => !prev)} style={styles.pinnedGoalsToggle}>
                       <Text style={styles.pinnedGoalsToggleText}>
-                        {goalsExpanded ? 'Show less' : `Show ${hiddenGoalCount} more`}
+                        {goalsExpanded ? t('Show less') : t('Show {n} more', { n: hiddenGoalCount })}
                       </Text>
                     </TouchableOpacity>
                   )}
@@ -238,7 +240,7 @@ export default function ReportScreen({
           {planBlocks.length > 0 && (
             <View style={styles.planSection}>
               <TouchableOpacity style={styles.sectionStripRow} onPress={() => setPlanOpen(prev => !prev)} activeOpacity={0.85}>
-                <Text style={styles.planHeader}>📅  PLAN</Text>
+                <Text style={styles.planHeader}>{t('📅  PLAN')}</Text>
                 <Text style={styles.planStripCount}>{coveredCount}/{planBlocks.length}</Text>
                 <Text style={styles.planStripChevron}>{planOpen ? '⌄' : '›'}</Text>
               </TouchableOpacity>
@@ -263,13 +265,13 @@ export default function ReportScreen({
                   {hiddenPlanCount > 0 && (
                     <TouchableOpacity onPress={e => { e.stopPropagation?.(); setPlanExpanded(prev => !prev); }} style={styles.pinnedGoalsToggle}>
                       <Text style={styles.planToggleText}>
-                        {planExpanded ? 'Show less' : `Show ${hiddenPlanCount} more`}
+                        {planExpanded ? t('Show less') : t('Show {n} more', { n: hiddenPlanCount })}
                       </Text>
                     </TouchableOpacity>
                   )}
                   <Text style={styles.planCoverage}>
-                    {coveredCount}/{planBlocks.length} blocks covered
-                    {coveredCount < planBlocks.length ? `  ·  ${planBlocks.length - coveredCount} missed` : '  ✓'}
+                    {t('{covered}/{total} blocks covered', { covered: coveredCount, total: planBlocks.length })}
+                    {coveredCount < planBlocks.length ? `  ·  ${t('{n} missed', { n: planBlocks.length - coveredCount })}` : '  ✓'}
                   </Text>
                 </TouchableOpacity>
               )}
@@ -279,12 +281,12 @@ export default function ReportScreen({
           {/* Check-in Entries */}
           {entries.length === 0 ? (
             <View style={styles.centered}>
-              <Text style={styles.emptyText}>No entries for this day</Text>
+              <Text style={styles.emptyText}>{t('No entries for this day')}</Text>
             </View>
           ) : (
             <View style={styles.entriesSection}>
               <TouchableOpacity style={styles.sectionStripRow} onPress={() => setEntriesOpen(prev => !prev)} activeOpacity={0.85}>
-                <Text style={styles.entriesHeader}>📋  ENTRIES</Text>
+                <Text style={styles.entriesHeader}>{t('📋  ENTRIES')}</Text>
                 <Text style={styles.entriesStripCount}>{entries.length}</Text>
                 <Text style={styles.entriesStripChevron}>{entriesOpen ? '⌄' : '›'}</Text>
               </TouchableOpacity>
@@ -306,7 +308,7 @@ export default function ReportScreen({
                         </View>
                         <Text style={styles.transcript}>{entry.transcript}</Text>
                         {matched.length > 0 && (
-                          <Text style={styles.planTag}>→ {matched.map(b => b.activity).join(', ')}</Text>
+                          <Text style={styles.planTag}>{t('→ {activities}', { activities: matched.map(b => b.activity).join(', ') })}</Text>
                         )}
                         {entryContributions[entry.id] && entryContributions[entry.id].length > 0 && (
                           <View style={styles.goalTagRow}>
@@ -351,7 +353,7 @@ export default function ReportScreen({
                   {hiddenEntryCount > 0 && (
                     <TouchableOpacity onPress={() => setEntriesExpanded(prev => !prev)} style={styles.entriesToggle}>
                       <Text style={styles.entriesToggleText}>
-                        {entriesExpanded ? 'Show less' : `Show ${hiddenEntryCount} more`}
+                        {entriesExpanded ? t('Show less') : t('Show {n} more', { n: hiddenEntryCount })}
                       </Text>
                     </TouchableOpacity>
                   )}
@@ -366,11 +368,11 @@ export default function ReportScreen({
             onPress={() => onOpenDailySummary?.(currentDate)}
             activeOpacity={0.85}>
             <View style={styles.summaryDebugHeader}>
-              <Text style={styles.summaryDebugTitle}>DAILY SUMMARY</Text>
-              <Text style={styles.summaryDebugLink}>Open</Text>
+              <Text style={styles.summaryDebugTitle}>{t('DAILY SUMMARY')}</Text>
+              <Text style={styles.summaryDebugLink}>{t('Open')}</Text>
             </View>
             <Text style={[styles.summaryReadOnly, !summary && styles.summaryPlaceholder]} numberOfLines={3}>
-              {summary?.debrief || 'No summary yet'}
+              {summary?.debrief || t('No summary yet')}
             </Text>
           </TouchableOpacity>
 
@@ -391,11 +393,12 @@ function dateToStr(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 }
 
-function makeStyles(colors: ColorPalette, calendarColor: string) {
+function makeStyles(colors: ColorPalette, calendarColor: string, direction: 'ltr' | 'rtl') {
+  const isRTL = direction === 'rtl';
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
     topBar: {
-      flexDirection: 'row',
+      flexDirection: isRTL ? 'row-reverse' : 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
       paddingHorizontal: 12,
@@ -409,7 +412,7 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
     appTitle: { fontSize: 16, fontWeight: '700', color: colors.text },
     topBarSpacer: { width: 32 },
     dayNav: {
-      flexDirection: 'row',
+      flexDirection: isRTL ? 'row-reverse' : 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
       paddingHorizontal: 6,
@@ -431,11 +434,13 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
       borderRadius: 8,
       padding: 12,
       gap: 8,
-      borderLeftWidth: 4,
-      borderLeftColor: SUMMARY_COLOR,
+      borderLeftWidth: isRTL ? 0 : 4,
+      borderRightWidth: isRTL ? 4 : 0,
+      borderLeftColor: isRTL ? 'transparent' : SUMMARY_COLOR,
+      borderRightColor: isRTL ? SUMMARY_COLOR : 'transparent',
     },
     summaryDebugHeader: {
-      flexDirection: 'row',
+      flexDirection: isRTL ? 'row-reverse' : 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
     },
@@ -482,7 +487,7 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
     },
     summaryCancelText: { fontSize: 14, color: colors.textSecondary, fontWeight: '700' },
     entryCardHeader: {
-      flexDirection: 'row',
+      flexDirection: isRTL ? 'row-reverse' : 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
       marginBottom: 2,
@@ -495,7 +500,8 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
     transcript: { fontSize: 14, color: colors.text, lineHeight: 20 },
     fab: {
       position: 'absolute',
-      right: 24,
+      right: isRTL ? undefined : 24,
+      left: isRTL ? 24 : undefined,
       width: 60,
       height: 60,
       borderRadius: 30,
@@ -509,7 +515,7 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
     },
     fabIcon: { fontSize: 32, color: '#fff', lineHeight: 36 },
     sectionStripRow: {
-      flexDirection: 'row',
+      flexDirection: isRTL ? 'row-reverse' : 'row',
       alignItems: 'center',
       gap: 8,
     },
@@ -522,8 +528,10 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
       borderRadius: 8,
       padding: 12,
       gap: 8,
-      borderLeftWidth: 4,
-      borderLeftColor: '#33B679',
+      borderLeftWidth: isRTL ? 0 : 4,
+      borderRightWidth: isRTL ? 4 : 0,
+      borderLeftColor: isRTL ? 'transparent' : '#33B679',
+      borderRightColor: isRTL ? '#33B679' : 'transparent',
     },
     entriesHeader: {
       flex: 1,
@@ -539,8 +547,10 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
       borderRadius: 8,
       padding: 12,
       gap: 8,
-      borderLeftWidth: 4,
-      borderLeftColor: GOAL_COLOR,
+      borderLeftWidth: isRTL ? 0 : 4,
+      borderRightWidth: isRTL ? 4 : 0,
+      borderLeftColor: isRTL ? 'transparent' : GOAL_COLOR,
+      borderRightColor: isRTL ? GOAL_COLOR : 'transparent',
     },
     pinnedGoalsHeader: {
       flex: 1,
@@ -565,7 +575,7 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
       fontWeight: '700',
     },
     pinnedGoalRow: {
-      flexDirection: 'row',
+      flexDirection: isRTL ? 'row-reverse' : 'row',
       alignItems: 'center',
       gap: 8,
       borderRadius: 6,
@@ -579,14 +589,16 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
     pinnedBarFill: { height: 3, backgroundColor: GOAL_COLOR, borderRadius: 2 },
     pinnedGoalDeadline: { fontSize: 9, color: colors.textSecondary, lineHeight: 12 },
     pinnedGoalOverdueText: { fontSize: 9, color: OVERDUE_COLOR, fontWeight: '700', lineHeight: 12 },
-    pinnedGoalPct: { fontSize: 12, fontWeight: '700', color: GOAL_COLOR, minWidth: 34, textAlign: 'right' },
+    pinnedGoalPct: { fontSize: 12, fontWeight: '700', color: GOAL_COLOR, minWidth: 34, textAlign: isRTL ? 'left' : 'right' },
     planSection: {
       backgroundColor: '#039BE5' + '18',
       borderRadius: 8,
       padding: 12,
       gap: 8,
-      borderLeftWidth: 4,
-      borderLeftColor: '#039BE5',
+      borderLeftWidth: isRTL ? 0 : 4,
+      borderRightWidth: isRTL ? 4 : 0,
+      borderLeftColor: isRTL ? 'transparent' : '#039BE5',
+      borderRightColor: isRTL ? '#039BE5' : 'transparent',
     },
     planHeader: {
       flex: 1,
@@ -618,7 +630,7 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
     },
     goalTagText: { fontSize: 12, color: GOAL_COLOR, fontWeight: '600' },
     debugRow: {
-      flexDirection: 'row',
+      flexDirection: isRTL ? 'row-reverse' : 'row',
       gap: 12,
       marginTop: 6,
       paddingTop: 6,

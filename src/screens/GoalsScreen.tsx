@@ -19,6 +19,7 @@ import GoalsService from '../services/GoalsService';
 import { Goal, GoalStatus, isGoalOverdue } from '../types/Goal';
 import { applyTranscription } from '../utils/parseTranscript';
 import { ColorPalette, useTheme } from '../contexts/ThemeContext';
+import { useTranslation } from '../i18n/LanguageContext';
 
 interface Props {
   onClose: () => void;
@@ -95,12 +96,13 @@ function DateTimeField({
   onToday: () => void;
   styles: ReturnType<typeof makeStyles>;
 }) {
+  const { t } = useTranslation();
   return (
     <View style={styles.dateField}>
       <View style={styles.dateFieldTop}>
         <Text style={styles.dateFieldLabel}>{label}</Text>
         <TouchableOpacity onPress={onToday}>
-          <Text style={styles.dateFieldToday}>Today</Text>
+          <Text style={styles.dateFieldToday}>{t('Today')}</Text>
         </TouchableOpacity>
       </View>
       <View style={styles.dateFieldActions}>
@@ -177,6 +179,7 @@ const STATUS_LABELS: Record<GoalStatus, string> = {
 export default function GoalsScreen({ onClose, initialGoalId }: Props) {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
+  const { t, direction } = useTranslation();
   const [goals, setGoals] = useState<Goal[]>([]);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editText, setEditText] = useState('');
@@ -206,7 +209,7 @@ export default function GoalsScreen({ onClose, initialGoalId }: Props) {
         }
       }
     } catch (e: any) {
-      Alert.alert('Load failed', String(e?.message ?? e));
+      Alert.alert(t('Load failed'), String(e?.message ?? e));
     }
   }
 
@@ -220,7 +223,7 @@ export default function GoalsScreen({ onClose, initialGoalId }: Props) {
     const text = newText.trim();
     if (!text) return;
     if (newTargetAt < newStartAt) {
-      Alert.alert('Invalid dates', 'Finish must be the same as or later than Start.');
+      Alert.alert(t('Invalid dates'), t('Finish must be the same as or later than Start.'));
       return;
     }
     const now = Date.now();
@@ -235,7 +238,7 @@ export default function GoalsScreen({ onClose, initialGoalId }: Props) {
       setNewStartAt(nextDefault);
       setNewTargetAt(nextDefault);
     } catch (e: any) {
-      Alert.alert('Failed to add goal', String(e?.message ?? e));
+      Alert.alert(t('Failed to add goal'), String(e?.message ?? e));
     }
   }
 
@@ -253,12 +256,12 @@ export default function GoalsScreen({ onClose, initialGoalId }: Props) {
     const text = editText.trim();
     if (!text) { setEditingId(null); return; }
     if (editTargetAt < editStartAt) {
-      Alert.alert('Invalid dates', 'Finish must be the same as or later than Start.');
+      Alert.alert(t('Invalid dates'), t('Finish must be the same as or later than Start.'));
       return;
     }
     const parsedProgress = editProgress.trim() === '' ? goal.progress : Number(editProgress);
     if (!Number.isFinite(parsedProgress)) {
-      Alert.alert('Invalid progress', 'Progress must be a number from 0 to 100.');
+      Alert.alert(t('Invalid progress'), t('Progress must be a number from 0 to 100.'));
       return;
     }
     const progress = Math.max(0, Math.min(100, Math.round(parsedProgress)));
@@ -269,7 +272,7 @@ export default function GoalsScreen({ onClose, initialGoalId }: Props) {
       const saved = await GoalsService.setProgress(updated, progress);
       setGoals(prev => prev.map(g => g.id === saved.id ? saved : g));
     } catch (e: any) {
-      Alert.alert('Failed to save', String(e?.message ?? e));
+      Alert.alert(t('Failed to save'), String(e?.message ?? e));
     } finally {
       setEditingId(null);
     }
@@ -282,7 +285,7 @@ export default function GoalsScreen({ onClose, initialGoalId }: Props) {
       await GoalsService.updateGoal(updated);
       setGoals(prev => prev.map(g => g.id === updated.id ? updated : g));
     } catch (e: any) {
-      Alert.alert('Failed to update', String(e?.message ?? e));
+      Alert.alert(t('Failed to update'), String(e?.message ?? e));
     }
   }
 
@@ -319,14 +322,14 @@ export default function GoalsScreen({ onClose, initialGoalId }: Props) {
   // ─── Delete ───────────────────────────────────────────────────────────────
 
   async function deleteGoal(id: number) {
-    Alert.alert('Delete goal', 'This will also delete all contribution history. Continue?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: async () => {
+    Alert.alert(t('Delete goal'), t('This will also delete all contribution history. Continue?'), [
+      { text: t('Cancel'), style: 'cancel' },
+      { text: t('Delete'), style: 'destructive', onPress: async () => {
         try {
           await GoalsService.deleteGoal(id);
           setGoals(prev => prev.filter(g => g.id !== id));
         } catch (e: any) {
-          Alert.alert('Failed to delete', String(e?.message ?? e));
+          Alert.alert(t('Failed to delete'), String(e?.message ?? e));
         }
       }},
     ]);
@@ -342,7 +345,7 @@ export default function GoalsScreen({ onClose, initialGoalId }: Props) {
       setRecording(target);
       setRecordingMs(0);
     } catch (e: any) {
-      Alert.alert('Recording failed', String(e?.message ?? e));
+      Alert.alert(t('Recording failed'), String(e?.message ?? e));
     }
   }
 
@@ -359,7 +362,7 @@ export default function GoalsScreen({ onClose, initialGoalId }: Props) {
         setEditText(prev => applyTranscription(prev, text.trim()));
       }
     } catch (e: any) {
-      Alert.alert('Transcription failed', String(e?.message ?? e));
+      Alert.alert(t('Transcription failed'), String(e?.message ?? e));
     }
   }
 
@@ -370,7 +373,7 @@ export default function GoalsScreen({ onClose, initialGoalId }: Props) {
     };
   }, []);
 
-  const styles = makeStyles(colors);
+  const styles = makeStyles(colors, direction);
 
   return (
     <KeyboardAvoidingView
@@ -387,7 +390,7 @@ export default function GoalsScreen({ onClose, initialGoalId }: Props) {
             style={[styles.filterTab, filter === f && styles.filterTabActive]}
             onPress={() => setFilter(f)}>
             <Text style={[styles.filterTabText, filter === f && styles.filterTabTextActive]}>
-              {f === 'all' ? 'All' : STATUS_LABELS[f]}
+              {f === 'all' ? t('All') : t(STATUS_LABELS[f])}
             </Text>
           </TouchableOpacity>
         ))}
@@ -432,7 +435,7 @@ export default function GoalsScreen({ onClose, initialGoalId }: Props) {
                     autoFocus
                   />
                   <View style={styles.editFieldRow}>
-                    <Text style={styles.editFieldLabel}>Progress</Text>
+                    <Text style={styles.editFieldLabel}>{t('Progress')}</Text>
                     <TextInput
                       style={[styles.editFieldInput, { width: 60 }]}
                       value={editProgress}
@@ -451,13 +454,13 @@ export default function GoalsScreen({ onClose, initialGoalId }: Props) {
                       <Text style={styles.micIcon}>{recEdit ? '⏹' : '🎙'}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.saveEditBtn} onPress={() => commitEdit(goal)}>
-                      <Text style={styles.saveEditText}>Save</Text>
+                      <Text style={styles.saveEditText}>{t('Save')}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.cancelEditBtn} onPress={() => setEditingId(null)}>
-                      <Text style={styles.cancelEditText}>Cancel</Text>
+                      <Text style={styles.cancelEditText}>{t('Cancel')}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.deleteBtn} onPress={() => deleteGoal(goal.id)}>
-                      <Text style={styles.deleteText}>Delete</Text>
+                      <Text style={styles.deleteText}>{t('Delete')}</Text>
                     </TouchableOpacity>
                   </View>
                   {recEdit && (
@@ -472,12 +475,12 @@ export default function GoalsScreen({ onClose, initialGoalId }: Props) {
                     <Text style={styles.goalText}>{goal.text}</Text>
                     <ProgressBar progress={goal.progress} color={color} />
                     <View style={styles.goalDates}>
-                      <Text style={styles.goalDateText}>Start {formatGoalDateTime(goal.startAt)}</Text>
-                      <Text style={[styles.goalDateText, overdue && styles.goalOverdueText]}>Finish {formatGoalDateTime(goal.targetAt)}</Text>
+                      <Text style={styles.goalDateText}>{t('Start')} {formatGoalDateTime(goal.startAt)}</Text>
+                      <Text style={[styles.goalDateText, overdue && styles.goalOverdueText]}>{t('End')} {formatGoalDateTime(goal.targetAt)}</Text>
                     </View>
                     <View style={styles.goalMeta}>
                       <Text style={[styles.goalStatus, { color }]}>
-                        {overdue ? 'Overdue' : STATUS_LABELS[goal.status]} · {goal.progress}%
+                        {overdue ? t('Overdue') : t(STATUS_LABELS[goal.status])} · {goal.progress}%
                       </Text>
                     </View>
                   </TouchableOpacity>
@@ -485,16 +488,16 @@ export default function GoalsScreen({ onClose, initialGoalId }: Props) {
                   {goal.status === 'active' && (
                     <View style={styles.quickActions}>
                       <TouchableOpacity style={styles.quickBtn} onPress={() => setStatus(goal, 'done')}>
-                        <Text style={styles.quickBtnText}>✅ Done</Text>
+                      <Text style={styles.quickBtnText}>{t('✅ Done')}</Text>
                       </TouchableOpacity>
                       <TouchableOpacity style={styles.quickBtn} onPress={() => setStatus(goal, 'canceled')}>
-                        <Text style={styles.quickBtnText}>✕ Cancel</Text>
+                      <Text style={styles.quickBtnText}>{t('✕ Cancel')}</Text>
                       </TouchableOpacity>
                     </View>
                   )}
                   {goal.status !== 'active' && (
                     <TouchableOpacity style={styles.quickBtn} onPress={() => setStatus(goal, 'active')}>
-                      <Text style={styles.quickBtnText}>↩ Reactivate</Text>
+                      <Text style={styles.quickBtnText}>{t('↩ Reactivate')}</Text>
                     </TouchableOpacity>
                   )}
                 </>
@@ -505,13 +508,13 @@ export default function GoalsScreen({ onClose, initialGoalId }: Props) {
 
         {filtered.length === 0 && (
           <Text style={styles.emptyHint}>
-            {filter === 'active' ? 'No active goals. Add one below.' : 'No goals in this category.'}
+            {filter === 'active' ? t('No active goals. Add one below.') : t('No goals in this category.')}
           </Text>
         )}
 
         {/* Add new goal */}
         <View style={styles.addCard}>
-          <Text style={styles.addCardLabel}>NEW GOAL</Text>
+          <Text style={styles.addCardLabel}>{t('NEW GOAL')}</Text>
           <DateRangeFields
             startValue={newStartAt}
             targetValue={newTargetAt}
@@ -527,7 +530,7 @@ export default function GoalsScreen({ onClose, initialGoalId }: Props) {
             style={styles.addInput}
             value={newText}
             onChangeText={setNewText}
-            placeholder="What do you want to achieve?"
+            placeholder={t('What do you want to achieve?')}
             placeholderTextColor={colors.placeholder}
             multiline
             textAlignVertical="top"
@@ -536,7 +539,7 @@ export default function GoalsScreen({ onClose, initialGoalId }: Props) {
             <DictateBar onResult={raw => setNewText(prev => applyTranscription(prev, raw))} />
             {newText.trim().length > 0 && (
               <TouchableOpacity style={styles.addBtn} onPress={addGoal}>
-                <Text style={styles.addBtnText}>Add goal</Text>
+                <Text style={styles.addBtnText}>{t('Add goal')}</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -556,11 +559,12 @@ export default function GoalsScreen({ onClose, initialGoalId }: Props) {
   );
 }
 
-function makeStyles(colors: ColorPalette) {
+function makeStyles(colors: ColorPalette, direction: 'ltr' | 'rtl') {
+  const isRTL = direction === 'rtl';
   return StyleSheet.create({
     container:      { flex: 1, backgroundColor: colors.background },
     filterRow: {
-      flexDirection: 'row', backgroundColor: colors.surface,
+      flexDirection: isRTL ? 'row-reverse' : 'row', backgroundColor: colors.surface,
       borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border,
     },
     filterTab: { flex: 1, minHeight: 44, paddingVertical: 7, alignItems: 'center', justifyContent: 'center' },
@@ -570,20 +574,22 @@ function makeStyles(colors: ColorPalette) {
     body:           { paddingHorizontal: 16, paddingTop: 16, gap: 12, paddingBottom: 40 },
     goalCard: {
       backgroundColor: GOAL_COLOR + '10', borderRadius: 8, padding: 12, gap: 8,
-      borderLeftWidth: 4,
-      borderLeftColor: GOAL_COLOR,
+      borderLeftWidth: isRTL ? 0 : 4,
+      borderRightWidth: isRTL ? 4 : 0,
+      borderLeftColor: isRTL ? 'transparent' : GOAL_COLOR,
+      borderRightColor: isRTL ? GOAL_COLOR : 'transparent',
     },
     goalCardOverdue: {
       backgroundColor: OVERDUE_COLOR + '16',
     },
     goalMain:       { gap: 6 },
     goalText:       { fontSize: 15, color: colors.text, lineHeight: 22 },
-    goalMeta:       { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    goalMeta:       { flexDirection: isRTL ? 'row-reverse' : 'row', justifyContent: 'space-between', alignItems: 'center' },
     goalStatus:     { fontSize: 12, fontWeight: '600' },
     goalDates:      { gap: 2 },
     goalDateText:   { fontSize: 11, color: colors.textSecondary },
     goalOverdueText: { color: OVERDUE_COLOR, fontWeight: '700' },
-    quickActions:   { flexDirection: 'row', gap: 8 },
+    quickActions:   { flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8 },
     quickBtn: {
       paddingHorizontal: 10, paddingVertical: 5,
       borderRadius: 6, borderWidth: 1, borderColor: colors.border,
@@ -594,13 +600,13 @@ function makeStyles(colors: ColorPalette) {
       backgroundColor: colors.surfaceSecondary, borderRadius: 8,
       padding: 8, minHeight: 60,
     },
-    editFieldRow:   { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    editFieldRow:   { flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8 },
     editFieldLabel: { fontSize: 13, color: colors.textSecondary, width: 60 },
     editFieldInput: {
       flex: 1, fontSize: 14, color: colors.text,
       borderBottomWidth: 1, borderBottomColor: colors.border, paddingVertical: 3,
     },
-    editActions:    { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
+    editActions:    { flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
     micBtn:         { padding: 6, borderRadius: 8 },
     micBtnActive:   { backgroundColor: colors.recordBtn + '22' },
     micIcon:        { fontSize: 20 },
@@ -616,19 +622,22 @@ function makeStyles(colors: ColorPalette) {
     emptyHint:      { textAlign: 'center', color: colors.placeholder, fontSize: 14, marginTop: 8 },
     addCard: {
       backgroundColor: GOAL_COLOR + '10', borderRadius: 8, padding: 12, gap: 8,
-      borderLeftWidth: 4, borderWidth: 1, borderColor: GOAL_COLOR + '60',
+      borderLeftWidth: isRTL ? 0 : 4,
+      borderRightWidth: isRTL ? 4 : 0,
+      borderWidth: 1,
+      borderColor: GOAL_COLOR + '60',
     },
     addCardLabel: {
       fontSize: 11, fontWeight: '700', color: GOAL_COLOR, letterSpacing: 0.5,
     },
     addInput: { fontSize: 15, color: colors.text, minHeight: 60, lineHeight: 22 },
-    addActions:     { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    addActions:     { flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8 },
     addBtn: {
       paddingHorizontal: 14, paddingVertical: 6, backgroundColor: GOAL_COLOR, borderRadius: 8,
     },
     addBtnText:     { fontSize: 14, color: '#fff', fontWeight: '600' },
     dateRangeRow: {
-      flexDirection: 'row',
+      flexDirection: isRTL ? 'row-reverse' : 'row',
       gap: 8,
       alignItems: 'stretch',
     },
@@ -642,19 +651,19 @@ function makeStyles(colors: ColorPalette) {
       borderColor: colors.border,
     },
     dateFieldTop: {
-      flexDirection: 'row',
+      flexDirection: isRTL ? 'row-reverse' : 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
     },
     dateFieldLabel: { fontSize: 11, color: colors.textSecondary, fontWeight: '600' },
     dateFieldToday: { fontSize: 11, color: GOAL_COLOR, fontWeight: '600' },
-    dateFieldActions: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+    dateFieldActions: { flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 5 },
     dateValueBtn: {
       flex: 1,
       minHeight: 30,
       borderRadius: 7,
       paddingHorizontal: 7,
-      flexDirection: 'row',
+      flexDirection: isRTL ? 'row-reverse' : 'row',
       alignItems: 'center',
       backgroundColor: colors.surface,
       borderWidth: 1,
