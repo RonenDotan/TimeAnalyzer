@@ -3,8 +3,10 @@ export type SyncIntervalMinutes = 0 | 1 | 5 | 15 | 30 | 60;
 export type TranscriptionProvider = 'groq';
 export type AnalysisProvider = 'claude' | 'openai';
 export type Theme = 'system' | 'light' | 'dark';
+export type Language = 'en' | 'he';
 
 export interface Settings {
+  language: Language;
   checkInDays: [boolean, boolean, boolean, boolean, boolean, boolean, boolean]; // Sun–Sat
   everyHour: boolean; // true = fire 24/7, ignore startHour/endHour
   startHour: number; // 0–23
@@ -22,6 +24,7 @@ export interface Settings {
 }
 
 export const DEFAULT_SETTINGS: Settings = {
+  language: 'en',
   checkInDays: [true, true, true, true, true, true, true],
   everyHour: true,
   startHour: 10,
