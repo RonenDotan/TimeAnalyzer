@@ -467,7 +467,7 @@ function makeStyles(colors: ColorPalette, calendarColor: string, direction: 'ltr
       lineHeight: 20,
       textAlignVertical: 'top',
     },
-    summaryReadOnly: { fontSize: 14, color: colors.text, lineHeight: 20 },
+    summaryReadOnly: { fontSize: 14, color: colors.text, lineHeight: 20, textAlign: isRTL ? 'right' : 'left' },
     summaryPlaceholder: { color: colors.placeholder, fontStyle: 'italic' },
     summaryActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, alignItems: 'center' },
     summarySaveButton: {
@@ -496,8 +496,8 @@ function makeStyles(colors: ColorPalette, calendarColor: string, direction: 'ltr
     entryCard: {
       paddingVertical: 10,
     },
-    timeRange: { fontSize: 13, fontWeight: '600', color: '#33B679' },
-    transcript: { fontSize: 14, color: colors.text, lineHeight: 20 },
+    timeRange: { fontSize: 13, fontWeight: '600', color: '#33B679', textAlign: isRTL ? 'right' : 'left' },
+    transcript: { fontSize: 14, color: colors.text, lineHeight: 20, textAlign: isRTL ? 'right' : 'left' },
     fab: {
       position: 'absolute',
       right: isRTL ? undefined : 24,
@@ -608,15 +608,16 @@ function makeStyles(colors: ColorPalette, calendarColor: string, direction: 'ltr
       paddingVertical: 10,
       gap: 2,
     },
-    planTime: { fontSize: 13, fontWeight: '600', color: '#039BE5' },
-    planActivity: { fontSize: 14, color: colors.text, lineHeight: 20 },
+    planTime: { fontSize: 13, fontWeight: '600', color: '#039BE5', textAlign: isRTL ? 'right' : 'left' },
+    planActivity: { fontSize: 14, color: colors.text, lineHeight: 20, textAlign: isRTL ? 'right' : 'left' },
     planActivityMissed: { color: colors.textSecondary },
     planCoverage: {
       fontSize: 12, color: colors.textSecondary, marginTop: 4,
       borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border,
       paddingTop: 8,
+      textAlign: isRTL ? 'right' : 'left',
     },
-    planTag: { fontSize: 12, color: '#039BE5', marginTop: 6, fontWeight: '500' },
+    planTag: { fontSize: 12, color: '#039BE5', marginTop: 6, fontWeight: '500', textAlign: isRTL ? 'right' : 'left' },
     goalTagRow: { flexDirection: 'column', gap: 4, marginTop: 6 },
     goalTag: {
       backgroundColor: GOAL_COLOR + '18',

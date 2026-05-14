@@ -109,6 +109,8 @@ function makeStyles(colors: ColorPalette, direction: 'ltr' | 'rtl') {
       backgroundColor: colors.border,
       borderRadius: 2,
       overflow: 'hidden',
+      // Mirror horizontally in RTL so the fill starts from the trailing (right) edge
+      transform: [{ scaleX: isRTL ? -1 : 1 }],
     },
     progressFill: {
       height: 3,

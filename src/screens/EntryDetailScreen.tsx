@@ -554,6 +554,7 @@ function makeStyles(colors: ColorPalette, direction: 'ltr' | 'rtl') {
       color: '#33B679',
       letterSpacing: 0.5,
       marginBottom: 10,
+      textAlign: isRTL ? 'right' : 'left',
     },
     timeRow: { flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8 },
     timeDisplay: { fontSize: 18, fontWeight: '600', color: colors.text },
@@ -570,7 +571,7 @@ function makeStyles(colors: ColorPalette, direction: 'ltr' | 'rtl') {
       color: colors.text,
     },
     timeSep: { fontSize: 18, color: colors.text },
-    transcriptText: { fontSize: 16, color: colors.text, lineHeight: 24 },
+    transcriptText: { fontSize: 16, color: colors.text, lineHeight: 24, textAlign: isRTL ? 'right' : 'left' },
     transcriptInput: {
       fontSize: 16,
       color: colors.text,
@@ -582,6 +583,7 @@ function makeStyles(colors: ColorPalette, direction: 'ltr' | 'rtl') {
       padding: 10,
       backgroundColor: colors.surface,
       textAlignVertical: 'top',
+      textAlign: isRTL ? 'right' : 'left',
     },
     notesGroupLabel: {
       fontSize: 11,
@@ -591,8 +593,9 @@ function makeStyles(colors: ColorPalette, direction: 'ltr' | 'rtl') {
       marginLeft: isRTL ? 0 : 4,
       marginRight: isRTL ? 4 : 0,
       marginBottom: 8,
+      textAlign: isRTL ? 'right' : 'left',
     },
-    emptyNotes: { fontSize: 14, color: colors.placeholder, marginLeft: 4 },
+    emptyNotes: { fontSize: 14, color: colors.placeholder, marginLeft: isRTL ? 0 : 4, marginRight: isRTL ? 4 : 0 },
     noteCard: {
       backgroundColor: colors.surface,
       borderRadius: 12,
@@ -614,7 +617,7 @@ function makeStyles(colors: ColorPalette, direction: 'ltr' | 'rtl') {
     },
     noteCardMeta: { fontSize: 11, color: colors.placeholder, fontWeight: '500' },
     noteDeleteText: { fontSize: 15, color: colors.recordBtn, paddingHorizontal: 4 },
-    noteText: { fontSize: 15, color: colors.text, lineHeight: 22 },
+    noteText: { fontSize: 15, color: colors.text, lineHeight: 22, textAlign: isRTL ? 'right' : 'left' },
     noteEditInput: {
       fontSize: 15,
       color: colors.text,
@@ -626,6 +629,7 @@ function makeStyles(colors: ColorPalette, direction: 'ltr' | 'rtl') {
       minHeight: 60,
       textAlignVertical: 'top',
       backgroundColor: colors.surface + 'cc',
+      textAlign: isRTL ? 'right' : 'left',
     },
     addNoteCard: {
       backgroundColor: colors.surface,

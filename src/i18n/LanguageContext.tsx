@@ -19,7 +19,7 @@ const defaultValue: LanguageContextValue = {
   setLanguage: async () => {},
 };
 
-const LanguageContext = createContext<LanguageContextValue>(defaultValue);
+export const LanguageContext = createContext<LanguageContextValue>(defaultValue);
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [language, setLanguageState] = useState<Language>('en');

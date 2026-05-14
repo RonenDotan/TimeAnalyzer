@@ -178,7 +178,7 @@ export default function SettingsScreen({ onClose }: Props) {
     onClose(true);
   }
 
-  async function handleSeedDemoData() {
+  async function handleSeedDemoData(hebrew = false) {
     if (!settings) return;
     Alert.alert(
       t('Seed Mock Data'),
@@ -191,7 +191,7 @@ export default function SettingsScreen({ onClose }: Props) {
           onPress: async () => {
             setSeeding(true);
             try {
-              const result = await DevSeedService.seedSoftwareEngineerDemo(settings.debugMode);
+              const result = await DevSeedService.seedSoftwareEngineerDemo(settings.debugMode, hebrew);
               Alert.alert(
                 result.seeded ? t('Seed complete') : t('Seed skipped'),
                 result.seeded ? t('Mock software engineer data was added.') : (result.reason ?? t('No data was added.')),
@@ -581,11 +581,25 @@ export default function SettingsScreen({ onClose }: Props) {
               {settings.debugMode && (
                 <TouchableOpacity
                   style={[styles.row, styles.rowBorder]}
-                  onPress={handleSeedDemoData}
+                  onPress={() => handleSeedDemoData(false)}
                   disabled={seeding}>
                   <View>
                     <Text style={styles.rowLabel}>{t('Seed Mock Data')}</Text>
                     <Text style={styles.rowSub}>{t('Emulator-only software engineer dataset')}</Text>
+                  </View>
+                  {seeding
+                    ? <ActivityIndicator size="small" color={colors.accent} />
+                    : <Text style={styles.chevron}>›</Text>}
+                </TouchableOpacity>
+              )}
+              {settings.debugMode && (
+                <TouchableOpacity
+                  style={[styles.row, styles.rowBorder]}
+                  onPress={() => handleSeedDemoData(true)}
+                  disabled={seeding}>
+                  <View>
+                    <Text style={styles.rowLabel}>נתוני דמה עברית</Text>
+                    <Text style={styles.rowSub}>Hebrew mock data for RTL testing</Text>
                   </View>
                   {seeding
                     ? <ActivityIndicator size="small" color={colors.accent} />
