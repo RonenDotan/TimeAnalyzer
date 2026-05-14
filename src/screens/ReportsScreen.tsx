@@ -17,6 +17,7 @@ import { PlanBlock } from '../types/DayPlan';
 import { ColorPalette, useTheme } from '../contexts/ThemeContext';
 import { computeReportData, dateRangeLabel, formatDuration, ReportData } from '../utils/reportData';
 import { formatMin } from '../utils/parseDayPlan';
+import { useTranslation } from '../i18n/LanguageContext';
 
 interface Props {
   onOpenMenu: () => void;
@@ -37,6 +38,7 @@ function toDateStr(d: Date): string {
 export default function ReportsScreen({ onOpenMenu }: Props) {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
+  const { t, direction } = useTranslation();
   const [mode, setMode] = useState<RangeMode>('today');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [loading, setLoading] = useState(true);
@@ -94,7 +96,7 @@ export default function ReportsScreen({ onOpenMenu }: Props) {
     setCurrentDate(d => new Date(d.getTime() + delta));
   }
 
-  const styles = makeStyles(colors);
+  const styles = makeStyles(colors, direction);
 
   function renderRangeLabel(): string {
     if (mode === 'today') return dateRangeLabel(currentDate);
@@ -113,12 +115,12 @@ export default function ReportsScreen({ onOpenMenu }: Props) {
         <TouchableOpacity
           style={[styles.modeBtn, mode === 'today' && styles.modeBtnActive]}
           onPress={() => setMode('today')}>
-          <Text style={[styles.modeBtnText, mode === 'today' && styles.modeBtnTextActive]}>Day</Text>
+          <Text style={[styles.modeBtnText, mode === 'today' && styles.modeBtnTextActive]}>{t('Day')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.modeBtn, mode === 'week' && styles.modeBtnActive]}
           onPress={() => setMode('week')}>
-          <Text style={[styles.modeBtnText, mode === 'week' && styles.modeBtnTextActive]}>Week</Text>
+          <Text style={[styles.modeBtnText, mode === 'week' && styles.modeBtnTextActive]}>{t('Week')}</Text>
         </TouchableOpacity>
       </View>
       <DateNavigator
@@ -135,19 +137,19 @@ export default function ReportsScreen({ onOpenMenu }: Props) {
       ) : !reportData || (entries.length === 0 && planBlocks.length === 0) ? (
         <View style={styles.centeredFull}>
           <Text style={styles.emptyIcon}>📊</Text>
-          <Text style={styles.emptyText}>No data for this period</Text>
+          <Text style={styles.emptyText}>{t('No data for this period')}</Text>
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.body}>
 
           {/* ── PLAN vs ACTUAL TABLE ─────────────────────────── */}
-          <Text style={styles.sectionTitle}>PLAN VS ACTUAL</Text>
+          <Text style={styles.sectionTitle}>{t('PLAN VS ACTUAL')}</Text>
           <View style={styles.card}>
             {/* Header row */}
             <View style={[styles.tableRow, styles.tableHeader]}>
-              <Text style={[styles.col1, styles.tableHeaderText]}>Time</Text>
-              <Text style={[styles.col2, styles.tableHeaderText]}>Planned</Text>
-              <Text style={[styles.col3, styles.tableHeaderText]}>Actual</Text>
+              <Text style={[styles.col1, styles.tableHeaderText]}>{t('Time')}</Text>
+              <Text style={[styles.col2, styles.tableHeaderText]}>{t('Planned')}</Text>
+              <Text style={[styles.col3, styles.tableHeaderText]}>{t('Actual')}</Text>
             </View>
 
             {reportData.planRows.map((row, i) => (
@@ -180,14 +182,14 @@ export default function ReportsScreen({ onOpenMenu }: Props) {
                 <View style={[styles.tableRow, styles.rowBorder]}>
                   <Text style={[styles.col1, styles.timeText]} />
                   <View style={styles.col2}>
-                    <Text style={[styles.activityText, { color: colors.textSecondary }]}>Unplanned</Text>
+                    <Text style={[styles.activityText, { color: colors.textSecondary }]}>{t('Unplanned')}</Text>
                   </View>
                   <View style={styles.col3}>
                     <Text style={styles.activityText} numberOfLines={2}>
                       {reportData.unplannedRows[0].entry.transcript}
                     </Text>
                     {reportData.unplannedRows.length > 1 && (
-                      <Text style={styles.durationText}>+{reportData.unplannedRows.length - 1} more</Text>
+                      <Text style={styles.durationText}>{t('+{n} more', { n: reportData.unplannedRows.length - 1 })}</Text>
                     )}
                   </View>
                 </View>
@@ -198,11 +200,11 @@ export default function ReportsScreen({ onOpenMenu }: Props) {
           {/* ── PIE CHART ────────────────────────────────────── */}
           {reportData.pieSlices.length > 0 && (
             <>
-              <Text style={styles.sectionTitle}>TIME DISTRIBUTION</Text>
+              <Text style={styles.sectionTitle}>{t('TIME DISTRIBUTION')}</Text>
               <View style={[styles.card, styles.pieCard]}>
                 <PieChart slices={reportData.pieSlices} colors={colors} />
                 <Text style={styles.pieTotal}>
-                  Total: {formatDuration(reportData.totalActualMinutes)}
+                  {t('Total: {duration}', { duration: formatDuration(reportData.totalActualMinutes) })}
                 </Text>
               </View>
             </>
@@ -211,13 +213,13 @@ export default function ReportsScreen({ onOpenMenu }: Props) {
           {/* ── PLAN ADHERENCE ───────────────────────────────── */}
           {reportData.totalBlockCount > 0 && (
             <>
-              <Text style={styles.sectionTitle}>PLAN ADHERENCE</Text>
+              <Text style={styles.sectionTitle}>{t('PLAN ADHERENCE')}</Text>
               <View style={styles.card}>
                 <View style={styles.adherenceRow}>
                   <Text style={styles.adherencePct}>{reportData.adherencePercent}%</Text>
                   <View style={styles.adherenceRight}>
                     <Text style={styles.adherenceLabel}>
-                      {reportData.coveredBlockCount} of {reportData.totalBlockCount} blocks covered
+                      {t('{covered} of {total} blocks covered', { covered: reportData.coveredBlockCount, total: reportData.totalBlockCount })}
                     </Text>
                     <View style={styles.adherenceBar}>
                       <View
@@ -229,10 +231,10 @@ export default function ReportsScreen({ onOpenMenu }: Props) {
                     </View>
                     <View style={styles.adherenceStats}>
                       <Text style={styles.adherenceStatText}>
-                        Planned: {formatDuration(reportData.totalPlannedMinutes)}
+                        {t('Planned: {duration}', { duration: formatDuration(reportData.totalPlannedMinutes) })}
                       </Text>
                       <Text style={styles.adherenceStatText}>
-                        Actual: {formatDuration(reportData.totalActualMinutes)}
+                        {t('Actual: {duration}', { duration: formatDuration(reportData.totalActualMinutes) })}
                       </Text>
                     </View>
                   </View>
@@ -247,11 +249,12 @@ export default function ReportsScreen({ onOpenMenu }: Props) {
   );
 }
 
-function makeStyles(colors: ColorPalette) {
+function makeStyles(colors: ColorPalette, direction: 'ltr' | 'rtl') {
+  const isRTL = direction === 'rtl';
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
     header: {
-      flexDirection: 'row',
+      flexDirection: isRTL ? 'row-reverse' : 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
       paddingHorizontal: 12,
@@ -264,7 +267,7 @@ function makeStyles(colors: ColorPalette) {
     menuIcon: { fontSize: 20, color: colors.accent },
     title: { fontSize: 16, fontWeight: '600', color: colors.text },
     modeRow: {
-      flexDirection: 'row',
+      flexDirection: isRTL ? 'row-reverse' : 'row',
       paddingHorizontal: 12,
       paddingVertical: 5,
       gap: 6,
@@ -282,7 +285,7 @@ function makeStyles(colors: ColorPalette) {
     modeBtnText: { fontSize: 14, fontWeight: '500', color: colors.textSecondary },
     modeBtnTextActive: { color: '#fff' },
     dayNav: {
-      flexDirection: 'row',
+      flexDirection: isRTL ? 'row-reverse' : 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
       paddingHorizontal: 6,
@@ -314,7 +317,7 @@ function makeStyles(colors: ColorPalette) {
     },
     pieCard: { padding: 16, gap: 10 },
     tableRow: {
-      flexDirection: 'row',
+      flexDirection: isRTL ? 'row-reverse' : 'row',
       paddingHorizontal: 12,
       paddingVertical: 10,
       alignItems: 'flex-start',
@@ -340,7 +343,7 @@ function makeStyles(colors: ColorPalette) {
       marginVertical: 4,
     },
     col1: { width: 80 },
-    col2: { flex: 1, paddingRight: 8 },
+    col2: { flex: 1, paddingRight: isRTL ? 0 : 8, paddingLeft: isRTL ? 8 : 0 },
     col3: { flex: 1 },
     timeText: { fontSize: 12, fontWeight: '600', color: colors.accent, paddingTop: 2 },
     activityText: { fontSize: 13, color: colors.text, lineHeight: 18 },
@@ -349,9 +352,9 @@ function makeStyles(colors: ColorPalette) {
     pieTotal: {
       fontSize: 12,
       color: colors.textSecondary,
-      textAlign: 'right',
+      textAlign: isRTL ? 'left' : 'right',
     },
-    adherenceRow: { flexDirection: 'row', alignItems: 'center', padding: 16, gap: 16 },
+    adherenceRow: { flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', padding: 16, gap: 16 },
     adherencePct: { fontSize: 42, fontWeight: '700', color: colors.accent, width: 80 },
     adherenceRight: { flex: 1, gap: 6 },
     adherenceLabel: { fontSize: 14, color: colors.text },
@@ -366,7 +369,7 @@ function makeStyles(colors: ColorPalette) {
       backgroundColor: colors.accent,
       borderRadius: 4,
     },
-    adherenceStats: { flexDirection: 'row', justifyContent: 'space-between' },
+    adherenceStats: { flexDirection: isRTL ? 'row-reverse' : 'row', justifyContent: 'space-between' },
     adherenceStatText: { fontSize: 12, color: colors.textSecondary },
   });
 }

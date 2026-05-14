@@ -4,15 +4,23 @@ import SettingsService from '../src/services/SettingsService';
 
 jest.mock('../src/services/SettingsService', () => ({
   getGroqApiKey: jest.fn(),
+  load: jest.fn(),
 }));
 
 const mockFetch = jest.fn();
 global.fetch = mockFetch;
+(global as any).FormData = class MockFormData {
+  _parts: Array<[string, any]> = [];
+  append(key: string, value: any) {
+    this._parts.push([key, value]);
+  }
+};
 
 const mockAudioRecorder = NativeModules.AudioRecorder;
 
 beforeEach(() => {
   jest.clearAllMocks();
+  (SettingsService.load as jest.Mock).mockResolvedValue({ language: 'en' });
 });
 
 test('start() triggers audio recording', async () => {
@@ -49,6 +57,21 @@ test('stop() sends correct request to Groq API', async () => {
 
   const formData: FormData = options.body;
   expect(formData).toBeInstanceOf(FormData);
+  expect((formData as any)._parts).toContainEqual(['language', 'en']);
+});
+
+test('stop() sends Hebrew language to Groq when selected', async () => {
+  (SettingsService.getGroqApiKey as jest.Mock).mockResolvedValue('sk-test-key');
+  (SettingsService.load as jest.Mock).mockResolvedValue({ language: 'he' });
+  mockFetch.mockResolvedValue({
+    ok: true,
+    json: async () => ({ text: 'שלום' }),
+  });
+
+  await WhisperTranscriptionProvider.stop();
+
+  const [, options] = mockFetch.mock.calls[0];
+  expect((options.body as any)._parts).toContainEqual(['language', 'he']);
 });
 
 test('stop() throws when Groq API key is not set', async () => {

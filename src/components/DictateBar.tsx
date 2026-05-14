@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import TranscriptionService from '../services/TranscriptionService';
 import { ColorPalette, useTheme } from '../contexts/ThemeContext';
+import { useTranslation } from '../i18n/LanguageContext';
 
 interface Props {
   onResult: (text: string) => void;
@@ -20,6 +21,7 @@ type Phase = 'idle' | 'recording' | 'transcribing';
 
 export default function DictateBar({ onResult }: Props) {
   const { colors } = useTheme();
+  const { t, direction } = useTranslation();
   const [phase, setPhase] = useState<Phase>('idle');
   const [partial, setPartial] = useState('');
   const partialRef = useRef('');
@@ -29,9 +31,9 @@ export default function DictateBar({ onResult }: Props) {
     const granted = await PermissionsAndroid.request(
       PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
       {
-        title: 'Microphone Permission',
-        message: 'TimeAnalyzer needs the microphone to transcribe.',
-        buttonPositive: 'Allow',
+        title: t('Microphone Permission'),
+        message: t('TimeAnalyzer needs the microphone to transcribe.'),
+        buttonPositive: t('Allow'),
       },
     );
     return granted === PermissionsAndroid.RESULTS.GRANTED;
@@ -40,7 +42,7 @@ export default function DictateBar({ onResult }: Props) {
   async function handleStart() {
     const ok = await requestMic();
     if (!ok) {
-      Alert.alert('Permission denied', 'Microphone access is required.');
+      Alert.alert(t('Permission denied'), t('Microphone access is required.'));
       return;
     }
     partialRef.current = '';
@@ -52,7 +54,7 @@ export default function DictateBar({ onResult }: Props) {
         setPartial(p);
       });
     } catch (e: any) {
-      Alert.alert('Failed to start', String(e?.message ?? e));
+      Alert.alert(t('Failed to start'), String(e?.message ?? e));
       setPhase('idle');
     }
   }
@@ -63,7 +65,7 @@ export default function DictateBar({ onResult }: Props) {
       const result = await TranscriptionService.stop();
       onResult((result || partialRef.current).trim());
     } catch (e: any) {
-      Alert.alert('Transcription failed', String(e?.message ?? e));
+      Alert.alert(t('Transcription failed'), String(e?.message ?? e));
     } finally {
       setPartial('');
       partialRef.current = '';
@@ -71,13 +73,13 @@ export default function DictateBar({ onResult }: Props) {
     }
   }
 
-  const styles = makeStyles(colors);
+  const styles = makeStyles(colors, direction);
 
   if (phase === 'transcribing') {
     return (
       <View style={styles.row}>
         <ActivityIndicator size="small" color={colors.accent} />
-        <Text style={styles.statusText}>Transcribing…</Text>
+        <Text style={styles.statusText}>{t('Transcribing…')}</Text>
       </View>
     );
   }
@@ -90,7 +92,7 @@ export default function DictateBar({ onResult }: Props) {
           <Text style={styles.partial} numberOfLines={1}>{partial}</Text>
         )}
         <TouchableOpacity style={styles.stopBtn} onPress={handleStop}>
-          <Text style={styles.stopBtnText}>Stop</Text>
+          <Text style={styles.stopBtnText}>{t('Stop')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -98,15 +100,16 @@ export default function DictateBar({ onResult }: Props) {
 
   return (
     <TouchableOpacity style={styles.dictateBtn} onPress={handleStart}>
-      <Text style={styles.dictateBtnText}>🎤 Dictate</Text>
+      <Text style={styles.dictateBtnText}>{t('🎤 Dictate')}</Text>
     </TouchableOpacity>
   );
 }
 
-function makeStyles(colors: ColorPalette) {
+function makeStyles(colors: ColorPalette, direction: 'ltr' | 'rtl') {
+  const isRTL = direction === 'rtl';
   return StyleSheet.create({
     row: {
-      flexDirection: 'row',
+      flexDirection: isRTL ? 'row-reverse' : 'row',
       alignItems: 'center',
       gap: 8,
       paddingVertical: 6,

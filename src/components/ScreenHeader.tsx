@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { ColorPalette, useTheme } from '../contexts/ThemeContext';
+import { useTranslation } from '../i18n/LanguageContext';
 
 type LeftIcon = 'hamburger' | 'close' | 'back' | undefined;
 
@@ -31,21 +32,22 @@ export default function ScreenHeader({
   rightColor,
 }: Props) {
   const { colors } = useTheme();
-  const styles = makeStyles(colors);
+  const { t, direction } = useTranslation();
+  const styles = makeStyles(colors, direction);
   const leftIsIcon = leftIcon !== undefined;
 
   return (
     <View style={styles.header}>
       <TouchableOpacity onPress={onLeft} style={styles.side} activeOpacity={0.75}>
         <Text style={[styles.sideText, leftIsIcon && styles.iconText]}>
-          {renderLeftContent(leftIcon, leftLabel)}
+          {leftIsIcon ? renderLeftContent(leftIcon, leftLabel) : t(leftLabel)}
         </Text>
       </TouchableOpacity>
-      <Text style={styles.title} numberOfLines={1}>{title}</Text>
+      <Text style={styles.title} numberOfLines={1}>{t(title)}</Text>
       {onRight && rightLabel ? (
         <TouchableOpacity onPress={onRight} style={styles.side} activeOpacity={0.75}>
           <Text style={[styles.sideText, styles.rightText, rightColor ? { color: rightColor } : null]}>
-            {rightLabel}
+            {t(rightLabel)}
           </Text>
         </TouchableOpacity>
       ) : (
@@ -55,10 +57,11 @@ export default function ScreenHeader({
   );
 }
 
-function makeStyles(colors: ColorPalette) {
+function makeStyles(colors: ColorPalette, direction: 'ltr' | 'rtl') {
+  const isRTL = direction === 'rtl';
   return StyleSheet.create({
     header: {
-      flexDirection: 'row',
+      flexDirection: isRTL ? 'row-reverse' : 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
       paddingHorizontal: 12,
@@ -76,6 +79,7 @@ function makeStyles(colors: ColorPalette) {
       fontSize: 15,
       color: colors.textSecondary,
       fontWeight: '500',
+      textAlign: isRTL ? 'right' : 'left',
     },
     iconText: {
       fontSize: 22,
@@ -93,7 +97,7 @@ function makeStyles(colors: ColorPalette) {
     rightText: {
       color: colors.accent,
       fontWeight: '700',
-      textAlign: 'right',
+      textAlign: isRTL ? 'left' : 'right',
     },
   });
 }

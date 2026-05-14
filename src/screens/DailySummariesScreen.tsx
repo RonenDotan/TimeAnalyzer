@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import DailySummaryService from '../services/DailySummaryService';
 import { DailySummary, DailySummaryResult } from '../types/DailySummary';
 import { ColorPalette, useTheme } from '../contexts/ThemeContext';
+import { useTranslation } from '../i18n/LanguageContext';
 
 interface Props {
   onClose: () => void;
@@ -31,7 +32,8 @@ function formatGeneratedAt(ts: number): string {
 export default function DailySummariesScreen({ onClose }: Props) {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
-  const styles = makeStyles(colors);
+  const { t, direction } = useTranslation();
+  const styles = makeStyles(colors, direction);
   const [summaries, setSummaries] = useState<DailySummary[]>([]);
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -45,12 +47,12 @@ export default function DailySummariesScreen({ onClose }: Props) {
     try {
       setSummaries(await DailySummaryService.getAllSummaries());
     } catch (e: any) {
-      Alert.alert('Load failed', String(e?.message ?? e));
+      Alert.alert(t('Load failed'), String(e?.message ?? e));
     }
   }
 
   function parse(summary: DailySummary): DailySummaryResult {
-    return DailySummaryService.parseSummary(summary) ?? { debrief: 'Unable to parse saved summary.' };
+    return DailySummaryService.parseSummary(summary) ?? { debrief: t('Unable to parse saved summary.') };
   }
 
   function startEdit(summary: DailySummary) {
@@ -66,7 +68,7 @@ export default function DailySummariesScreen({ onClose }: Props) {
       setEditingId(null);
       setDraft('');
     } catch (e: any) {
-      Alert.alert('Save failed', String(e?.message ?? e));
+      Alert.alert(t('Save failed'), String(e?.message ?? e));
     }
   }
 
@@ -79,15 +81,15 @@ export default function DailySummariesScreen({ onClose }: Props) {
     <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       <View style={styles.header}>
         <TouchableOpacity onPress={onClose}>
-          <Text style={styles.headerBtn}>Close</Text>
+          <Text style={styles.headerBtn}>{t('Close')}</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>Daily Summaries</Text>
+        <Text style={styles.title}>{t('Daily Summaries')}</Text>
         <View style={styles.headerSpacer} />
       </View>
 
       <ScrollView contentContainerStyle={styles.body}>
         {summaries.length === 0 ? (
-          <Text style={styles.emptyText}>No saved daily summaries.</Text>
+          <Text style={styles.emptyText}>{t('No saved daily summaries.')}</Text>
         ) : (
           summaries.map(summary => {
             const parsed = parse(summary);
@@ -106,7 +108,7 @@ export default function DailySummariesScreen({ onClose }: Props) {
                   </TouchableOpacity>
                   {!editing && (
                     <TouchableOpacity onPress={() => startEdit(summary)}>
-                      <Text style={styles.editLink}>Edit</Text>
+                      <Text style={styles.editLink}>{t('Edit')}</Text>
                     </TouchableOpacity>
                   )}
                 </View>
@@ -118,15 +120,15 @@ export default function DailySummariesScreen({ onClose }: Props) {
                       onChangeText={setDraft}
                       multiline
                       textAlignVertical="top"
-                      placeholder="Write a summary..."
+                      placeholder={t('Write a summary...')}
                       placeholderTextColor={colors.placeholder}
                     />
                     <View style={styles.editActions}>
                       <TouchableOpacity style={styles.saveBtn} onPress={() => saveEdit(summary)}>
-                        <Text style={styles.saveBtnText}>Save</Text>
+                        <Text style={styles.saveBtnText}>{t('Save')}</Text>
                       </TouchableOpacity>
                       <TouchableOpacity style={styles.cancelBtn} onPress={cancelEdit}>
-                        <Text style={styles.cancelBtnText}>Cancel</Text>
+                        <Text style={styles.cancelBtnText}>{t('Cancel')}</Text>
                       </TouchableOpacity>
                     </View>
                   </>
@@ -139,7 +141,7 @@ export default function DailySummariesScreen({ onClose }: Props) {
                 )}
                 {expanded && parsed.keyInsights && parsed.keyInsights.length > 0 && (
                   <>
-                    <Text style={styles.sectionLabel}>KEY INSIGHTS</Text>
+                    <Text style={styles.sectionLabel}>{t('KEY INSIGHTS')}</Text>
                     {parsed.keyInsights.map((insight, i) => (
                       <Text key={i} style={styles.bulletText}>• {insight.text}</Text>
                     ))}
@@ -147,7 +149,7 @@ export default function DailySummariesScreen({ onClose }: Props) {
                 )}
                 {expanded && !!parsed.momentum && (
                   <>
-                    <Text style={styles.sectionLabel}>MOMENTUM</Text>
+                    <Text style={styles.sectionLabel}>{t('MOMENTUM')}</Text>
                     <Text style={styles.bulletText}>{parsed.momentum}</Text>
                   </>
                 )}
@@ -160,11 +162,12 @@ export default function DailySummariesScreen({ onClose }: Props) {
   );
 }
 
-function makeStyles(colors: ColorPalette) {
+function makeStyles(colors: ColorPalette, direction: 'ltr' | 'rtl') {
+  const isRTL = direction === 'rtl';
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
     header: {
-      flexDirection: 'row',
+      flexDirection: isRTL ? 'row-reverse' : 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
       paddingHorizontal: 16,
@@ -180,13 +183,15 @@ function makeStyles(colors: ColorPalette) {
     emptyText: { textAlign: 'center', color: colors.placeholder, fontSize: 15, marginTop: 36 },
     summaryCard: {
       backgroundColor: SUMMARY_COLOR + '10',
-      borderLeftWidth: 4,
-      borderLeftColor: SUMMARY_COLOR,
+      borderLeftWidth: isRTL ? 0 : 4,
+      borderRightWidth: isRTL ? 4 : 0,
+      borderLeftColor: isRTL ? 'transparent' : SUMMARY_COLOR,
+      borderRightColor: isRTL ? SUMMARY_COLOR : 'transparent',
       borderRadius: 8,
       padding: 12,
       gap: 8,
     },
-    cardHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
+    cardHeader: { flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
     cardTitleBlock: { flex: 1, gap: 2 },
     dateText: { fontSize: 15, color: colors.text, fontWeight: '700' },
     generatedText: { fontSize: 11, color: colors.textSecondary },
@@ -204,7 +209,7 @@ function makeStyles(colors: ColorPalette) {
       lineHeight: 20,
       textAlignVertical: 'top',
     },
-    editActions: { flexDirection: 'row', gap: 8, alignItems: 'center' },
+    editActions: { flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, alignItems: 'center' },
     saveBtn: {
       backgroundColor: SUMMARY_COLOR,
       borderRadius: 8,

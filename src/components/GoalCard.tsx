@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { ColorPalette, useTheme } from '../contexts/ThemeContext';
+import { useTranslation } from '../i18n/LanguageContext';
 import { Goal, isGoalOverdue } from '../types/Goal';
 
 const GOAL_COLOR = '#F97316';
@@ -22,7 +23,8 @@ function formatDeadline(ts: number): string {
 
 export default function GoalCard({ goal, onPress, asOf }: Props) {
   const { colors } = useTheme();
-  const styles = makeStyles(colors);
+  const { t, direction } = useTranslation();
+  const styles = makeStyles(colors, direction);
   const overdue = isGoalOverdue(goal, asOf);
   const goalColor = overdue ? OVERDUE_COLOR : GOAL_COLOR;
   const Body = (
@@ -48,7 +50,7 @@ export default function GoalCard({ goal, onPress, asOf }: Props) {
             📅 {formatDeadline(goal.targetAt)}
           </Text>
         )}
-        {overdue && <Text style={styles.overdueText}>Overdue</Text>}
+        {overdue && <Text style={styles.overdueText}>{t('Overdue')}</Text>}
       </View>
     </>
   );
@@ -71,7 +73,8 @@ export default function GoalCard({ goal, onPress, asOf }: Props) {
   );
 }
 
-function makeStyles(colors: ColorPalette) {
+function makeStyles(colors: ColorPalette, direction: 'ltr' | 'rtl') {
+  const isRTL = direction === 'rtl';
   return StyleSheet.create({
     card: {
       gap: 2,
@@ -83,7 +86,7 @@ function makeStyles(colors: ColorPalette) {
       backgroundColor: OVERDUE_COLOR + '16',
     },
     topRow: {
-      flexDirection: 'row',
+      flexDirection: isRTL ? 'row-reverse' : 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
       gap: 8,
@@ -94,10 +97,11 @@ function makeStyles(colors: ColorPalette) {
       color: colors.text,
       fontWeight: '500',
       lineHeight: 16,
+      textAlign: isRTL ? 'right' : 'left',
     },
     goalPct: {
       minWidth: 34,
-      textAlign: 'right',
+      textAlign: isRTL ? 'left' : 'right',
       fontSize: 12,
       fontWeight: '700',
     },
@@ -106,13 +110,15 @@ function makeStyles(colors: ColorPalette) {
       backgroundColor: colors.border,
       borderRadius: 2,
       overflow: 'hidden',
+      // Mirror horizontally in RTL so the fill starts from the trailing (right) edge
+      transform: [{ scaleX: isRTL ? -1 : 1 }],
     },
     progressFill: {
       height: 3,
       borderRadius: 2,
     },
     metaRow: {
-      flexDirection: 'row',
+      flexDirection: isRTL ? 'row-reverse' : 'row',
       alignItems: 'center',
       gap: 8,
     },
@@ -120,6 +126,7 @@ function makeStyles(colors: ColorPalette) {
       fontSize: 10,
       color: colors.textSecondary,
       lineHeight: 13,
+      textAlign: isRTL ? 'right' : 'left',
     },
     overdueText: {
       fontSize: 10,

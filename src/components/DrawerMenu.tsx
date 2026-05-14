@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ColorPalette, useTheme } from '../contexts/ThemeContext';
+import { useTranslation } from '../i18n/LanguageContext';
 
 export type DrawerScreen = 'entries' | 'reports' | 'settings' | 'dayplan' | 'goals' | 'aitest' | 'prompts' | 'dailySummaries';
 
@@ -59,7 +60,9 @@ export default function DrawerMenu({
 }: Props) {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
-  const slideAnim = useRef(new Animated.Value(-DRAWER_WIDTH)).current;
+  const { t, direction } = useTranslation();
+  const hiddenX = direction === 'rtl' ? DRAWER_WIDTH : -DRAWER_WIDTH;
+  const slideAnim = useRef(new Animated.Value(hiddenX)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -70,15 +73,15 @@ export default function DrawerMenu({
       ]).start();
     } else {
       Animated.parallel([
-        Animated.timing(slideAnim, { toValue: -DRAWER_WIDTH, duration: 180, useNativeDriver: true }),
+        Animated.timing(slideAnim, { toValue: hiddenX, duration: 180, useNativeDriver: true }),
         Animated.timing(opacityAnim, { toValue: 0, duration: 180, useNativeDriver: true }),
       ]).start();
     }
-  }, [visible]);
+  }, [visible, hiddenX, slideAnim, opacityAnim]);
 
   if (!visible) return null;
 
-  const styles = makeStyles(colors);
+  const styles = makeStyles(colors, direction);
 
   function handleNavigate(screen: DrawerScreen) {
     onNavigate(screen);
@@ -101,7 +104,7 @@ export default function DrawerMenu({
         ]}>
         {/* Header */}
         <View style={styles.drawerHeader}>
-          <Text style={styles.drawerTitle}>TimeAnalyzer</Text>
+          <Text style={styles.drawerTitle}>{t('TimeAnalyzer')}</Text>
           <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
             <Text style={styles.closeBtnText}>✕</Text>
           </TouchableOpacity>
@@ -116,7 +119,7 @@ export default function DrawerMenu({
               onPress={() => handleNavigate(item.key)}>
               <Text style={styles.navIcon}>{item.icon}</Text>
               <Text style={[styles.navLabel, currentScreen === item.key && styles.navLabelActive]}>
-                {item.label}
+                {t(item.label)}
               </Text>
             </TouchableOpacity>
           ))}
@@ -127,7 +130,7 @@ export default function DrawerMenu({
           <View style={styles.divider} />
           {debugMode && (
             <>
-              <Text style={styles.sectionLabel}>DEBUG</Text>
+              <Text style={styles.sectionLabel}>{t('DEBUG')}</Text>
               {DEBUG_ITEMS.map(item => (
                 <TouchableOpacity
                   key={item.key}
@@ -135,7 +138,7 @@ export default function DrawerMenu({
                   onPress={() => handleNavigate(item.key)}>
                   <Text style={styles.navIcon}>{item.icon}</Text>
                   <Text style={[styles.navLabel, currentScreen === item.key && styles.navLabelActive]}>
-                    {item.label}
+                    {t(item.label)}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -144,7 +147,7 @@ export default function DrawerMenu({
                 onPress={onSeedMockData}
                 disabled={seedingMockData}>
                 <Text style={styles.navIcon}>{'\u{1F331}'}</Text>
-                <Text style={styles.navLabel}>Seed Mock Data</Text>
+                <Text style={styles.navLabel}>{t('Seed Mock Data')}</Text>
                 {seedingMockData && <ActivityIndicator size="small" color={colors.accent} />}
               </TouchableOpacity>
               <View style={styles.divider} />
@@ -157,7 +160,7 @@ export default function DrawerMenu({
               onPress={() => handleNavigate(item.key)}>
               <Text style={styles.navIcon}>{item.icon}</Text>
               <Text style={[styles.navLabel, currentScreen === item.key && styles.navLabelActive]}>
-                {item.label}
+                {t(item.label)}
               </Text>
             </TouchableOpacity>
           ))}
@@ -167,7 +170,8 @@ export default function DrawerMenu({
   );
 }
 
-function makeStyles(colors: ColorPalette) {
+function makeStyles(colors: ColorPalette, direction: 'ltr' | 'rtl') {
+  const isRTL = direction === 'rtl';
   return StyleSheet.create({
     overlay: {
       position: 'absolute',
@@ -179,7 +183,8 @@ function makeStyles(colors: ColorPalette) {
     },
     drawer: {
       position: 'absolute',
-      left: 0,
+      left: isRTL ? undefined : 0,
+      right: isRTL ? 0 : undefined,
       top: 0,
       bottom: 0,
       width: DRAWER_WIDTH,
@@ -190,7 +195,7 @@ function makeStyles(colors: ColorPalette) {
       elevation: 16,
     },
     drawerHeader: {
-      flexDirection: 'row',
+      flexDirection: isRTL ? 'row-reverse' : 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
       paddingHorizontal: 20,
@@ -203,7 +208,7 @@ function makeStyles(colors: ColorPalette) {
     closeBtnText: { fontSize: 16, color: colors.textSecondary },
     navSection: { flex: 1, paddingTop: 8 },
     navItem: {
-      flexDirection: 'row',
+      flexDirection: isRTL ? 'row-reverse' : 'row',
       alignItems: 'center',
       paddingHorizontal: 20,
       paddingVertical: 14,

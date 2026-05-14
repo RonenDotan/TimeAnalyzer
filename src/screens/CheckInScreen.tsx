@@ -26,6 +26,7 @@ import GoalCard from '../components/GoalCard';
 import PlanHintBar from '../components/PlanHintBar';
 import ScreenHeader from '../components/ScreenHeader';
 import { Goal, isGoalOverdue } from '../types/Goal';
+import { useTranslation } from '../i18n/LanguageContext';
 
 const GOAL_COLOR = '#F97316';
 const OVERDUE_COLOR = '#DC2626';
@@ -62,6 +63,7 @@ function formatHour(ts: number): string {
 export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel }: Props) {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
+  const { t, direction } = useTranslation();
   const [phase, setPhase] = useState<Phase>('idle');
   const [recordingMs, setRecordingMs] = useState(0);
   const [partialTranscript, setPartialTranscript] = useState('');
@@ -95,9 +97,9 @@ export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel
     const granted = await PermissionsAndroid.request(
       PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
       {
-        title: 'Microphone Permission',
-        message: 'TimeAnalyzer needs the microphone to record your check-in.',
-        buttonPositive: 'Allow',
+        title: t('Microphone Permission'),
+        message: t('TimeAnalyzer needs the microphone to transcribe.'),
+        buttonPositive: t('Allow'),
       },
     );
     return granted === PermissionsAndroid.RESULTS.GRANTED;
@@ -106,7 +108,7 @@ export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel
   async function startRecording() {
     const ok = await requestMicPermission();
     if (!ok) {
-      Alert.alert('Permission denied', 'Microphone access is required to record a check-in.');
+      Alert.alert(t('Permission denied'), t('Microphone access is required.'));
       return;
     }
 
@@ -121,7 +123,7 @@ export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel
       await TranscriptionService.start((partial) => setPartialTranscript(partial));
     } catch (e: any) {
       if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
-      Alert.alert('Speech start failed', String(e?.message ?? e));
+      Alert.alert(t('Speech start failed'), String(e?.message ?? e));
       setPhase('idle');
     }
   }
@@ -145,7 +147,7 @@ export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel
       setAiSuggestionMessage('');
       setPhase('confirming');
     } catch (e: any) {
-      Alert.alert('Transcription failed', String(e?.message ?? e));
+      Alert.alert(t('Transcription failed'), String(e?.message ?? e));
       setPhase('idle');
     }
   }
@@ -237,7 +239,7 @@ export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel
     try {
       const result = await AnalysisService.suggestGoalContributions(transcript, activeGoals);
       if (result.suggestions.length === 0) {
-        setAiSuggestionMessage('No clear goal progress found in this check-in.');
+        setAiSuggestionMessage(t('No clear goal progress found in this check-in.'));
         return;
       }
 
@@ -260,7 +262,7 @@ export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel
     }
   }
 
-  const styles = makeStyles(colors);
+  const styles = makeStyles(colors, direction);
 
   return (
     <KeyboardAvoidingView
@@ -272,7 +274,7 @@ export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel
         <Text style={styles.periodText}>
           {formatHour(periodStart)} – {formatHour(periodEnd)}
         </Text>
-        <Text style={styles.periodSub}>What did you work on?</Text>
+        <Text style={styles.periodSub}>{t('What did you work on?')}</Text>
       </View>
       <View style={styles.hintRow}>
         <PlanHintBar periodStart={periodStart} periodEnd={periodEnd} />
@@ -287,7 +289,7 @@ export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel
             {/* Active goals reminder — shown before recording so user knows what to think about */}
             {activeGoals.length > 0 && (
               <View style={styles.idleGoalsSection}>
-                <Text style={styles.idleGoalsLabel}>🎯  Goals in scope</Text>
+                <Text style={styles.idleGoalsLabel}>{t('🎯  Goals in scope')}</Text>
                 {activeGoals.map(goal => (
                   <GoalCard key={goal.id} goal={goal} />
                 ))}
@@ -297,7 +299,7 @@ export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel
               style={styles.typeInput}
               value={transcript}
               onChangeText={setTranscript}
-              placeholder="Type what you worked on..."
+              placeholder={t('Type what you worked on...')}
               placeholderTextColor={colors.placeholder}
               multiline
               textAlignVertical="top"
@@ -306,15 +308,15 @@ export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel
               style={[styles.submitBtn, !canSubmitTyped && styles.submitBtnDisabled]}
               onPress={handleTypedSubmit}
               disabled={!canSubmitTyped}>
-              <Text style={styles.submitBtnText}>Submit</Text>
+              <Text style={styles.submitBtnText}>{t('Submit')}</Text>
             </TouchableOpacity>
             <View style={styles.orRow}>
               <View style={styles.orLine} />
-              <Text style={styles.orText}>or speak</Text>
+              <Text style={styles.orText}>{t('or speak')}</Text>
               <View style={styles.orLine} />
             </View>
             <TouchableOpacity style={styles.recordBtn} onPress={startRecording}>
-              <Text style={styles.recordBtnText}>Record</Text>
+              <Text style={styles.recordBtnText}>{t('Record')}</Text>
             </TouchableOpacity>
           </>
         )}
@@ -333,7 +335,7 @@ export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel
             )}
 
             <TouchableOpacity style={[styles.recordBtn, styles.stopBtn]} onPress={stopRecording}>
-              <Text style={styles.recordBtnText}>Stop</Text>
+              <Text style={styles.recordBtnText}>{t('Stop')}</Text>
             </TouchableOpacity>
           </>
         )}
@@ -341,13 +343,13 @@ export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel
         {phase === 'transcribing' && (
           <>
             <ActivityIndicator size="large" color={colors.accent} />
-            <Text style={styles.transcribingLabel}>Transcribing…</Text>
+            <Text style={styles.transcribingLabel}>{t('Transcribing…')}</Text>
           </>
         )}
 
         {phase === 'confirming' && (
           <>
-            <Text style={styles.confirmLabel}>Review your check-in</Text>
+            <Text style={styles.confirmLabel}>{t('Review your check-in')}</Text>
             <TextInput
               style={styles.typeInput}
               value={transcript}
@@ -363,7 +365,7 @@ export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel
                   style={styles.noteInput}
                   value={note}
                   onChangeText={t => updateNote(i, t)}
-                  placeholder="Add a note…"
+                  placeholder={t('Add a note…')}
                   placeholderTextColor={colors.placeholder}
                   multiline
                   textAlignVertical="top"
@@ -375,13 +377,13 @@ export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel
             ))}
 
             <TouchableOpacity style={styles.addNoteBtn} onPress={addNote}>
-              <Text style={styles.addNoteBtnText}>+ Add note</Text>
+              <Text style={styles.addNoteBtnText}>{t('+ Add note')}</Text>
             </TouchableOpacity>
 
             {/* Active goals — contribution input per goal */}
             {activeGoals.length > 0 && (
               <View style={styles.goalsSection}>
-                <Text style={styles.goalsSectionLabel}>🎯  HOW MUCH DID YOU ADVANCE EACH GOAL?</Text>
+                <Text style={styles.goalsSectionLabel}>{t('🎯  HOW MUCH DID YOU ADVANCE EACH GOAL?')}</Text>
                 {aiAvailable && (
                   <View style={styles.aiSuggestBox}>
                     <TouchableOpacity
@@ -391,7 +393,7 @@ export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel
                       {aiSuggesting ? (
                         <ActivityIndicator size="small" color="#fff" />
                       ) : (
-                        <Text style={styles.aiSuggestBtnText}>✨ Suggest with AI</Text>
+                        <Text style={styles.aiSuggestBtnText}>{t('✨ Suggest with AI')}</Text>
                       )}
                     </TouchableOpacity>
                     {!!aiSuggestionMessage && (
@@ -406,7 +408,7 @@ export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel
                   <View key={goal.id} style={[styles.goalContribCard, overdue && styles.goalContribCardOverdue]}>
                     {/* Goal name — prominent, full width */}
                     <Text style={styles.goalContribName}>{goal.text}</Text>
-                    {overdue && <Text style={styles.overdueLabel}>Overdue</Text>}
+                    {overdue && <Text style={styles.overdueLabel}>{t('Overdue')}</Text>}
                     {/* Progress bar + current % */}
                     <View style={styles.goalContribBarRow}>
                       <View style={styles.progressBarBg}>
@@ -416,7 +418,7 @@ export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel
                     </View>
                     {/* Advance-by input — clearly labeled */}
                     <View style={styles.goalContribInputRow}>
-                      <Text style={styles.goalContribInputLabel}>Advance by</Text>
+                      <Text style={styles.goalContribInputLabel}>{t('Advance by')}</Text>
                       <TextInput
                         style={styles.pctInput}
                         value={contributions[goal.id] ?? ''}
@@ -439,10 +441,10 @@ export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel
 
             <View style={styles.confirmRow}>
               <TouchableOpacity style={styles.rerecordBtn} onPress={handleReRecord}>
-                <Text style={styles.rerecordText}>Re-record</Text>
+                <Text style={styles.rerecordText}>{t('Re-record')}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.confirmBtn} onPress={handleConfirm}>
-                <Text style={styles.confirmText}>Confirm</Text>
+                <Text style={styles.confirmText}>{t('Confirm')}</Text>
               </TouchableOpacity>
             </View>
           </>
@@ -452,12 +454,12 @@ export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel
           <>
             <View style={styles.summaryHeader}>
               <Text style={styles.summaryCheck}>✓</Text>
-              <Text style={styles.summaryTitle}>Check-in saved</Text>
+              <Text style={styles.summaryTitle}>{t('Check-in saved')}</Text>
             </View>
 
             {goalMoves.length > 0 ? (
               <View style={styles.summaryGoals}>
-                <Text style={styles.summaryGoalsLabel}>GOAL PROGRESS THIS SESSION</Text>
+                <Text style={styles.summaryGoalsLabel}>{t('GOAL PROGRESS THIS SESSION')}</Text>
                 {goalMoves.map((move, i) => (
                   <View key={i} style={styles.summaryGoalCard}>
                     <View style={styles.summaryGoalTop}>
@@ -474,17 +476,17 @@ export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel
                     </View>
                     <Text style={styles.summaryBarLabel}>
                       {move.before}% → {move.after}%
-                      {move.status === 'done' ? '  🎉 Complete!' : ''}
+                      {move.status === 'done' ? `  ${t('🎉 Complete!')}` : ''}
                     </Text>
                   </View>
                 ))}
               </View>
             ) : (
-              <Text style={styles.summaryNoMoves}>No goal contributions this session.</Text>
+              <Text style={styles.summaryNoMoves}>{t('No goal contributions this session.')}</Text>
             )}
 
             <TouchableOpacity style={styles.doneBtn} onPress={() => onDone(transcript)}>
-              <Text style={styles.doneBtnText}>Done</Text>
+              <Text style={styles.doneBtnText}>{t('Done')}</Text>
             </TouchableOpacity>
           </>
         )}
@@ -493,7 +495,8 @@ export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel
   );
 }
 
-function makeStyles(colors: ColorPalette) {
+function makeStyles(colors: ColorPalette, direction: 'ltr' | 'rtl') {
+  const isRTL = direction === 'rtl';
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
     bodyScroll: { flex: 1 },
@@ -535,14 +538,14 @@ function makeStyles(colors: ColorPalette) {
     submitBtnDisabled: { backgroundColor: colors.placeholder },
     submitBtnText: { fontSize: 16, color: '#fff', fontWeight: '600' },
     orRow: {
-      flexDirection: 'row',
+      flexDirection: isRTL ? 'row-reverse' : 'row',
       alignItems: 'center',
       width: '100%',
       gap: 10,
     },
     orLine: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: colors.border },
     orText: { fontSize: 13, color: colors.textSecondary },
-    timerBox: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 40 },
+    timerBox: { flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 10, marginTop: 40 },
     timer: { fontSize: 48, fontWeight: '200', color: colors.text, fontVariant: ['tabular-nums'] },
     recDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: colors.recordBtn },
     recordBtn: {
@@ -569,7 +572,7 @@ function makeStyles(colors: ColorPalette) {
     liveContent: { padding: 16 },
     liveText: { fontSize: 15, color: colors.textSecondary, lineHeight: 22, fontStyle: 'italic' },
     confirmLabel: { fontSize: 18, fontWeight: '600', color: colors.text, alignSelf: 'flex-start' },
-    noteRow: { flexDirection: 'row', alignItems: 'flex-start', width: '100%', gap: 8 },
+    noteRow: { flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'flex-start', width: '100%', gap: 8 },
     noteInput: {
       flex: 1,
       minHeight: 60,
@@ -594,8 +597,10 @@ function makeStyles(colors: ColorPalette) {
       borderRadius: 12,
       padding: 12,
       gap: 8,
-      borderLeftWidth: 3,
-      borderLeftColor: GOAL_COLOR,
+      borderLeftWidth: isRTL ? 0 : 3,
+      borderRightWidth: isRTL ? 3 : 0,
+      borderLeftColor: isRTL ? 'transparent' : GOAL_COLOR,
+      borderRightColor: isRTL ? GOAL_COLOR : 'transparent',
     },
     idleGoalsLabel: { fontSize: 11, fontWeight: '700', color: GOAL_COLOR, letterSpacing: 0.5 },
     overdueLabel: { fontSize: 11, color: OVERDUE_COLOR, fontWeight: '700' },
@@ -623,12 +628,15 @@ function makeStyles(colors: ColorPalette) {
       borderRadius: 12,
       padding: 14,
       gap: 8,
-      borderLeftWidth: 3,
-      borderLeftColor: GOAL_COLOR,
+      borderLeftWidth: isRTL ? 0 : 3,
+      borderRightWidth: isRTL ? 3 : 0,
+      borderLeftColor: isRTL ? 'transparent' : GOAL_COLOR,
+      borderRightColor: isRTL ? GOAL_COLOR : 'transparent',
     },
     goalContribCardOverdue: {
       backgroundColor: OVERDUE_COLOR + '16',
-      borderLeftColor: OVERDUE_COLOR,
+      borderLeftColor: isRTL ? 'transparent' : OVERDUE_COLOR,
+      borderRightColor: isRTL ? OVERDUE_COLOR : 'transparent',
     },
     goalContribName: {
       fontSize: 15, fontWeight: '600', color: colors.text, lineHeight: 22,
@@ -642,7 +650,7 @@ function makeStyles(colors: ColorPalette) {
     },
     goalProgressLabel: { fontSize: 11, color: colors.textSecondary },
     goalContribInputRow: {
-      flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4,
+      flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8, marginTop: 4,
     },
     goalContribInputLabel: { fontSize: 14, color: colors.textSecondary, flex: 1 },
     pctInput: {
@@ -653,7 +661,7 @@ function makeStyles(colors: ColorPalette) {
     pctLabel: { fontSize: 16, color: colors.textSecondary },
     aiReasonText: { fontSize: 12, color: GOAL_COLOR, lineHeight: 17 },
     aiReasonTextOverdue: { color: OVERDUE_COLOR },
-    confirmRow: { flexDirection: 'row', gap: 12, width: '100%' },
+    confirmRow: { flexDirection: isRTL ? 'row-reverse' : 'row', gap: 12, width: '100%' },
     rerecordBtn: {
       flex: 1,
       paddingVertical: 14,
@@ -682,9 +690,12 @@ function makeStyles(colors: ColorPalette) {
     },
     summaryGoalCard: {
       backgroundColor: GOAL_COLOR + '0e', borderRadius: 12, padding: 14, gap: 6,
-      borderLeftWidth: 3, borderLeftColor: GOAL_COLOR,
+      borderLeftWidth: isRTL ? 0 : 3,
+      borderRightWidth: isRTL ? 3 : 0,
+      borderLeftColor: isRTL ? 'transparent' : GOAL_COLOR,
+      borderRightColor: isRTL ? GOAL_COLOR : 'transparent',
     },
-    summaryGoalTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 },
+    summaryGoalTop: { flexDirection: isRTL ? 'row-reverse' : 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 },
     summaryGoalText: { flex: 1, fontSize: 14, color: colors.text, lineHeight: 20 },
     summaryDelta: { fontSize: 16, fontWeight: '700', color: GOAL_COLOR },
     summaryDeltaDone: { color: '#4CAF50' },

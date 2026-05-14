@@ -28,6 +28,7 @@ import SettingsService from '../services/SettingsService';
 import NoteDetailScreen from './NoteDetailScreen';
 import { applyTranscription } from '../utils/parseTranscript';
 import { ColorPalette, useTheme } from '../contexts/ThemeContext';
+import { useTranslation } from '../i18n/LanguageContext';
 
 interface Props {
   entry: LogEntry;
@@ -68,6 +69,7 @@ function timeStringToDate(timeStr: string, fallbackTs: number): Date {
 export default function EntryDetailScreen({ entry, onSave, onClose, debugMode = false }: Props) {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
+  const { t, direction } = useTranslation();
   const [editing, setEditing] = useState(false);
   const [transcript, setTranscript] = useState(entry.transcript);
   const [startTime, setStartTime] = useState(tsToTimeString(entry.timestampStart));
@@ -109,15 +111,15 @@ export default function EntryDetailScreen({ entry, onSave, onClose, debugMode = 
     const newEnd = applyTimeString(entry.timestampEnd, endTime);
 
     if (newStart === null) {
-      Alert.alert('Invalid time', 'Start time must be in HH:MM format.');
+      Alert.alert(t('Invalid time'), t('Start time must be in HH:MM format.'));
       return;
     }
     if (newEnd === null) {
-      Alert.alert('Invalid time', 'End time must be in HH:MM format.');
+      Alert.alert(t('Invalid time'), t('End time must be in HH:MM format.'));
       return;
     }
     if (newEnd <= newStart) {
-      Alert.alert('Invalid time', 'End time must be after start time.');
+      Alert.alert(t('Invalid time'), t('End time must be after start time.'));
       return;
     }
 
@@ -211,7 +213,7 @@ export default function EntryDetailScreen({ entry, onSave, onClose, debugMode = 
     try {
       const result = await AnalysisService.suggestGoalContributions(transcript, activeGoals);
       if (result.suggestions.length === 0) {
-        setAiSuggestionMessage('No clear goal progress found in this entry.');
+        setAiSuggestionMessage(t('No clear goal progress found in this entry.'));
         return;
       }
 
@@ -224,7 +226,10 @@ export default function EntryDetailScreen({ entry, onSave, onClose, debugMode = 
 
       setAiSuggestionInputs(nextInputs);
       setAiSuggestionReasons(nextReasons);
-      setAiSuggestionMessage(`Suggested ${result.suggestions.length} contribution${result.suggestions.length === 1 ? '' : 's'}.`);
+      setAiSuggestionMessage(t(
+        result.suggestions.length === 1 ? 'Suggested {n} contribution.' : 'Suggested {n} contributions.',
+        { n: result.suggestions.length },
+      ));
     } catch (e: any) {
       setAiSuggestionMessage(String(e?.message ?? e));
     } finally {
@@ -249,10 +254,13 @@ export default function EntryDetailScreen({ entry, onSave, onClose, debugMode = 
       setActiveGoals(await GoalsService.getActiveGoals(entry.timestampEnd));
       setAiSuggestionInputs({});
       setAiSuggestionReasons({});
-      setAiSuggestionMessage(`Applied ${selected.length} contribution${selected.length === 1 ? '' : 's'}.`);
+      setAiSuggestionMessage(t(
+        selected.length === 1 ? 'Applied {n} contribution.' : 'Applied {n} contributions.',
+        { n: selected.length },
+      ));
       CalendarSyncService.syncChanged().catch(() => {});
     } catch (e: any) {
-      Alert.alert('Failed to apply suggestions', String(e?.message ?? e));
+      Alert.alert(t('Failed to apply suggestions'), String(e?.message ?? e));
     } finally {
       setAiApplying(false);
     }
@@ -271,7 +279,7 @@ export default function EntryDetailScreen({ entry, onSave, onClose, debugMode = 
     );
   }
 
-  const styles = makeStyles(colors);
+  const styles = makeStyles(colors, direction);
 
   return (
     <KeyboardAvoidingView
@@ -292,7 +300,7 @@ export default function EntryDetailScreen({ entry, onSave, onClose, debugMode = 
       <ScrollView contentContainerStyle={styles.body}>
         {/* Time range + Transcript — combined green box */}
         <View style={styles.section}>
-          <Text style={styles.label}>TIME RANGE</Text>
+          <Text style={styles.label}>{t('TIME RANGE')}</Text>
           <View style={styles.timeRow}>
             {editing ? (
               <>
@@ -313,7 +321,7 @@ export default function EntryDetailScreen({ entry, onSave, onClose, debugMode = 
 
           <View style={styles.sectionDivider} />
 
-          <Text style={styles.label}>TRANSCRIPT</Text>
+          <Text style={styles.label}>{t('TRANSCRIPT')}</Text>
           {editing ? (
             <>
               <TextInput
@@ -332,10 +340,10 @@ export default function EntryDetailScreen({ entry, onSave, onClose, debugMode = 
         </View>
 
         {/* Notes */}
-        <Text style={styles.notesGroupLabel}>NOTES</Text>
+        <Text style={styles.notesGroupLabel}>{t('NOTES')}</Text>
 
         {notes.length === 0 && (
-          <Text style={styles.emptyNotes}>No notes yet.</Text>
+          <Text style={styles.emptyNotes}>{t('No notes yet.')}</Text>
         )}
 
         {notes.map(note => (
@@ -371,7 +379,7 @@ export default function EntryDetailScreen({ entry, onSave, onClose, debugMode = 
         {/* Goal contributions */}
         {goalContributions.length > 0 && (
           <>
-            <Text style={styles.notesGroupLabel}>GOAL CONTRIBUTIONS</Text>
+            <Text style={styles.notesGroupLabel}>{t('GOAL CONTRIBUTIONS')}</Text>
             {goalContributions.map(c => {
               const reasonDraft = editingContributionReasons[c.id];
               const editingReason = reasonDraft !== undefined;
@@ -387,27 +395,27 @@ export default function EntryDetailScreen({ entry, onSave, onClose, debugMode = 
                       style={styles.goalContribReasonInput}
                       value={reasonDraft}
                       onChangeText={text => setEditingContributionReasons(prev => ({ ...prev, [c.id]: text }))}
-                      placeholder="Reason..."
+                      placeholder={t('Reason...')}
                       placeholderTextColor={colors.placeholder}
                       multiline
                       textAlignVertical="top"
                     />
                     <View style={styles.goalContribReasonActions}>
                       <TouchableOpacity style={styles.goalContribReasonSave} onPress={() => saveContributionReason(c)}>
-                        <Text style={styles.goalContribReasonSaveText}>Save</Text>
+                        <Text style={styles.goalContribReasonSaveText}>{t('Save')}</Text>
                       </TouchableOpacity>
                       <TouchableOpacity style={styles.goalContribReasonCancel} onPress={() => cancelEditContributionReason(c.id)}>
-                        <Text style={styles.goalContribReasonCancelText}>Cancel</Text>
+                        <Text style={styles.goalContribReasonCancelText}>{t('Cancel')}</Text>
                       </TouchableOpacity>
                     </View>
                   </>
                 ) : (
                   <View style={styles.goalContribReasonRow}>
                     <Text style={[styles.goalContribReasonText, !c.reason && styles.goalContribReasonPlaceholder]}>
-                      {c.reason || 'No reason saved'}
+                      {c.reason || t('No reason saved')}
                     </Text>
                     <TouchableOpacity onPress={() => startEditContributionReason(c)}>
-                      <Text style={styles.goalContribReasonEdit}>Edit</Text>
+                      <Text style={styles.goalContribReasonEdit}>{t('Edit')}</Text>
                     </TouchableOpacity>
                   </View>
                 )}
@@ -420,7 +428,7 @@ export default function EntryDetailScreen({ entry, onSave, onClose, debugMode = 
         {aiAvailable && activeGoals.length > 0 && (
           <View style={styles.aiSection}>
             <View style={styles.aiHeaderRow}>
-              <Text style={styles.aiSectionLabel}>AI GOAL SUGGESTIONS</Text>
+              <Text style={styles.aiSectionLabel}>{t('AI GOAL SUGGESTIONS')}</Text>
               <TouchableOpacity
                 style={[styles.aiSuggestBtn, aiSuggesting && styles.aiSuggestBtnDisabled]}
                 onPress={handleSuggestWithAI}
@@ -428,7 +436,7 @@ export default function EntryDetailScreen({ entry, onSave, onClose, debugMode = 
                 {aiSuggesting ? (
                   <ActivityIndicator size="small" color="#fff" />
                 ) : (
-                  <Text style={styles.aiSuggestBtnText}>✨ Suggest with AI</Text>
+                  <Text style={styles.aiSuggestBtnText}>{t('✨ Suggest with AI')}</Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -448,7 +456,7 @@ export default function EntryDetailScreen({ entry, onSave, onClose, debugMode = 
                         <Text style={styles.aiSuggestionReason}>{aiSuggestionReasons[goal.id]}</Text>
                       )}
                       <View style={styles.aiInputRow}>
-                        <Text style={styles.aiInputLabel}>Apply</Text>
+                        <Text style={styles.aiInputLabel}>{t('Apply')}</Text>
                         <TextInput
                           style={styles.aiPctInput}
                           value={aiSuggestionInputs[goal.id] ?? ''}
@@ -468,7 +476,7 @@ export default function EntryDetailScreen({ entry, onSave, onClose, debugMode = 
                   onPress={handleApplyAISuggestions}
                   disabled={aiApplying}>
                   <Text style={styles.aiApplyBtnText}>
-                    {aiApplying ? 'Applying...' : 'Apply suggestions'}
+                    {aiApplying ? t('Applying...') : t('Apply suggestions')}
                   </Text>
                 </TouchableOpacity>
               </>
@@ -482,7 +490,7 @@ export default function EntryDetailScreen({ entry, onSave, onClose, debugMode = 
             style={styles.addNoteInput}
             value={newNoteText}
             onChangeText={setNewNoteText}
-            placeholder="New note…"
+            placeholder={t('New note…')}
             placeholderTextColor={colors.placeholder}
             multiline
             textAlignVertical="top"
@@ -491,7 +499,7 @@ export default function EntryDetailScreen({ entry, onSave, onClose, debugMode = 
             style={[styles.addNoteBtn, !newNoteText.trim() && styles.addNoteBtnDisabled]}
             onPress={handleAddNote}
             disabled={!newNoteText.trim()}>
-            <Text style={styles.addNoteBtnText}>Add</Text>
+            <Text style={styles.addNoteBtnText}>{t('Add')}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -511,7 +519,8 @@ export default function EntryDetailScreen({ entry, onSave, onClose, debugMode = 
   );
 }
 
-function makeStyles(colors: ColorPalette) {
+function makeStyles(colors: ColorPalette, direction: 'ltr' | 'rtl') {
+  const isRTL = direction === 'rtl';
   return StyleSheet.create({
     container: {
       flex: 1,
@@ -534,8 +543,10 @@ function makeStyles(colors: ColorPalette) {
       backgroundColor: '#33B679' + '18',
       borderRadius: 12,
       padding: 16,
-      borderLeftWidth: 4,
-      borderLeftColor: '#33B679',
+      borderLeftWidth: isRTL ? 0 : 4,
+      borderRightWidth: isRTL ? 4 : 0,
+      borderLeftColor: isRTL ? 'transparent' : '#33B679',
+      borderRightColor: isRTL ? '#33B679' : 'transparent',
     },
     label: {
       fontSize: 11,
@@ -543,8 +554,9 @@ function makeStyles(colors: ColorPalette) {
       color: '#33B679',
       letterSpacing: 0.5,
       marginBottom: 10,
+      textAlign: isRTL ? 'right' : 'left',
     },
-    timeRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    timeRow: { flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8 },
     timeDisplay: { fontSize: 18, fontWeight: '600', color: colors.text },
     timeInput: {
       borderBottomWidth: 1.5,
@@ -559,7 +571,7 @@ function makeStyles(colors: ColorPalette) {
       color: colors.text,
     },
     timeSep: { fontSize: 18, color: colors.text },
-    transcriptText: { fontSize: 16, color: colors.text, lineHeight: 24 },
+    transcriptText: { fontSize: 16, color: colors.text, lineHeight: 24, textAlign: isRTL ? 'right' : 'left' },
     transcriptInput: {
       fontSize: 16,
       color: colors.text,
@@ -571,16 +583,19 @@ function makeStyles(colors: ColorPalette) {
       padding: 10,
       backgroundColor: colors.surface,
       textAlignVertical: 'top',
+      textAlign: isRTL ? 'right' : 'left',
     },
     notesGroupLabel: {
       fontSize: 11,
       fontWeight: '600',
       color: '#33B679',
       letterSpacing: 0.5,
-      marginLeft: 4,
+      marginLeft: isRTL ? 0 : 4,
+      marginRight: isRTL ? 4 : 0,
       marginBottom: 8,
+      textAlign: isRTL ? 'right' : 'left',
     },
-    emptyNotes: { fontSize: 14, color: colors.placeholder, marginLeft: 4 },
+    emptyNotes: { fontSize: 14, color: colors.placeholder, marginLeft: isRTL ? 0 : 4, marginRight: isRTL ? 4 : 0 },
     noteCard: {
       backgroundColor: colors.surface,
       borderRadius: 12,
@@ -589,18 +604,20 @@ function makeStyles(colors: ColorPalette) {
       shadowOpacity: 0.04,
       shadowRadius: 3,
       elevation: 1,
-      borderLeftWidth: 4,
-      borderLeftColor: '#33B679',
+      borderLeftWidth: isRTL ? 0 : 4,
+      borderRightWidth: isRTL ? 4 : 0,
+      borderLeftColor: isRTL ? 'transparent' : '#33B679',
+      borderRightColor: isRTL ? '#33B679' : 'transparent',
     },
     noteCardHeader: {
-      flexDirection: 'row',
+      flexDirection: isRTL ? 'row-reverse' : 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
       marginBottom: 6,
     },
     noteCardMeta: { fontSize: 11, color: colors.placeholder, fontWeight: '500' },
     noteDeleteText: { fontSize: 15, color: colors.recordBtn, paddingHorizontal: 4 },
-    noteText: { fontSize: 15, color: colors.text, lineHeight: 22 },
+    noteText: { fontSize: 15, color: colors.text, lineHeight: 22, textAlign: isRTL ? 'right' : 'left' },
     noteEditInput: {
       fontSize: 15,
       color: colors.text,
@@ -612,12 +629,13 @@ function makeStyles(colors: ColorPalette) {
       minHeight: 60,
       textAlignVertical: 'top',
       backgroundColor: colors.surface + 'cc',
+      textAlign: isRTL ? 'right' : 'left',
     },
     addNoteCard: {
       backgroundColor: colors.surface,
       borderRadius: 12,
       padding: 14,
-      flexDirection: 'row',
+      flexDirection: isRTL ? 'row-reverse' : 'row',
       alignItems: 'flex-end',
       gap: 10,
       borderWidth: StyleSheet.hairlineWidth,
@@ -643,11 +661,13 @@ function makeStyles(colors: ColorPalette) {
       backgroundColor: GOAL_COLOR + '10',
       borderRadius: 10,
       padding: 12,
-      borderLeftWidth: 3,
-      borderLeftColor: GOAL_COLOR,
+      borderLeftWidth: isRTL ? 0 : 3,
+      borderRightWidth: isRTL ? 3 : 0,
+      borderLeftColor: isRTL ? 'transparent' : GOAL_COLOR,
+      borderRightColor: isRTL ? GOAL_COLOR : 'transparent',
     },
     goalContribRow: {
-      flexDirection: 'row',
+      flexDirection: isRTL ? 'row-reverse' : 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
       gap: 8,
@@ -655,7 +675,7 @@ function makeStyles(colors: ColorPalette) {
     goalContribText: { flex: 1, fontSize: 14, color: colors.text, lineHeight: 20 },
     goalContribDelta: { fontSize: 15, fontWeight: '700', color: GOAL_COLOR },
     goalContribReasonRow: {
-      flexDirection: 'row',
+      flexDirection: isRTL ? 'row-reverse' : 'row',
       alignItems: 'flex-start',
       justifyContent: 'space-between',
       gap: 10,
@@ -677,7 +697,7 @@ function makeStyles(colors: ColorPalette) {
       lineHeight: 18,
       textAlignVertical: 'top',
     },
-    goalContribReasonActions: { flexDirection: 'row', gap: 8, marginTop: 8 },
+    goalContribReasonActions: { flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8, marginTop: 8 },
     goalContribReasonSave: {
       backgroundColor: GOAL_COLOR,
       borderRadius: 8,
@@ -698,11 +718,13 @@ function makeStyles(colors: ColorPalette) {
       borderRadius: 12,
       padding: 14,
       gap: 10,
-      borderLeftWidth: 4,
-      borderLeftColor: GOAL_COLOR,
+      borderLeftWidth: isRTL ? 0 : 4,
+      borderRightWidth: isRTL ? 4 : 0,
+      borderLeftColor: isRTL ? 'transparent' : GOAL_COLOR,
+      borderRightColor: isRTL ? GOAL_COLOR : 'transparent',
     },
     aiHeaderRow: {
-      flexDirection: 'row',
+      flexDirection: isRTL ? 'row-reverse' : 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
       gap: 10,
@@ -736,7 +758,7 @@ function makeStyles(colors: ColorPalette) {
     },
     aiSuggestionGoal: { fontSize: 14, color: colors.text, fontWeight: '600', lineHeight: 20 },
     aiSuggestionReason: { fontSize: 12, color: GOAL_COLOR, lineHeight: 17 },
-    aiInputRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    aiInputRow: { flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8 },
     aiInputLabel: { fontSize: 14, color: colors.textSecondary },
     aiPctInput: {
       width: 56,

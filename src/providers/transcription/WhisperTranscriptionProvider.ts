@@ -14,6 +14,8 @@ const WhisperTranscriptionProvider: TranscriptionProvider = {
 
     const apiKey = await SettingsService.getGroqApiKey();
     if (!apiKey) throw new Error('Groq API key not set. Add it in Settings.');
+    const settings = await SettingsService.load();
+    const language = settings.language === 'he' ? 'he' : 'en';
 
     const formData = new FormData();
     formData.append('file', {
@@ -22,7 +24,7 @@ const WhisperTranscriptionProvider: TranscriptionProvider = {
       name: 'checkin.m4a',
     } as any);
     formData.append('model', 'whisper-large-v3-turbo');
-    formData.append('language', 'en');
+    formData.append('language', language);
 
     const response = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
       method: 'POST',

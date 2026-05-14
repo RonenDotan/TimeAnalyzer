@@ -10,6 +10,7 @@ import SettingsService from './src/services/SettingsService';
 import StorageService from './src/services/StorageService';
 import DrawerMenu, { DrawerScreen } from './src/components/DrawerMenu';
 import { ThemeProvider } from './src/contexts/ThemeContext';
+import { LanguageProvider } from './src/i18n/LanguageContext';
 import AITestScreen from './src/screens/AITestScreen';
 import CheckInScreen from './src/screens/CheckInScreen';
 import DailySummariesScreen from './src/screens/DailySummariesScreen';
@@ -308,7 +309,9 @@ function App(): React.JSX.Element {
   return (
     <SafeAreaProvider>
       <StatusBar barStyle="dark-content" />
-      <AppContent />
+      <LanguageProvider>
+        <AppContent />
+      </LanguageProvider>
     </SafeAreaProvider>
   );
 }
