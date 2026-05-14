@@ -240,12 +240,10 @@ export default function ReportScreen({
               <TouchableOpacity style={styles.sectionStripRow} onPress={() => setPlanOpen(prev => !prev)} activeOpacity={0.85}>
                 <Text style={styles.planHeader}>📅  PLAN</Text>
                 <Text style={styles.planStripCount}>{coveredCount}/{planBlocks.length}</Text>
-                <TouchableOpacity onPress={() => onEditPlan?.(currentDate)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                  <Text style={styles.planEditLink}>Edit ›</Text>
-                </TouchableOpacity>
+                <Text style={styles.planStripChevron}>{planOpen ? '⌄' : '›'}</Text>
               </TouchableOpacity>
               {planOpen && (
-                <>
+                <TouchableOpacity onPress={() => onEditPlan?.(currentDate)} activeOpacity={0.85}>
                   {visiblePlanBlocks.map(block => {
                     const covered = isCovered(block, entries);
                     const isCalendar = block.source === 'calendar';
@@ -266,7 +264,7 @@ export default function ReportScreen({
                     );
                   })}
                   {hiddenPlanCount > 0 && (
-                    <TouchableOpacity onPress={() => setPlanExpanded(prev => !prev)} style={styles.pinnedGoalsToggle}>
+                    <TouchableOpacity onPress={e => { e.stopPropagation?.(); setPlanExpanded(prev => !prev); }} style={styles.pinnedGoalsToggle}>
                       <Text style={styles.pinnedGoalsToggleText}>
                         {planExpanded ? 'Show less' : `Show ${hiddenPlanCount} more`}
                       </Text>
@@ -276,7 +274,7 @@ export default function ReportScreen({
                     {coveredCount}/{planBlocks.length} blocks covered
                     {coveredCount < planBlocks.length ? `  ·  ${planBlocks.length - coveredCount} missed` : '  ✓'}
                   </Text>
-                </>
+                </TouchableOpacity>
               )}
             </View>
           )}
@@ -526,24 +524,24 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
     goalsStripCount: { fontSize: 12, fontWeight: '700', color: GOAL_COLOR },
     goalsStripChevron: { fontSize: 20, color: GOAL_COLOR, lineHeight: 22 },
     planStripCount: { fontSize: 12, fontWeight: '700', color: '#039BE5' },
-    planEditLink: { fontSize: 13, color: '#039BE5', fontWeight: '600' },
+    planStripChevron: { fontSize: 20, color: '#039BE5', lineHeight: 22 },
     entriesSection: {
-      backgroundColor: colors.accent + '18',
+      backgroundColor: '#33B679' + '18',
       borderRadius: 8,
       padding: 12,
       gap: 8,
       borderLeftWidth: 4,
-      borderLeftColor: colors.accent,
+      borderLeftColor: '#33B679',
     },
     entriesHeader: {
       flex: 1,
       fontSize: 11,
       fontWeight: '700',
-      color: colors.accent,
+      color: '#33B679',
       letterSpacing: 0.8,
     },
-    entriesStripCount: { fontSize: 12, fontWeight: '700', color: colors.accent },
-    entriesStripChevron: { fontSize: 20, color: colors.accent, lineHeight: 22 },
+    entriesStripCount: { fontSize: 12, fontWeight: '700', color: '#33B679' },
+    entriesStripChevron: { fontSize: 20, color: '#33B679', lineHeight: 22 },
     pinnedGoals: {
       backgroundColor: GOAL_COLOR + '10',
       borderRadius: 8,

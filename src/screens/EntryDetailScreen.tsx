@@ -38,6 +38,12 @@ interface Props {
 
 type ActiveTimePicker = 'start' | 'end' | null;
 
+function formatEntryTitle(entry: { timestampStart: number; timestampEnd: number }): string {
+  const d = new Date(entry.timestampStart);
+  const date = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  return `${date}  ${tsToTimeString(entry.timestampStart)}–${tsToTimeString(entry.timestampEnd)}`;
+}
+
 function tsToTimeString(ts: number): string {
   const d = new Date(ts);
   return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
@@ -272,7 +278,7 @@ export default function EntryDetailScreen({ entry, onSave, onClose, debugMode = 
       style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <ScreenHeader
-        title={`${tsToTimeString(entry.timestampStart)} – ${tsToTimeString(entry.timestampEnd)}`}
+        title={formatEntryTitle(entry)}
         onLeft={editing ? handleCancel : onClose}
         leftLabel={editing ? 'Cancel' : 'Back'}
         onRight={editing ? handleSave : () => setEditing(true)}
@@ -521,20 +527,20 @@ function makeStyles(colors: ColorPalette) {
     body: { padding: 16, gap: 20, paddingBottom: 40 },
     sectionDivider: {
       height: StyleSheet.hairlineWidth,
-      backgroundColor: colors.accent + '40',
+      backgroundColor: '#33B679' + '60',
       marginVertical: 12,
     },
     section: {
-      backgroundColor: colors.surface,
+      backgroundColor: '#33B679' + '18',
       borderRadius: 12,
       padding: 16,
       borderLeftWidth: 4,
-      borderLeftColor: colors.accent,
+      borderLeftColor: '#33B679',
     },
     label: {
       fontSize: 11,
       fontWeight: '600',
-      color: colors.accent,
+      color: '#33B679',
       letterSpacing: 0.5,
       marginBottom: 10,
     },
@@ -542,7 +548,7 @@ function makeStyles(colors: ColorPalette) {
     timeDisplay: { fontSize: 18, fontWeight: '600', color: colors.text },
     timeInput: {
       borderBottomWidth: 1.5,
-      borderBottomColor: colors.accent,
+      borderBottomColor: '#33B679',
       paddingVertical: 4,
       minWidth: 60,
       alignItems: 'center',
@@ -560,7 +566,7 @@ function makeStyles(colors: ColorPalette) {
       lineHeight: 24,
       minHeight: 120,
       borderWidth: 1.5,
-      borderColor: colors.accent,
+      borderColor: '#33B679',
       borderRadius: 8,
       padding: 10,
       backgroundColor: colors.surface,
@@ -569,7 +575,7 @@ function makeStyles(colors: ColorPalette) {
     notesGroupLabel: {
       fontSize: 11,
       fontWeight: '600',
-      color: colors.accent,
+      color: '#33B679',
       letterSpacing: 0.5,
       marginLeft: 4,
       marginBottom: 8,
@@ -584,7 +590,7 @@ function makeStyles(colors: ColorPalette) {
       shadowRadius: 3,
       elevation: 1,
       borderLeftWidth: 4,
-      borderLeftColor: colors.accent,
+      borderLeftColor: '#33B679',
     },
     noteCardHeader: {
       flexDirection: 'row',
@@ -600,7 +606,7 @@ function makeStyles(colors: ColorPalette) {
       color: colors.text,
       lineHeight: 22,
       borderWidth: 1,
-      borderColor: colors.accent,
+      borderColor: '#33B679',
       borderRadius: 8,
       padding: 8,
       minHeight: 60,
@@ -628,7 +634,7 @@ function makeStyles(colors: ColorPalette) {
     addNoteBtn: {
       paddingHorizontal: 14,
       paddingVertical: 8,
-      backgroundColor: colors.accent,
+      backgroundColor: '#33B679',
       borderRadius: 8,
     },
     addNoteBtnDisabled: { backgroundColor: colors.placeholder },
