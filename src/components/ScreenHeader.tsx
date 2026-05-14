@@ -79,6 +79,7 @@ function makeStyles(colors: ColorPalette, direction: 'ltr' | 'rtl') {
       fontSize: 15,
       color: colors.textSecondary,
       fontWeight: '500',
+      textAlign: isRTL ? 'right' : 'left',
     },
     iconText: {
       fontSize: 22,

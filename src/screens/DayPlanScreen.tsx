@@ -676,6 +676,8 @@ function makeStyles(colors: ColorPalette, calendarColor: string, direction: 'ltr
       padding: 10,
       minHeight: 64,
       lineHeight: 22,
+      textAlign: isRTL ? 'right' : 'left',
+      textAlignVertical: 'top',
     },
     micBtn: {
       padding: 6,
@@ -714,6 +716,7 @@ function makeStyles(colors: ColorPalette, calendarColor: string, direction: 'ltr
       fontSize: 15,
       color: colors.text,
       lineHeight: 22,
+      textAlign: isRTL ? 'right' : 'left',
     },
     calendarBadge: {
       fontSize: 12,
@@ -826,6 +829,7 @@ function makeStyles(colors: ColorPalette, calendarColor: string, direction: 'ltr
       fontSize: 15,
       color: colors.text,
       lineHeight: 22,
+      textAlign: isRTL ? 'right' : 'left',
     },
     blockEditActions: {
       flexDirection: isRTL ? 'row-reverse' : 'row',

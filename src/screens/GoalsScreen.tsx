@@ -583,11 +583,11 @@ function makeStyles(colors: ColorPalette, direction: 'ltr' | 'rtl') {
       backgroundColor: OVERDUE_COLOR + '16',
     },
     goalMain:       { gap: 6 },
-    goalText:       { fontSize: 15, color: colors.text, lineHeight: 22 },
+    goalText:       { fontSize: 15, color: colors.text, lineHeight: 22, textAlign: isRTL ? 'right' : 'left' },
     goalMeta:       { flexDirection: isRTL ? 'row-reverse' : 'row', justifyContent: 'space-between', alignItems: 'center' },
     goalStatus:     { fontSize: 12, fontWeight: '600' },
     goalDates:      { gap: 2 },
-    goalDateText:   { fontSize: 11, color: colors.textSecondary },
+    goalDateText:   { fontSize: 11, color: colors.textSecondary, textAlign: isRTL ? 'right' : 'left' },
     goalOverdueText: { color: OVERDUE_COLOR, fontWeight: '700' },
     quickActions:   { flexDirection: isRTL ? 'row-reverse' : 'row', gap: 8 },
     quickBtn: {

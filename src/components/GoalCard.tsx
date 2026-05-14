@@ -97,6 +97,7 @@ function makeStyles(colors: ColorPalette, direction: 'ltr' | 'rtl') {
       color: colors.text,
       fontWeight: '500',
       lineHeight: 16,
+      textAlign: isRTL ? 'right' : 'left',
     },
     goalPct: {
       minWidth: 34,
@@ -125,6 +126,7 @@ function makeStyles(colors: ColorPalette, direction: 'ltr' | 'rtl') {
       fontSize: 10,
       color: colors.textSecondary,
       lineHeight: 13,
+      textAlign: isRTL ? 'right' : 'left',
     },
     overdueText: {
       fontSize: 10,

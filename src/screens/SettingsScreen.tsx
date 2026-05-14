@@ -209,6 +209,7 @@ export default function SettingsScreen({ onClose }: Props) {
 
   const set = (patch: Partial<Settings>) => setSettings(s => ({ ...(s ?? DEFAULT_SETTINGS), ...patch }));
   const styles = makeStyles(colors, direction);
+  const rowChevron = direction === 'rtl' ? '‹' : '›';
 
   async function handleLanguageChange(nextLanguage: Language) {
     set({ language: nextLanguage });
@@ -589,7 +590,7 @@ export default function SettingsScreen({ onClose }: Props) {
                   </View>
                   {seeding
                     ? <ActivityIndicator size="small" color={colors.accent} />
-                    : <Text style={styles.chevron}>›</Text>}
+                    : <Text style={styles.chevron}>{rowChevron}</Text>}
                 </TouchableOpacity>
               )}
               {settings.debugMode && (
@@ -603,7 +604,7 @@ export default function SettingsScreen({ onClose }: Props) {
                   </View>
                   {seeding
                     ? <ActivityIndicator size="small" color={colors.accent} />
-                    : <Text style={styles.chevron}>›</Text>}
+                    : <Text style={styles.chevron}>{rowChevron}</Text>}
                 </TouchableOpacity>
               )}
             </View>
@@ -630,7 +631,7 @@ export default function SettingsScreen({ onClose }: Props) {
                       }
                     }}>
                     <Text style={styles.rowLabel}>{t('Run full diagnostic')}</Text>
-                    <Text style={styles.chevron}>›</Text>
+                    <Text style={styles.chevron}>{rowChevron}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[styles.row, styles.rowBorder]}
@@ -643,7 +644,7 @@ export default function SettingsScreen({ onClose }: Props) {
                       }
                     }}>
                     <Text style={styles.rowLabel}>{t('Reschedule now')}</Text>
-                    <Text style={styles.chevron}>›</Text>
+                    <Text style={styles.chevron}>{rowChevron}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[styles.row, styles.rowBorder]}
@@ -656,7 +657,7 @@ export default function SettingsScreen({ onClose }: Props) {
                       }
                     }}>
                     <Text style={styles.rowLabel}>{t('Send test notification')}</Text>
-                    <Text style={styles.chevron}>›</Text>
+                    <Text style={styles.chevron}>{rowChevron}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[styles.row, styles.rowBorder]}
@@ -673,13 +674,13 @@ export default function SettingsScreen({ onClose }: Props) {
                     style={[styles.row, styles.rowBorder]}
                     onPress={() => SchedulerService.openAlarmSettings()}>
                     <Text style={styles.rowLabel}>{t('Open alarm settings')}</Text>
-                    <Text style={styles.chevron}>›</Text>
+                    <Text style={styles.chevron}>{rowChevron}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[styles.row, styles.rowBorder]}
                     onPress={() => SchedulerService.openAppSettings()}>
                     <Text style={styles.rowLabel}>{t('Open app notification settings')}</Text>
-                    <Text style={styles.chevron}>›</Text>
+                    <Text style={styles.chevron}>{rowChevron}</Text>
                   </TouchableOpacity>
                 </View>
               </>
@@ -723,17 +724,19 @@ function makeStyles(colors: ColorPalette, direction: 'ltr' | 'rtl') {
       fontWeight: '700',
       color: colors.accent,
       letterSpacing: 0.5,
+      textAlign: isRTL ? 'right' : 'left',
     },
     chevron: { fontSize: 11, color: colors.accent },
     sectionLabel: {
       fontSize: 11,
-      fontWeight: '500',
+      fontWeight: '700',
       color: colors.textSecondary,
       marginBottom: 4,
       marginTop: 6,
       marginLeft: isRTL ? 0 : 4,
       marginRight: isRTL ? 4 : 0,
       letterSpacing: 0.3,
+      textAlign: isRTL ? 'right' : 'left',
     },
     card: { backgroundColor: colors.surface, borderRadius: 10, overflow: 'hidden' },
     row: {

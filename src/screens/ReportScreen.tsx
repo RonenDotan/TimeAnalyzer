@@ -169,6 +169,8 @@ export default function ReportScreen({
   const visibleEntries = entriesExpanded ? entries : entries.slice(0, ENTRIES_COLLAPSED_COUNT);
   const hiddenEntryCount = Math.max(0, entries.length - ENTRIES_COLLAPSED_COUNT);
   const styles = makeStyles(colors, calendarColor, direction);
+  const isRTL = direction === 'rtl';
+  const expandChevron = isRTL ? '‹' : '›'; // closed-state strip indicator
 
   function handleEntrySaved(updated: LogEntry) {
     setEntries(prev => prev.map(e => e.id === updated.id ? updated : e));
@@ -212,7 +214,7 @@ export default function ReportScreen({
               <TouchableOpacity style={styles.sectionStripRow} onPress={() => setGoalsOpen(prev => !prev)} activeOpacity={0.85}>
                 <Text style={styles.pinnedGoalsHeader}>{t('🎯  ACTIVE GOALS')}</Text>
                 <Text style={styles.goalsStripCount}>{goals.length}</Text>
-                <Text style={styles.goalsStripChevron}>{goalsOpen ? '⌄' : '›'}</Text>
+                <Text style={styles.goalsStripChevron}>{goalsOpen ? '⌄' : expandChevron}</Text>
               </TouchableOpacity>
               {goalsOpen && (
                 <>
@@ -242,7 +244,7 @@ export default function ReportScreen({
               <TouchableOpacity style={styles.sectionStripRow} onPress={() => setPlanOpen(prev => !prev)} activeOpacity={0.85}>
                 <Text style={styles.planHeader}>{t('📅  PLAN')}</Text>
                 <Text style={styles.planStripCount}>{coveredCount}/{planBlocks.length}</Text>
-                <Text style={styles.planStripChevron}>{planOpen ? '⌄' : '›'}</Text>
+                <Text style={styles.planStripChevron}>{planOpen ? '⌄' : expandChevron}</Text>
               </TouchableOpacity>
               {planOpen && (
                 <TouchableOpacity onPress={() => onEditPlan?.(currentDate)} activeOpacity={0.85}>
@@ -288,7 +290,7 @@ export default function ReportScreen({
               <TouchableOpacity style={styles.sectionStripRow} onPress={() => setEntriesOpen(prev => !prev)} activeOpacity={0.85}>
                 <Text style={styles.entriesHeader}>{t('📋  ENTRIES')}</Text>
                 <Text style={styles.entriesStripCount}>{entries.length}</Text>
-                <Text style={styles.entriesStripChevron}>{entriesOpen ? '⌄' : '›'}</Text>
+                <Text style={styles.entriesStripChevron}>{entriesOpen ? '⌄' : expandChevron}</Text>
               </TouchableOpacity>
               {entriesOpen && (
                 <>
@@ -444,7 +446,7 @@ function makeStyles(colors: ColorPalette, calendarColor: string, direction: 'ltr
       alignItems: 'center',
       justifyContent: 'space-between',
     },
-    summaryDebugTitle: { fontSize: 11, fontWeight: '700', color: SUMMARY_COLOR, letterSpacing: 0.5 },
+    summaryDebugTitle: { fontSize: 11, fontWeight: '700', color: SUMMARY_COLOR, letterSpacing: 0.5, textAlign: isRTL ? 'right' : 'left' },
     summaryDebugLink: { fontSize: 13, color: SUMMARY_COLOR, fontWeight: '600' },
     summaryButton: {
       alignSelf: 'flex-start',
@@ -539,6 +541,7 @@ function makeStyles(colors: ColorPalette, calendarColor: string, direction: 'ltr
       fontWeight: '700',
       color: '#33B679',
       letterSpacing: 0.8,
+      textAlign: isRTL ? 'right' : 'left',
     },
     entriesStripCount: { fontSize: 12, fontWeight: '700', color: '#33B679' },
     entriesStripChevron: { fontSize: 20, color: '#33B679', lineHeight: 22 },
@@ -558,6 +561,7 @@ function makeStyles(colors: ColorPalette, calendarColor: string, direction: 'ltr
       fontWeight: '700',
       color: GOAL_COLOR,
       letterSpacing: 0.8,
+      textAlign: isRTL ? 'right' : 'left',
     },
     pinnedGoalsToggle: {
       minHeight: 22,
@@ -603,6 +607,7 @@ function makeStyles(colors: ColorPalette, calendarColor: string, direction: 'ltr
     planHeader: {
       flex: 1,
       fontSize: 11, fontWeight: '700', color: '#039BE5', letterSpacing: 0.5,
+      textAlign: isRTL ? 'right' : 'left',
     },
     planBlock: {
       paddingVertical: 10,

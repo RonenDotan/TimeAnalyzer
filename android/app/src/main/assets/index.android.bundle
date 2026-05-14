@@ -104172,7 +104172,7 @@ __d(function(global, require, _importDefaultUnused, _importAllUnused, module, ex
     "major":  0,
     "minor":  0,
     "ticket_id":  41,
-    "sequence":  19
+    "sequence":  20
 }
 ;
 },638,[],"version.json");
@@ -112134,7 +112134,8 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         fontSize: 12,
         color: colors.text,
         fontWeight: '500',
-        lineHeight: 16
+        lineHeight: 16,
+        textAlign: isRTL ? 'right' : 'left'
       },
       goalPct: {
         minWidth: 34,
@@ -112164,7 +112165,8 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       deadline: {
         fontSize: 10,
         color: colors.textSecondary,
-        lineHeight: 13
+        lineHeight: 13,
+        textAlign: isRTL ? 'right' : 'left'
       },
       overdueText: {
         fontSize: 10,
@@ -112691,7 +112693,8 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       sideText: {
         fontSize: 15,
         color: colors.textSecondary,
-        fontWeight: '500'
+        fontWeight: '500',
+        textAlign: isRTL ? 'right' : 'left'
       },
       iconText: {
         fontSize: 22,
@@ -114382,7 +114385,9 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         borderRadius: 8,
         padding: 10,
         minHeight: 64,
-        lineHeight: 22
+        lineHeight: 22,
+        textAlign: isRTL ? 'right' : 'left',
+        textAlignVertical: 'top'
       },
       micBtn: {
         padding: 6,
@@ -114429,7 +114434,8 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       calendarBlockActivity: {
         fontSize: 15,
         color: colors.text,
-        lineHeight: 22
+        lineHeight: 22,
+        textAlign: isRTL ? 'right' : 'left'
       },
       calendarBadge: {
         fontSize: 12,
@@ -114588,7 +114594,8 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       blockCardActivity: {
         fontSize: 15,
         color: colors.text,
-        lineHeight: 22
+        lineHeight: 22,
+        textAlign: isRTL ? 'right' : 'left'
       },
       blockEditActions: {
         flexDirection: isRTL ? 'row-reverse' : 'row',
@@ -116265,7 +116272,8 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       goalText: {
         fontSize: 15,
         color: colors.text,
-        lineHeight: 22
+        lineHeight: 22,
+        textAlign: isRTL ? 'right' : 'left'
       },
       goalMeta: {
         flexDirection: isRTL ? 'row-reverse' : 'row',
@@ -116281,7 +116289,8 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       },
       goalDateText: {
         fontSize: 11,
-        color: colors.textSecondary
+        color: colors.textSecondary,
+        textAlign: isRTL ? 'right' : 'left'
       },
       goalOverdueText: {
         color: OVERDUE_COLOR,
@@ -117261,6 +117270,9 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
     var visibleEntries = entriesExpanded ? entries : entries.slice(0, ENTRIES_COLLAPSED_COUNT);
     var hiddenEntryCount = Math.max(0, entries.length - ENTRIES_COLLAPSED_COUNT);
     var styles = makeStyles(colors, calendarColor, direction);
+    var isRTL = direction === 'rtl';
+    var expandChevron = isRTL ? '‹' : '›'; // closed-state strip indicator
+
     function handleEntrySaved(updated) {
       setEntries(prev => prev.map(e => e.id === updated.id ? updated : e));
       setSelectedEntry(null);
@@ -117311,7 +117323,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
               children: goals.length
             }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
               style: styles.goalsStripChevron,
-              children: goalsOpen ? '⌄' : '›'
+              children: goalsOpen ? '⌄' : expandChevron
             })]
           }), goalsOpen && /*#__PURE__*/(0, _jsxRuntime.jsxs)(_jsxRuntime.Fragment, {
             children: [visibleGoals.map((goal, index) => /*#__PURE__*/(0, _jsxRuntime.jsx)(_GoalCard.default, {
@@ -117343,7 +117355,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
               children: [coveredCount, "/", planBlocks.length]
             }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
               style: styles.planStripChevron,
-              children: planOpen ? '⌄' : '›'
+              children: planOpen ? '⌄' : expandChevron
             })]
           }), planOpen && /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.TouchableOpacity, {
             onPress: () => onEditPlan?.(currentDate),
@@ -117408,7 +117420,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
               children: entries.length
             }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
               style: styles.entriesStripChevron,
-              children: entriesOpen ? '⌄' : '›'
+              children: entriesOpen ? '⌄' : expandChevron
             })]
           }), entriesOpen && /*#__PURE__*/(0, _jsxRuntime.jsxs)(_jsxRuntime.Fragment, {
             children: [visibleEntries.map((entry, index) => {
@@ -117613,7 +117625,8 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         fontSize: 11,
         fontWeight: '700',
         color: SUMMARY_COLOR,
-        letterSpacing: 0.5
+        letterSpacing: 0.5,
+        textAlign: isRTL ? 'right' : 'left'
       },
       summaryDebugLink: {
         fontSize: 13,
@@ -117769,7 +117782,8 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         fontSize: 11,
         fontWeight: '700',
         color: '#33B679',
-        letterSpacing: 0.8
+        letterSpacing: 0.8,
+        textAlign: isRTL ? 'right' : 'left'
       },
       entriesStripCount: {
         fontSize: 12,
@@ -117796,7 +117810,8 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         fontSize: 11,
         fontWeight: '700',
         color: GOAL_COLOR,
-        letterSpacing: 0.8
+        letterSpacing: 0.8,
+        textAlign: isRTL ? 'right' : 'left'
       },
       pinnedGoalsToggle: {
         minHeight: 22,
@@ -117878,7 +117893,8 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         fontSize: 11,
         fontWeight: '700',
         color: '#039BE5',
-        letterSpacing: 0.5
+        letterSpacing: 0.5,
+        textAlign: isRTL ? 'right' : 'left'
       },
       planBlock: {
         paddingVertical: 10,
@@ -120078,6 +120094,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       ...patch
     }));
     var styles = makeStyles(colors, direction);
+    var rowChevron = direction === 'rtl' ? '‹' : '›';
     function handleLanguageChange(_x) {
       return _handleLanguageChange.apply(this, arguments);
     }
@@ -120632,7 +120649,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
                 color: colors.accent
               }) : /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
                 style: styles.chevron,
-                children: "\u203A"
+                children: rowChevron
               })]
             }), settings.debugMode && /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.TouchableOpacity, {
               style: [styles.row, styles.rowBorder],
@@ -120651,7 +120668,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
                 color: colors.accent
               }) : /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
                 style: styles.chevron,
-                children: "\u203A"
+                children: rowChevron
               })]
             })]
           }), settings.debugMode && /*#__PURE__*/(0, _jsxRuntime.jsxs)(_jsxRuntime.Fragment, {
@@ -120683,7 +120700,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
                   children: t('Run full diagnostic')
                 }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
                   style: styles.chevron,
-                  children: "\u203A"
+                  children: rowChevron
                 })]
               }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.TouchableOpacity, {
                 style: [styles.row, styles.rowBorder],
@@ -120700,7 +120717,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
                   children: t('Reschedule now')
                 }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
                   style: styles.chevron,
-                  children: "\u203A"
+                  children: rowChevron
                 })]
               }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.TouchableOpacity, {
                 style: [styles.row, styles.rowBorder],
@@ -120717,7 +120734,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
                   children: t('Send test notification')
                 }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
                   style: styles.chevron,
-                  children: "\u203A"
+                  children: rowChevron
                 })]
               }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.TouchableOpacity, {
                 style: [styles.row, styles.rowBorder],
@@ -120744,7 +120761,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
                   children: t('Open alarm settings')
                 }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
                   style: styles.chevron,
-                  children: "\u203A"
+                  children: rowChevron
                 })]
               }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.TouchableOpacity, {
                 style: [styles.row, styles.rowBorder],
@@ -120754,7 +120771,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
                   children: t('Open app notification settings')
                 }), /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
                   style: styles.chevron,
-                  children: "\u203A"
+                  children: rowChevron
                 })]
               })]
             })]
@@ -120815,7 +120832,8 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         fontSize: 13,
         fontWeight: '700',
         color: colors.accent,
-        letterSpacing: 0.5
+        letterSpacing: 0.5,
+        textAlign: isRTL ? 'right' : 'left'
       },
       chevron: {
         fontSize: 11,
@@ -120823,13 +120841,14 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       },
       sectionLabel: {
         fontSize: 11,
-        fontWeight: '500',
+        fontWeight: '700',
         color: colors.textSecondary,
         marginBottom: 4,
         marginTop: 6,
         marginLeft: isRTL ? 0 : 4,
         marginRight: isRTL ? 4 : 0,
-        letterSpacing: 0.3
+        letterSpacing: 0.3,
+        textAlign: isRTL ? 'right' : 'left'
       },
       card: {
         backgroundColor: colors.surface,
