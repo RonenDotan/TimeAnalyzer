@@ -7,92 +7,120 @@ See `AGENTS.md` for full architecture reference, `CLAUDE.md` for Claude-specific
 
 ## Last updated
 
-- **Date:** 2026-05-12
-- **Updated by:** Codex
-- **Switching to:** Claude / next agent
+- **Date:** 2026-05-14
+- **Updated by:** Claude
+- **Switching to:** Codex
 
 ---
 
 ## Current branch
 
-`ticket-31-end-of-day-summary`
+`main`
 
-Branched from current `main` after ticket #39 was merged.
+Ticket #41 (`ticket-41-unify-ui`) was fully merged to main and pushed.
+Tag `v0.0.40-pre-ui-unify` marks the last commit on main *before* the UI unification work — use it to restore the old look if needed.
 
 ---
 
 ## Current ticket
 
-**#31 - AI: End-of-day synthesis — daily debrief paragraph**
+**#41 — Unify UI elements across all screens** — **DONE, merged to main**
 
-- GitHub: https://github.com/RonenDotan/TimeAnalyzer/issues/31
-- Project status: **In Progress**
-- Version: `v0.0.31.3`
-- `version.json`: `major=0`, `minor=0`, `ticket_id=31`, `sequence=3`
+- GitHub: https://github.com/RonenDotan/TimeAnalyzer/issues/41
+- Status: should be closed on GitHub (set to Closed / Pending Closure)
+- Version: `v0.0.41.14`
+- `version.json`: `major=0`, `minor=0`, `ticket_id=41`, `sequence=14`
 
 ---
 
-## What changed
+## What changed (ticket #41 — full summary)
 
-- Added daily summary persistence:
-  - New `daily_summaries` SQLite table in schema version 7.
-  - Table columns: `id`, `date`, `summary_json`, `generated_at`.
-  - Added issue #31 comment with the table structure:
-    - https://github.com/RonenDotan/TimeAnalyzer/issues/31#issuecomment-4428002056
-  - Added `DailySummary` types.
-  - Added `DailySummariesProvider` and SQLite implementation.
-- Added daily summary generation flow:
-  - New `DailySummaryService`.
-  - Reads entries, day plan blocks, calendar plan blocks, and active goals for a date.
-  - Renders the default prompt for prompt action `2` (`daily_summary`).
-  - Calls `AnalysisService.generateJson()`.
-  - Saves normalized JSON to `daily_summaries`.
-  - Can read one saved summary or list all saved summaries.
-- Extended analysis providers:
-  - Added generic `generateJson(prompt, maxTokens?)` to the analysis provider interface.
-  - Claude/OpenAI providers now share this path with goal contribution parsing.
-  - Daily summaries request up to 1200 tokens.
-- Added debug UI:
-  - `ReportScreen` shows `✨ Generate Summary` only when `debugMode=true`.
-  - Generated/saved summary is shown in a modal.
-  - New `DailySummariesScreen` lists all saved summaries by date.
-  - Drawer `DEBUG` section includes `Daily Summaries`.
-- Updated `version.json` to ticket #31 sequence 3.
-- Android JS bundle regenerated.
-- Backup created before handoff edit:
-  - `HANDOFF.md.backup-2026-05-12-codex-ticket31`
+### Shared components extracted
+- `src/components/ScreenHeader.tsx` — used by every screen. Props: title, onLeft, leftLabel, leftIcon, onRight, rightLabel, rightColor.
+- `src/components/DateNavigator.tsx` — prev/next day row, used by ReportScreen and DayPlanScreen.
+- `src/components/GoalCard.tsx` — compact goal row with progress bar and overdue indicator.
+
+### ReportScreen (Entries screen)
+- Title changed from "TimeAnalyzer" to "Entries".
+- Active Goals, Plan, and Entries each start **collapsed** as a single-line strip (label + count/coverage + `›` chevron). Tap to expand in-place.
+  - Goals strip: `🎯 ACTIVE GOALS (N) ›` → expands to show up to 2 goals + "Show N more" inner accordion.
+  - Plan strip: `📅 PLAN (covered/total) ›` → expands to show plan blocks. **Tapping the expanded body navigates to edit plan.** Inner "Show N more" accordion for overflow.
+  - Entries strip: `📋 ENTRIES (N) ›` → expands to show up to 2 entries + "Show N more" inner accordion. Color: `#33B679` green.
+- Entry ID (`#N`) hidden in normal mode, shown only in `debugMode`.
+- Date nav format: compact ("Today" / "Yesterday" / "Mon, May 13").
+- All sections collapse back to strip on day navigation.
+
+### EntryDetailScreen (single entry)
+- Header title: `May 14  10:00–12:00` (date + time range). Entry ID shown in small grey row only in `debugMode`.
+- TIME RANGE and TRANSCRIPT merged into **one green box** (`#33B679` tint background, left accent stripe) with a hairline divider between them.
+- All colors use `#33B679` (entry green), not `colors.accent` (system blue).
+- `debugMode` prop added (passed from ReportScreen).
+
+### GoalsScreen
+- Removed `borderWidth: 1` outer border from each goal card. Left accent stripe (`borderLeftWidth: 4`) kept.
+
+### DayPlanScreen
+- Global Save button removed; each plan block autosaves.
+- Dictate section hidden in non-debug mode.
+
+### DevSeedService
+- New `src/services/DevSeedService.ts` — seeds mock data (4 goals, plan blocks, 5 check-in entries, contributions, summary).
+- Triggered from debug drawer with a confirmation alert.
+- Only available when `__DEV__ && debugMode`.
+
+### SettingsScreen
+- Minor layout normalization to match system spacing.
+
+### Infra
+- `tmp/` added to `.gitignore` (was accidentally tracked).
+- `scripts/build-and-install.ps1` updated.
+- All 110 tests passing.
 
 ---
 
 ## Verification
 
-- TypeScript passed:
-  - `$env:Path = 'C:\Program Files\nodejs;' + $env:Path; .\node_modules\.bin\tsc.cmd --noEmit`
-- Tests passed:
-  - `$env:Path = 'C:\Program Files\nodejs;' + $env:Path; npm test -- --watchAll=false`
-  - 10 suites passed, 107 tests passed.
-  - Jest still prints the existing open-handle warning after completion.
-- JS bundle passed:
-  - `npx react-native bundle --platform android --dev true --entry-file index.js --bundle-output android/app/src/main/assets/index.android.bundle --assets-dest android/app/src/main/res`
-- Build/install passed:
-  - `.\gradlew.bat app:installDebug` from `android/`
-  - Installed on emulator `Medium_Phone(AVD) - 16`.
-  - `JAVA_HOME=C:\Program Files\Android\Android Studio\jbr`
-  - `ANDROID_HOME=C:\Users\ronen\AppData\Local\Android\Sdk`
-- APK copied to:
-  - `C:\Users\ronen\Desktop\TimeAnalyzer\apk\TimeAnalyzer_v0.0.31.3_2026-05-12_09-55.apk`
+- TypeScript: `npx tsc --noEmit` — clean
+- Tests: 110 passed, 11 suites
+- Bundle: JS bundled (production, `--dev false`)
+- Build: `gradlew app:installDebug` — BUILD SUCCESSFUL
+- APK: `TimeAnalyzer_v0.0.41.14_2026-05-14_10-53.apk` in `C:\Users\ronen\Desktop\TimeAnalyzer\apk\`
+- Installed on emulator
 
 ---
 
-## Peer Review
+## 🤣 Peer Review
 
-Claude added two daily summary prompts and a schema migration, then left Codex to wire the actual button, provider plumbing, storage service, modal, list screen, build, handoff, and emotional support for JSON parsing. Excellent division of labor: one agent wrote the poetry, the other installed the plumbing under the sink.
+Codex left a HANDOFF.md frozen in the era of ticket #31, heroically describing a daily summary screen that had since been shipped, iterated, and forgotten while three more tickets came and went. The document confidently listed "next steps" that were completed two weeks ago. Truly a time capsule. A monument to "I'll update the docs later."
+
+Meanwhile, ticket #41 involved Claude extracting shared components, applying them across six screens, building a two-level accordion system, fixing colors that somehow used system blue where entry-green was needed, and updating the handoff document like a responsible adult.
+
+The emulator was also asked to install the APK eleven times in a single session. It complied without complaint. Good emulator.
 
 ---
 
 ## Next steps
 
-1. On emulator, enable debug mode if needed and open the entries screen.
-2. Tap `✨ Generate Summary` on a day with entries, plan blocks, and active goals.
-3. Confirm the modal shows the generated debrief and the drawer `Daily Summaries` screen lists the saved row.
-4. Consider adding a non-debug end-of-day surface once the prompt and saved summary shape are validated.
+1. **Close ticket #41** on GitHub — set status to Closed.
+2. **Pick the next ticket** from the project board: https://github.com/users/RonenDotan/projects/1
+3. Branch from `main` as `ticket-{id}-{short-title}`.
+4. Update `version.json`: set `ticket_id` to new ticket number, reset `sequence=1`.
+5. If seeding mock data for testing, use the debug drawer → "Seed Mock Data" button (debug mode must be on).
+
+---
+
+## Key file locations
+
+| Thing | Where |
+|---|---|
+| Shared header | `src/components/ScreenHeader.tsx` |
+| Shared date nav | `src/components/DateNavigator.tsx` |
+| Shared goal card | `src/components/GoalCard.tsx` |
+| Mock data seeder | `src/services/DevSeedService.ts` |
+| Theme colors | `src/contexts/ThemeContext.tsx` |
+| Entry green | `#33B679` (not `colors.accent` which is `#007AFF` blue) |
+| Goal/orange | `#F97316` (GOAL_COLOR) |
+| Plan/blue | `#039BE5` |
+| Summary/amber | `#F5A623` |
+| Build flow | See AGENTS.md → "Full build and sync flow" |
+| Pre-UI tag | `git checkout v0.0.40-pre-ui-unify` |
