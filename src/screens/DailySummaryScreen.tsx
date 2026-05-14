@@ -12,6 +12,8 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import DateNavigator from '../components/DateNavigator';
+import ScreenHeader from '../components/ScreenHeader';
 import DailySummaryService from '../services/DailySummaryService';
 import { DailySummaryResult } from '../types/DailySummary';
 import { ColorPalette, useTheme } from '../contexts/ThemeContext';
@@ -25,14 +27,6 @@ const SUMMARY_COLOR = '#F5A623';
 
 function startOfDay(date: Date): Date {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
-}
-
-function formatDayHeader(date: Date): string {
-  return date.toLocaleDateString('en-US', {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-  });
 }
 
 function formatGeneratedAt(ts: number): string {
@@ -130,23 +124,14 @@ export default function DailySummaryScreen({ initialDate, onClose }: Props) {
     <KeyboardAvoidingView
       style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={onClose}>
-          <Text style={styles.headerBtn}>Close</Text>
-        </TouchableOpacity>
-        <Text style={styles.title}>Daily Summary</Text>
-        <View style={styles.headerSpacer} />
-      </View>
+      <ScreenHeader title="Daily Summary" onLeft={onClose} />
 
-      <View style={styles.dayNav}>
-        <TouchableOpacity onPress={goToPrevDay} style={styles.navBtn}>
-          <Text style={styles.navArrow}>{'<'}</Text>
-        </TouchableOpacity>
-        <Text style={styles.dayLabel}>{formatDayHeader(currentDate)}</Text>
-        <TouchableOpacity onPress={goToNextDay} style={styles.navBtn} disabled={!canGoForward}>
-          <Text style={[styles.navArrow, !canGoForward && styles.navArrowDisabled]}>{'>'}</Text>
-        </TouchableOpacity>
-      </View>
+      <DateNavigator
+        date={currentDate}
+        onPrev={goToPrevDay}
+        onNext={goToNextDay}
+        disableNext={!canGoForward}
+      />
 
       {loading ? (
         <View style={styles.centeredFull}>
@@ -238,33 +223,6 @@ export default function DailySummaryScreen({ initialDate, onClose }: Props) {
 function makeStyles(colors: ColorPalette) {
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
-    header: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      paddingHorizontal: 12,
-      paddingVertical: 6,
-      backgroundColor: colors.surface,
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: colors.border,
-    },
-    headerBtn: { fontSize: 15, color: colors.textSecondary },
-    title: { fontSize: 16, fontWeight: '700', color: colors.text },
-    headerSpacer: { width: 44 },
-    dayNav: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      paddingHorizontal: 6,
-      paddingVertical: 6,
-      backgroundColor: colors.surface,
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: colors.border,
-    },
-    navBtn: { paddingHorizontal: 8, paddingVertical: 3 },
-    navArrow: { fontSize: 22, color: SUMMARY_COLOR, fontWeight: '500' },
-    navArrowDisabled: { color: colors.border },
-    dayLabel: { fontSize: 14, fontWeight: '600', color: colors.text },
     centeredFull: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     body: { padding: 16, gap: 12, paddingBottom: 40 },
     summaryCard: {

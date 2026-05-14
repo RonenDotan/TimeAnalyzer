@@ -13,6 +13,7 @@ import {
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import DictateBar from '../components/DictateBar';
+import ScreenHeader from '../components/ScreenHeader';
 import TranscriptionService from '../services/TranscriptionService';
 import GoalsService from '../services/GoalsService';
 import { Goal, GoalStatus, isGoalOverdue } from '../types/Goal';
@@ -376,14 +377,7 @@ export default function GoalsScreen({ onClose, initialGoalId }: Props) {
       style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
 
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={onClose}>
-          <Text style={styles.cancel}>Close</Text>
-        </TouchableOpacity>
-        <Text style={styles.title}>Goals</Text>
-        <View style={styles.headerSpacer} />
-      </View>
+      <ScreenHeader title="Goals" onLeft={onClose} />
 
       {/* Filter tabs */}
       <View style={styles.filterRow}>
@@ -565,33 +559,22 @@ export default function GoalsScreen({ onClose, initialGoalId }: Props) {
 function makeStyles(colors: ColorPalette) {
   return StyleSheet.create({
     container:      { flex: 1, backgroundColor: colors.background },
-    header: {
-      flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-      paddingHorizontal: 16, paddingVertical: 12,
-      backgroundColor: colors.surface,
-      borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border,
-    },
-    title:          { fontSize: 17, fontWeight: '600', color: colors.text },
-    cancel:         { fontSize: 17, color: colors.textSecondary },
-    headerSpacer:   { width: 50 },
     filterRow: {
       flexDirection: 'row', backgroundColor: colors.surface,
       borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border,
     },
-    filterTab: { flex: 1, paddingVertical: 10, alignItems: 'center' },
+    filterTab: { flex: 1, minHeight: 44, paddingVertical: 7, alignItems: 'center', justifyContent: 'center' },
     filterTabActive: { borderBottomWidth: 2, borderBottomColor: GOAL_COLOR },
     filterTabText: { fontSize: 13, color: colors.textSecondary },
     filterTabTextActive: { color: GOAL_COLOR, fontWeight: '600' },
-    body:           { padding: 16, gap: 10, paddingBottom: 40 },
+    body:           { paddingHorizontal: 16, paddingTop: 16, gap: 12, paddingBottom: 40 },
     goalCard: {
-      backgroundColor: GOAL_COLOR + '0c', borderRadius: 12, padding: 14, gap: 8,
+      backgroundColor: GOAL_COLOR + '10', borderRadius: 8, padding: 12, gap: 8,
       borderLeftWidth: 4,
-      borderWidth: 1,
-      borderColor: GOAL_COLOR + '60',
+      borderLeftColor: GOAL_COLOR,
     },
     goalCardOverdue: {
       backgroundColor: OVERDUE_COLOR + '16',
-      borderColor: OVERDUE_COLOR + '60',
     },
     goalMain:       { gap: 6 },
     goalText:       { fontSize: 15, color: colors.text, lineHeight: 22 },
@@ -630,10 +613,10 @@ function makeStyles(colors: ColorPalette) {
     deleteBtn:      { paddingHorizontal: 8, paddingVertical: 6, marginLeft: 'auto' },
     deleteText:     { fontSize: 14, color: '#FF5252' },
     recordingLabel: { fontSize: 12, color: colors.recordBtn, fontStyle: 'italic' },
-    emptyHint:      { textAlign: 'center', color: colors.placeholder, fontSize: 14, marginTop: 24 },
+    emptyHint:      { textAlign: 'center', color: colors.placeholder, fontSize: 14, marginTop: 8 },
     addCard: {
-      backgroundColor: GOAL_COLOR + '0c', borderRadius: 12, padding: 14, gap: 10,
-      borderStyle: 'dashed', borderWidth: 1, borderColor: GOAL_COLOR + '60',
+      backgroundColor: GOAL_COLOR + '10', borderRadius: 8, padding: 12, gap: 8,
+      borderLeftWidth: 4, borderWidth: 1, borderColor: GOAL_COLOR + '60',
     },
     addCardLabel: {
       fontSize: 11, fontWeight: '700', color: GOAL_COLOR, letterSpacing: 0.5,
@@ -651,10 +634,12 @@ function makeStyles(colors: ColorPalette) {
     },
     dateField: {
       flex: 1,
-      backgroundColor: colors.surfaceSecondary,
+      backgroundColor: colors.background,
       borderRadius: 8,
       padding: 8,
       gap: 6,
+      borderWidth: 1,
+      borderColor: colors.border,
     },
     dateFieldTop: {
       flexDirection: 'row',

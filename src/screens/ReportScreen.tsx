@@ -14,8 +14,11 @@ import EntryDetailScreen from './EntryDetailScreen';
 import StorageService from '../services/StorageService';
 import GoalsService from '../services/GoalsService';
 import DailySummaryService from '../services/DailySummaryService';
+import DateNavigator from '../components/DateNavigator';
+import GoalCard from '../components/GoalCard';
+import ScreenHeader from '../components/ScreenHeader';
 import { LogEntry } from '../types/LogEntry';
-import { Goal, GoalEntryContribution, isGoalOverdue } from '../types/Goal';
+import { Goal, GoalEntryContribution } from '../types/Goal';
 import { DailySummaryResult } from '../types/DailySummary';
 
 const GOAL_COLOR = '#F97316';
@@ -46,14 +49,6 @@ function endOfDay(date: Date): Date {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
 }
 
-function formatDayHeader(date: Date): string {
-  return date.toLocaleDateString('en-US', {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-  });
-}
-
 function formatTime(ts: number): string {
   const d = new Date(ts);
   return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
@@ -66,6 +61,21 @@ function isToday(date: Date): boolean {
     date.getMonth() === today.getMonth() &&
     date.getDate() === today.getDate()
   );
+}
+
+function formatDayHeader(date: Date): string {
+  const today = new Date();
+  const todayStart = startOfDay(today).getTime();
+  const dateStart = startOfDay(date).getTime();
+  const diffDays = Math.round((dateStart - todayStart) / 86_400_000);
+  if (diffDays === 0) return 'Today';
+  if (diffDays === -1) return 'Yesterday';
+  if (diffDays === 1) return 'Tomorrow';
+  return date.toLocaleDateString('en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+  });
 }
 
 export default function ReportScreen({
@@ -87,7 +97,12 @@ export default function ReportScreen({
   const [dayPlan, setDayPlan] = useState<DayPlan | null>(null);
   const [planBlocks, setPlanBlocks] = useState<PlanBlock[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
+  const [goalsOpen, setGoalsOpen] = useState(false);
   const [goalsExpanded, setGoalsExpanded] = useState(false);
+  const [planOpen, setPlanOpen] = useState(false);
+  const [planExpanded, setPlanExpanded] = useState(false);
+  const [entriesOpen, setEntriesOpen] = useState(false);
+  const [entriesExpanded, setEntriesExpanded] = useState(false);
   const [entryContributions, setEntryContributions] = useState<Record<number, GoalEntryContribution[]>>({});
   const [summary, setSummary] = useState<DailySummaryResult | null>(null);
 
@@ -128,18 +143,29 @@ export default function ReportScreen({
   }, [currentDate, loadEntries]);
 
   function goToPrevDay() {
-    setGoalsExpanded(false);
+    setGoalsOpen(false); setGoalsExpanded(false);
+    setPlanOpen(false); setPlanExpanded(false);
+    setEntriesOpen(false); setEntriesExpanded(false);
     setCurrentDate(d => new Date(d.getTime() - 86_400_000));
   }
 
   function goToNextDay() {
-    setGoalsExpanded(false);
+    setGoalsOpen(false); setGoalsExpanded(false);
+    setPlanOpen(false); setPlanExpanded(false);
+    setEntriesOpen(false); setEntriesExpanded(false);
     setCurrentDate(d => new Date(d.getTime() + 86_400_000));
   }
 
+  const ENTRIES_COLLAPSED_COUNT = 2;
+  const PLAN_COLLAPSED_COUNT = 2;
+  const coveredCount = planBlocks.filter(b => isCovered(b, entries)).length;
   const canGoForward = !isToday(currentDate);
   const visibleGoals = goalsExpanded ? goals : goals.slice(0, PINNED_GOALS_COLLAPSED_COUNT);
   const hiddenGoalCount = Math.max(0, goals.length - PINNED_GOALS_COLLAPSED_COUNT);
+  const visiblePlanBlocks = planExpanded ? planBlocks : planBlocks.slice(0, PLAN_COLLAPSED_COUNT);
+  const hiddenPlanCount = Math.max(0, planBlocks.length - PLAN_COLLAPSED_COUNT);
+  const visibleEntries = entriesExpanded ? entries : entries.slice(0, ENTRIES_COLLAPSED_COUNT);
+  const hiddenEntryCount = Math.max(0, entries.length - ENTRIES_COLLAPSED_COUNT);
   const styles = makeStyles(colors, calendarColor);
 
   function handleEntrySaved(updated: LogEntry) {
@@ -153,6 +179,7 @@ export default function ReportScreen({
         entry={selectedEntry}
         onSave={handleEntrySaved}
         onClose={() => setSelectedEntry(null)}
+        debugMode={debugMode}
       />
     );
   }
@@ -161,68 +188,15 @@ export default function ReportScreen({
     <KeyboardAvoidingView
       style={[styles.container, { paddingTop: insets.top }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <View style={styles.topBar}>
-        <TouchableOpacity onPress={onOpenMenu} style={styles.menuBtn}>
-          <Text style={styles.menuIcon}>☰</Text>
-        </TouchableOpacity>
-        <Text style={styles.appTitle}>TimeAnalyzer</Text>
-        <View style={styles.topBarSpacer} />
-      </View>
+      <ScreenHeader title="Entries" onLeft={onOpenMenu} leftIcon="hamburger" leftLabel="Menu" />
 
-      <View style={styles.dayNav}>
-        <TouchableOpacity onPress={goToPrevDay} style={styles.navBtn}>
-          <Text style={styles.navArrow}>{'‹'}</Text>
-        </TouchableOpacity>
-        <Text style={styles.dayLabel}>{formatDayHeader(currentDate)}</Text>
-        <TouchableOpacity
-          onPress={goToNextDay}
-          style={styles.navBtn}
-          disabled={!canGoForward}>
-          <Text style={[styles.navArrow, !canGoForward && styles.navArrowDisabled]}>{'›'}</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Pinned active goals — always visible above plan/entries */}
-      {!loading && goals.length > 0 && (
-        <View style={styles.pinnedGoals}>
-          <View style={styles.pinnedGoalsTop}>
-            <Text style={styles.pinnedGoalsHeader}>🎯  ACTIVE GOALS</Text>
-            {hiddenGoalCount > 0 && (
-              <TouchableOpacity onPress={() => setGoalsExpanded(prev => !prev)} style={styles.pinnedGoalsToggle}>
-                <Text style={styles.pinnedGoalsToggleText}>
-                  {goalsExpanded ? 'Show less' : `Show ${hiddenGoalCount} more`}
-                </Text>
-              </TouchableOpacity>
-            )}
-          </View>
-          {visibleGoals.map(goal => {
-            const overdue = isGoalOverdue(goal, endOfDay(currentDate).getTime());
-            const goalColor = overdue ? OVERDUE_COLOR : GOAL_COLOR;
-            return (
-            <TouchableOpacity
-              key={goal.id}
-              style={[styles.pinnedGoalRow, overdue && styles.pinnedGoalRowOverdue]}
-              onPress={() => onOpenGoal?.(goal.id)}
-              activeOpacity={0.85}>
-              <View style={styles.pinnedGoalInfo}>
-                <Text style={styles.pinnedGoalText} numberOfLines={1}>{goal.text}</Text>
-                <View style={styles.pinnedBarBg}>
-                  <View style={[styles.pinnedBarFill, { width: `${goal.progress}%` as any, backgroundColor: goalColor }]} />
-                </View>
-                {goal.targetAt !== null && (
-                  <Text style={[styles.pinnedGoalDeadline, overdue && styles.pinnedGoalOverdueText]}>
-                    📅 {new Date(goal.targetAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                  </Text>
-                )}
-                {overdue && <Text style={styles.pinnedGoalOverdueText}>Overdue</Text>}
-              </View>
-              <Text style={[styles.pinnedGoalPct, { color: goalColor }]}>{goal.progress}%</Text>
-            </TouchableOpacity>
-            );
-          })}
-        </View>
-      )}
-
+      <DateNavigator
+        date={currentDate}
+        onPrev={goToPrevDay}
+        onNext={goToNextDay}
+        formatLabel={formatDayHeader}
+        disableNext={!canGoForward}
+      />
 
       {loading ? (
         <View style={styles.centeredFull}>
@@ -230,6 +204,163 @@ export default function ReportScreen({
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.list}>
+          {/* Active Goals */}
+          {goals.length > 0 && (
+            <View style={styles.pinnedGoals}>
+              <TouchableOpacity style={styles.sectionStripRow} onPress={() => setGoalsOpen(prev => !prev)} activeOpacity={0.85}>
+                <Text style={styles.pinnedGoalsHeader}>🎯  ACTIVE GOALS</Text>
+                <Text style={styles.goalsStripCount}>{goals.length}</Text>
+                <Text style={styles.goalsStripChevron}>{goalsOpen ? '⌄' : '›'}</Text>
+              </TouchableOpacity>
+              {goalsOpen && (
+                <>
+                  {visibleGoals.map((goal, index) => (
+                    <GoalCard
+                      key={goal.id ?? `goal-${index}-${goal.text}`}
+                      goal={goal}
+                      asOf={endOfDay(currentDate).getTime()}
+                      onPress={() => onOpenGoal?.(goal.id)}
+                    />
+                  ))}
+                  {hiddenGoalCount > 0 && (
+                    <TouchableOpacity onPress={() => setGoalsExpanded(prev => !prev)} style={styles.pinnedGoalsToggle}>
+                      <Text style={styles.pinnedGoalsToggleText}>
+                        {goalsExpanded ? 'Show less' : `Show ${hiddenGoalCount} more`}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </>
+              )}
+            </View>
+          )}
+
+          {/* Plan section */}
+          {planBlocks.length > 0 && (
+            <View style={styles.planSection}>
+              <TouchableOpacity style={styles.sectionStripRow} onPress={() => setPlanOpen(prev => !prev)} activeOpacity={0.85}>
+                <Text style={styles.planHeader}>📅  PLAN</Text>
+                <Text style={styles.planStripCount}>{coveredCount}/{planBlocks.length}</Text>
+                <Text style={styles.planStripChevron}>{planOpen ? '⌄' : '›'}</Text>
+              </TouchableOpacity>
+              {planOpen && (
+                <TouchableOpacity onPress={() => onEditPlan?.(currentDate)} activeOpacity={0.85}>
+                  {visiblePlanBlocks.map(block => {
+                    const covered = isCovered(block, entries);
+                    const isCalendar = block.source === 'calendar';
+                    const blockKey = block.id ?? `${block.source}-${block.startMin}-${block.endMin}-${block.activity}`;
+                    return (
+                      <View key={blockKey} style={styles.planBlock}>
+                        <View style={[
+                          styles.planDot,
+                          isCalendar
+                            ? styles.planDotCalendar
+                            : covered ? styles.planDotCovered : styles.planDotMissed,
+                        ]} />
+                        <Text style={styles.planTime}>{formatMin(block.startMin)}–{formatMin(block.endMin)}</Text>
+                        <Text style={[styles.planActivity, !covered && styles.planActivityMissed]}>
+                          {block.activity}{isCalendar ? ' 🗓' : ''}
+                        </Text>
+                      </View>
+                    );
+                  })}
+                  {hiddenPlanCount > 0 && (
+                    <TouchableOpacity onPress={e => { e.stopPropagation?.(); setPlanExpanded(prev => !prev); }} style={styles.pinnedGoalsToggle}>
+                      <Text style={styles.pinnedGoalsToggleText}>
+                        {planExpanded ? 'Show less' : `Show ${hiddenPlanCount} more`}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                  <Text style={styles.planCoverage}>
+                    {coveredCount}/{planBlocks.length} blocks covered
+                    {coveredCount < planBlocks.length ? `  ·  ${planBlocks.length - coveredCount} missed` : '  ✓'}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+
+          {/* Check-in Entries */}
+          {entries.length === 0 ? (
+            <View style={styles.centered}>
+              <Text style={styles.emptyText}>No entries for this day</Text>
+            </View>
+          ) : (
+            <View style={styles.entriesSection}>
+              <TouchableOpacity style={styles.sectionStripRow} onPress={() => setEntriesOpen(prev => !prev)} activeOpacity={0.85}>
+                <Text style={styles.entriesHeader}>📋  ENTRIES</Text>
+                <Text style={styles.entriesStripCount}>{entries.length}</Text>
+                <Text style={styles.entriesStripChevron}>{entriesOpen ? '⌄' : '›'}</Text>
+              </TouchableOpacity>
+              {entriesOpen && (
+                <>
+                  {visibleEntries.map((entry, index) => {
+                    const matched = planBlocks.length > 0 ? allMatchingBlocks(entry, planBlocks) : [];
+                    return (
+                      <TouchableOpacity
+                        key={entry.id ?? `entry-${index}-${entry.timestampStart}-${entry.timestampEnd}`}
+                        style={styles.entryCard}
+                        onPress={() => setSelectedEntry(entry)}>
+                        <View style={styles.entryCardHeader}>
+                          <Text style={styles.timeRange}>
+                            {formatTime(entry.timestampStart)} – {formatTime(entry.timestampEnd)}
+                          </Text>
+                          {debugMode && <Text style={styles.entryId}>#{entry.id}</Text>}
+                        </View>
+                        <Text style={styles.transcript}>{entry.transcript}</Text>
+                        {matched.length > 0 && (
+                          <Text style={styles.planTag}>→ {matched.map(b => b.activity).join(', ')}</Text>
+                        )}
+                        {entryContributions[entry.id] && entryContributions[entry.id].length > 0 && (
+                          <View style={styles.goalTagRow}>
+                            {entryContributions[entry.id].map((c, i) => (
+                              <TouchableOpacity
+                                key={i}
+                                style={styles.goalTag}
+                                onPress={event => {
+                                  event.stopPropagation();
+                                  onOpenGoal?.(c.goalId);
+                                }}>
+                                <Text style={styles.goalTagText} numberOfLines={1}>
+                                  🎯 {c.goalText}  +{c.contributionPct}%
+                                </Text>
+                              </TouchableOpacity>
+                            ))}
+                          </View>
+                        )}
+                        {debugMode && (
+                          <View style={styles.debugRow}>
+                            <Text style={styles.debugText}>
+                              synced: {entry.syncedAt !== null && entry.syncedAt >= entry.updatedAt ? 'yes' : 'no'}
+                            </Text>
+                            <Text style={styles.debugText}>
+                              upd: {new Date(entry.updatedAt).toLocaleTimeString()}
+                            </Text>
+                            {entry.syncedAt !== null && (
+                              <Text style={styles.debugText}>
+                                sync_at: {new Date(entry.syncedAt).toLocaleTimeString()}
+                              </Text>
+                            )}
+                            <Text style={styles.debugText}>
+                              status: {entry.status === 1 ? 'active' : 'del'}
+                            </Text>
+                          </View>
+                        )}
+                      </TouchableOpacity>
+                    );
+                  })}
+                  {hiddenEntryCount > 0 && (
+                    <TouchableOpacity onPress={() => setEntriesExpanded(prev => !prev)} style={styles.entriesToggle}>
+                      <Text style={styles.entriesToggleText}>
+                        {entriesExpanded ? 'Show less' : `Show ${hiddenEntryCount} more`}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </>
+              )}
+            </View>
+          )}
+
+          {/* Daily Summary — bottom */}
           <TouchableOpacity
             style={styles.summaryDebugCard}
             onPress={() => onOpenDailySummary?.(currentDate)}
@@ -242,103 +373,7 @@ export default function ReportScreen({
               {summary?.debrief || 'No summary yet'}
             </Text>
           </TouchableOpacity>
-          {/* Plan section — always shown if plan exists */}
-          {planBlocks.length > 0 && (() => {
-            const coveredCount = planBlocks.filter(b => isCovered(b, entries)).length;
-            return (
-              <TouchableOpacity
-                style={styles.planSection}
-                onPress={() => onEditPlan?.(currentDate)}
-                activeOpacity={0.85}>
-                <Text style={styles.planHeader}>PLAN  ›</Text>
-                {planBlocks.map(block => {
-                  const covered = isCovered(block, entries);
-                  const isCalendar = block.source === 'calendar';
-                  return (
-                    <View key={block.id} style={styles.planBlock}>
-                      <View style={[
-                        styles.planDot,
-                        isCalendar
-                          ? styles.planDotCalendar
-                          : covered ? styles.planDotCovered : styles.planDotMissed,
-                      ]} />
-                      <Text style={styles.planTime}>{formatMin(block.startMin)}–{formatMin(block.endMin)}</Text>
-                      <Text style={[styles.planActivity, !covered && styles.planActivityMissed]}>
-                        {block.activity}{isCalendar ? ' 🗓' : ''}
-                      </Text>
-                    </View>
-                  );
-                })}
-                <Text style={styles.planCoverage}>
-                  {coveredCount}/{planBlocks.length} blocks covered
-                  {coveredCount < planBlocks.length ? `  ·  ${planBlocks.length - coveredCount} missed` : '  ✓'}
-                </Text>
-              </TouchableOpacity>
-            );
-          })()}
 
-          {/* Entries */}
-          {entries.length === 0 ? (
-            <View style={styles.centered}>
-              <Text style={styles.emptyText}>No entries for this day</Text>
-            </View>
-          ) : (
-            entries.map(entry => {
-              const matched = planBlocks.length > 0 ? allMatchingBlocks(entry, planBlocks) : [];
-              return (
-                <TouchableOpacity
-                  key={entry.id}
-                  style={styles.entryCard}
-                  onPress={() => setSelectedEntry(entry)}>
-                  <View style={styles.entryCardHeader}>
-                    <Text style={styles.timeRange}>
-                      {formatTime(entry.timestampStart)} – {formatTime(entry.timestampEnd)}
-                    </Text>
-                    <Text style={styles.entryId}>#{entry.id}</Text>
-                  </View>
-                  <Text style={styles.transcript}>{entry.transcript}</Text>
-                  {matched.length > 0 && (
-                    <Text style={styles.planTag}>→ {matched.map(b => b.activity).join(', ')}</Text>
-                  )}
-                  {entryContributions[entry.id] && entryContributions[entry.id].length > 0 && (
-                    <View style={styles.goalTagRow}>
-                      {entryContributions[entry.id].map((c, i) => (
-                        <TouchableOpacity
-                          key={i}
-                          style={styles.goalTag}
-                          onPress={event => {
-                            event.stopPropagation();
-                            onOpenGoal?.(c.goalId);
-                          }}>
-                          <Text style={styles.goalTagText} numberOfLines={1}>
-                            🎯 {c.goalText}  +{c.contributionPct}%
-                          </Text>
-                        </TouchableOpacity>
-                      ))}
-                    </View>
-                  )}
-                  {debugMode && (
-                    <View style={styles.debugRow}>
-                      <Text style={styles.debugText}>
-                        synced: {entry.syncedAt !== null && entry.syncedAt >= entry.updatedAt ? 'yes' : 'no'}
-                      </Text>
-                      <Text style={styles.debugText}>
-                        upd: {new Date(entry.updatedAt).toLocaleTimeString()}
-                      </Text>
-                      {entry.syncedAt !== null && (
-                        <Text style={styles.debugText}>
-                          sync_at: {new Date(entry.syncedAt).toLocaleTimeString()}
-                        </Text>
-                      )}
-                      <Text style={styles.debugText}>
-                        status: {entry.status === 1 ? 'active' : 'del'}
-                      </Text>
-                    </View>
-                  )}
-                </TouchableOpacity>
-              );
-            })
-          )}
         </ScrollView>
       )}
 
@@ -390,12 +425,12 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
     centeredFull: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     centered: { alignItems: 'center', justifyContent: 'center', paddingVertical: 48 },
     emptyText: { fontSize: 16, color: colors.textSecondary },
-    list: { padding: 16, gap: 12, paddingBottom: 100 },
+    list: { paddingHorizontal: 16, paddingTop: 16, gap: 12, paddingBottom: 100 },
     summaryDebugCard: {
       backgroundColor: SUMMARY_COLOR + '18',
-      borderRadius: 12,
+      borderRadius: 8,
       padding: 12,
-      gap: 10,
+      gap: 8,
       borderLeftWidth: 4,
       borderLeftColor: SUMMARY_COLOR,
     },
@@ -455,8 +490,8 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
     entryId: { fontSize: 11, color: colors.border, fontWeight: '500' },
     entryCard: {
       backgroundColor: '#33B679' + '18',
-      borderRadius: 12,
-      padding: 16,
+      borderRadius: 8,
+      padding: 12,
       borderLeftWidth: 4,
       borderLeftColor: '#33B679',
       shadowColor: '#000',
@@ -481,20 +516,39 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
       elevation: 8,
     },
     fabIcon: { fontSize: 32, color: '#fff', lineHeight: 36 },
-    // Pinned goals strip — sits between dayNav and scroll content
-    pinnedGoals: {
-      backgroundColor: GOAL_COLOR + '12',
-      borderBottomWidth: 2,
-      borderBottomColor: GOAL_COLOR + '40',
-      paddingHorizontal: 12,
-      paddingVertical: 7,
-      gap: 5,
-    },
-    pinnedGoalsTop: {
+    sectionStripRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'space-between',
-      gap: 10,
+      gap: 8,
+    },
+    goalsStripCount: { fontSize: 12, fontWeight: '700', color: GOAL_COLOR },
+    goalsStripChevron: { fontSize: 20, color: GOAL_COLOR, lineHeight: 22 },
+    planStripCount: { fontSize: 12, fontWeight: '700', color: '#039BE5' },
+    planStripChevron: { fontSize: 20, color: '#039BE5', lineHeight: 22 },
+    entriesSection: {
+      backgroundColor: '#33B679' + '18',
+      borderRadius: 8,
+      padding: 12,
+      gap: 8,
+      borderLeftWidth: 4,
+      borderLeftColor: '#33B679',
+    },
+    entriesHeader: {
+      flex: 1,
+      fontSize: 11,
+      fontWeight: '700',
+      color: '#33B679',
+      letterSpacing: 0.8,
+    },
+    entriesStripCount: { fontSize: 12, fontWeight: '700', color: '#33B679' },
+    entriesStripChevron: { fontSize: 20, color: '#33B679', lineHeight: 22 },
+    pinnedGoals: {
+      backgroundColor: GOAL_COLOR + '10',
+      borderRadius: 8,
+      padding: 12,
+      gap: 8,
+      borderLeftWidth: 4,
+      borderLeftColor: GOAL_COLOR,
     },
     pinnedGoalsHeader: {
       flex: 1,
@@ -531,8 +585,8 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
     pinnedGoalPct: { fontSize: 12, fontWeight: '700', color: GOAL_COLOR, minWidth: 34, textAlign: 'right' },
     planSection: {
       backgroundColor: '#039BE5' + '18',
-      borderRadius: 12,
-      padding: 14,
+      borderRadius: 8,
+      padding: 12,
       gap: 8,
       borderLeftWidth: 4,
       borderLeftColor: '#039BE5',
@@ -575,5 +629,16 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
       borderTopColor: colors.border,
     },
     debugText: { fontSize: 11, color: colors.textSecondary, fontFamily: 'monospace' },
+    entriesToggle: {
+      alignSelf: 'flex-start',
+      minHeight: 22,
+      justifyContent: 'center',
+      paddingHorizontal: 4,
+    },
+    entriesToggleText: {
+      fontSize: 12,
+      color: '#33B679',
+      fontWeight: '700',
+    },
   });
 }

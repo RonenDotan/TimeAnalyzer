@@ -23,6 +23,7 @@ import { Goal, GoalEntryContribution } from '../types/Goal';
 
 const GOAL_COLOR = '#F97316';
 import DictateBar from '../components/DictateBar';
+import ScreenHeader from '../components/ScreenHeader';
 import SettingsService from '../services/SettingsService';
 import NoteDetailScreen from './NoteDetailScreen';
 import { applyTranscription } from '../utils/parseTranscript';
@@ -32,9 +33,16 @@ interface Props {
   entry: LogEntry;
   onSave: (updated: LogEntry) => void;
   onClose: () => void;
+  debugMode?: boolean;
 }
 
 type ActiveTimePicker = 'start' | 'end' | null;
+
+function formatEntryTitle(entry: { timestampStart: number; timestampEnd: number }): string {
+  const d = new Date(entry.timestampStart);
+  const date = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  return `${date}  ${tsToTimeString(entry.timestampStart)}–${tsToTimeString(entry.timestampEnd)}`;
+}
 
 function tsToTimeString(ts: number): string {
   const d = new Date(ts);
@@ -57,7 +65,7 @@ function timeStringToDate(timeStr: string, fallbackTs: number): Date {
   return new Date(ts ?? fallbackTs);
 }
 
-export default function EntryDetailScreen({ entry, onSave, onClose }: Props) {
+export default function EntryDetailScreen({ entry, onSave, onClose, debugMode = false }: Props) {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const [editing, setEditing] = useState(false);
@@ -269,26 +277,20 @@ export default function EntryDetailScreen({ entry, onSave, onClose }: Props) {
     <KeyboardAvoidingView
       style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={editing ? handleCancel : onClose}>
-          <Text style={styles.headerBtn}>{editing ? 'Cancel' : 'Back'}</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>
-          Entry <Text style={styles.headerId}>#{entry.id}</Text>
-        </Text>
-        {editing ? (
-          <TouchableOpacity onPress={handleSave}>
-            <Text style={[styles.headerBtn, styles.saveBtn]}>Save</Text>
-          </TouchableOpacity>
-        ) : (
-          <TouchableOpacity onPress={() => setEditing(true)}>
-            <Text style={[styles.headerBtn, styles.editBtn]}>Edit</Text>
-          </TouchableOpacity>
-        )}
-      </View>
+      <ScreenHeader
+        title={formatEntryTitle(entry)}
+        onLeft={editing ? handleCancel : onClose}
+        leftLabel={editing ? 'Cancel' : 'Back'}
+        onRight={editing ? handleSave : () => setEditing(true)}
+        rightLabel={editing ? 'Save' : 'Edit'}
+        rightColor={editing ? colors.accent : undefined}
+      />
+      {debugMode && (
+        <Text style={styles.debugEntryId}>#{entry.id}</Text>
+      )}
 
       <ScrollView contentContainerStyle={styles.body}>
-        {/* Time range */}
+        {/* Time range + Transcript — combined green box */}
         <View style={styles.section}>
           <Text style={styles.label}>TIME RANGE</Text>
           <View style={styles.timeRow}>
@@ -308,10 +310,9 @@ export default function EntryDetailScreen({ entry, onSave, onClose }: Props) {
               </Text>
             )}
           </View>
-        </View>
 
-        {/* Transcript */}
-        <View style={styles.section}>
+          <View style={styles.sectionDivider} />
+
           <Text style={styles.label}>TRANSCRIPT</Text>
           {editing ? (
             <>
@@ -512,23 +513,23 @@ export default function EntryDetailScreen({ entry, onSave, onClose }: Props) {
 
 function makeStyles(colors: ColorPalette) {
   return StyleSheet.create({
-    container: { flex: 1, backgroundColor: colors.background },
-    header: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      paddingHorizontal: 16,
-      paddingVertical: 12,
-      backgroundColor: '#33B679' + '18',
-      borderBottomWidth: 2,
-      borderBottomColor: '#33B679',
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
     },
-    headerTitle: { fontSize: 17, fontWeight: '600', color: colors.text },
-    headerId: { fontSize: 13, fontWeight: '400', color: colors.border },
-    headerBtn: { fontSize: 17, color: '#33B679' },
-    editBtn: { color: '#33B679' },
-    saveBtn: { fontWeight: '600' },
+    debugEntryId: {
+      fontSize: 11,
+      color: colors.border,
+      textAlign: 'center',
+      paddingVertical: 3,
+      backgroundColor: colors.surface,
+    },
     body: { padding: 16, gap: 20, paddingBottom: 40 },
+    sectionDivider: {
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: '#33B679' + '60',
+      marginVertical: 12,
+    },
     section: {
       backgroundColor: '#33B679' + '18',
       borderRadius: 12,
@@ -564,11 +565,12 @@ function makeStyles(colors: ColorPalette) {
       color: colors.text,
       lineHeight: 24,
       minHeight: 120,
-      borderWidth: 1,
+      borderWidth: 1.5,
       borderColor: '#33B679',
       borderRadius: 8,
       padding: 10,
-      backgroundColor: colors.surface + 'cc',
+      backgroundColor: colors.surface,
+      textAlignVertical: 'top',
     },
     notesGroupLabel: {
       fontSize: 11,
@@ -580,7 +582,7 @@ function makeStyles(colors: ColorPalette) {
     },
     emptyNotes: { fontSize: 14, color: colors.placeholder, marginLeft: 4 },
     noteCard: {
-      backgroundColor: '#33B679' + '12',
+      backgroundColor: colors.surface,
       borderRadius: 12,
       padding: 14,
       shadowColor: '#000',
@@ -612,14 +614,14 @@ function makeStyles(colors: ColorPalette) {
       backgroundColor: colors.surface + 'cc',
     },
     addNoteCard: {
-      backgroundColor: '#33B679' + '12',
+      backgroundColor: colors.surface,
       borderRadius: 12,
       padding: 14,
       flexDirection: 'row',
       alignItems: 'flex-end',
       gap: 10,
       borderWidth: StyleSheet.hairlineWidth,
-      borderColor: '#33B679',
+      borderColor: colors.border,
       borderStyle: 'dashed',
     },
     addNoteInput: {

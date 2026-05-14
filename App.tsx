@@ -4,6 +4,7 @@ import { Alert, AppState, StatusBar, useColorScheme, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import v from './version.json';
 import CalendarSyncService from './src/services/CalendarSyncService';
+import DevSeedService from './src/services/DevSeedService';
 import SchedulerService from './src/services/SchedulerService';
 import SettingsService from './src/services/SettingsService';
 import StorageService from './src/services/StorageService';
@@ -53,6 +54,8 @@ function AppContent(): React.JSX.Element {
   const [themeSetting, setThemeSetting] = useState<Theme>('system');
   const [debugMode, setDebugMode] = useState(false);
   const [calendarColor, setCalendarColor] = useState(DEFAULT_CALENDAR_COLOR);
+  const [seedingMockData, setSeedingMockData] = useState(false);
+  const [entriesRefreshKey, setEntriesRefreshKey] = useState(0);
   const systemScheme = useColorScheme();
   const syncIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -202,6 +205,39 @@ function AppContent(): React.JSX.Element {
     setDrawerOpen(false);
   }
 
+  function handleSeedMockData() {
+    if (!debugMode || seedingMockData) return;
+    Alert.alert(
+      'Seed Mock Data',
+      'This clears existing entries, goals, plans, notes, and daily summaries, then inserts a software engineer demo day.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clear and Seed',
+          style: 'destructive',
+          onPress: async () => {
+            setSeedingMockData(true);
+            try {
+              const result = await DevSeedService.seedSoftwareEngineerDemo(debugMode);
+              if (result.seeded) {
+                setDrawerOpen(false);
+                setScreen('entries');
+                setEntriesRefreshKey(key => key + 1);
+                Alert.alert('Seed complete', 'Mock software engineer data was added.');
+              } else {
+                Alert.alert('Seed skipped', result.reason ?? 'No data was added.');
+              }
+            } catch (e: any) {
+              Alert.alert('Seed failed', e?.message ?? String(e));
+            } finally {
+              setSeedingMockData(false);
+            }
+          },
+        },
+      ],
+    );
+  }
+
   const drawerScreen: DrawerScreen =
     screen === 'settings' ? 'settings' :
     screen === 'reports'  ? 'reports'  :
@@ -243,6 +279,7 @@ function AppContent(): React.JSX.Element {
             <ReportsScreen onOpenMenu={() => setDrawerOpen(true)} />
           ) : (
             <ReportScreen
+              key={entriesRefreshKey}
               onStartCheckIn={handleStartCheckIn}
               onOpenMenu={() => setDrawerOpen(true)}
               onEditPlan={handleEditPlan}
@@ -257,7 +294,9 @@ function AppContent(): React.JSX.Element {
             currentScreen={drawerScreen}
             onClose={() => setDrawerOpen(false)}
             onNavigate={handleDrawerNavigate}
+            onSeedMockData={handleSeedMockData}
             debugMode={debugMode}
+            seedingMockData={seedingMockData}
           />
         </View>
       )}

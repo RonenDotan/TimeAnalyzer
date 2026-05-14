@@ -70,7 +70,12 @@ Write-Host "==> Launching app..." -ForegroundColor Cyan
 adb shell monkey -p $PACKAGE 1 | Out-Null
 
 # 9. Take screenshot of home screen and save to Drive
-Start-Sleep -Seconds 4
+# Debug builds can spend ~5s checking whether Metro is reachable before falling
+# back to the bundled JS asset. First launch after reinstall can also briefly
+# bounce through Android's permission controller. Wait long enough that the
+# verification screenshot captures the rendered app instead of the transient
+# white launch surface.
+Start-Sleep -Seconds 15
 $ScreenshotDir = "C:\Users\ronen\Desktop\TimeAnalyzer\tests\screenshots"
 if (-not (Test-Path $ScreenshotDir)) { New-Item -ItemType Directory -Path $ScreenshotDir | Out-Null }
 $ScreenshotPath = "$ScreenshotDir\home-screen_${VersionStr}_${Timestamp}.png"

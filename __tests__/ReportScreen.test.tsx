@@ -39,12 +39,26 @@ test('shows empty state when no entries', async () => {
 test('shows entry transcript when entries exist', async () => {
   jest.spyOn(StorageService, 'getByDateRange').mockResolvedValue([entry]);
   const renderer = await render();
+  // Tap the ENTRIES strip to expand
+  await ReactTestRenderer.act(async () => {
+    const stripNode = renderer.root.findAll(el => el.children?.includes('📋  ENTRIES'))[0];
+    let node = stripNode;
+    while (node && typeof node.props.onPress !== 'function') { node = node.parent!; }
+    node.props.onPress();
+  });
   expect(JSON.stringify(renderer.toJSON())).toContain('Worked on the report screen.');
 });
 
 test('shows formatted time range for entry', async () => {
   jest.spyOn(StorageService, 'getByDateRange').mockResolvedValue([entry]);
   const renderer = await render();
+  // Tap the ENTRIES strip to expand
+  await ReactTestRenderer.act(async () => {
+    const stripNode = renderer.root.findAll(el => el.children?.includes('📋  ENTRIES'))[0];
+    let node = stripNode;
+    while (node && typeof node.props.onPress !== 'function') { node = node.parent!; }
+    node.props.onPress();
+  });
   expect(JSON.stringify(renderer.toJSON())).toContain('10:00');
   expect(JSON.stringify(renderer.toJSON())).toContain('12:00');
 });

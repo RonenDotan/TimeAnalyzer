@@ -22,7 +22,9 @@ import TranscriptionService from '../services/TranscriptionService';
 import AnalysisService from '../services/AnalysisService';
 import { parseTranscriptAndNotes } from '../utils/parseTranscript';
 import { ColorPalette, useTheme } from '../contexts/ThemeContext';
+import GoalCard from '../components/GoalCard';
 import PlanHintBar from '../components/PlanHintBar';
+import ScreenHeader from '../components/ScreenHeader';
 import { Goal, isGoalOverdue } from '../types/Goal';
 
 const GOAL_COLOR = '#F97316';
@@ -264,13 +266,7 @@ export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel
     <KeyboardAvoidingView
       style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={onCancel}>
-          <Text style={styles.cancel}>Cancel</Text>
-        </TouchableOpacity>
-        <Text style={styles.title}>Check-in</Text>
-        <View style={styles.cancelPlaceholder} />
-      </View>
+      <ScreenHeader title="Check-in" onLeft={onCancel} leftLabel="Cancel" />
 
       <View style={styles.periodBadge}>
         <Text style={styles.periodText}>
@@ -292,22 +288,9 @@ export default function CheckInScreen({ periodStart, periodEnd, onDone, onCancel
             {activeGoals.length > 0 && (
               <View style={styles.idleGoalsSection}>
                 <Text style={styles.idleGoalsLabel}>🎯  Goals in scope</Text>
-                {activeGoals.map(goal => {
-                  const overdue = isGoalOverdue(goal);
-                  const goalColor = overdue ? OVERDUE_COLOR : GOAL_COLOR;
-                  return (
-                  <View key={goal.id} style={[styles.idleGoalRow, overdue && styles.idleGoalRowOverdue]}>
-                    <View style={styles.idleGoalInfo}>
-                      <Text style={styles.idleGoalText} numberOfLines={1}>{goal.text}</Text>
-                      <View style={styles.idleBarBg}>
-                        <View style={[styles.idleBarFill, { width: `${goal.progress}%` as any, backgroundColor: goalColor }]} />
-                      </View>
-                      {overdue && <Text style={styles.overdueLabel}>Overdue</Text>}
-                    </View>
-                    <Text style={[styles.idleGoalPct, { color: goalColor }]}>{goal.progress}%</Text>
-                  </View>
-                  );
-                })}
+                {activeGoals.map(goal => (
+                  <GoalCard key={goal.id} goal={goal} />
+                ))}
               </View>
             )}
             <TextInput
@@ -514,19 +497,6 @@ function makeStyles(colors: ColorPalette) {
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
     bodyScroll: { flex: 1 },
-    header: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      paddingHorizontal: 16,
-      paddingVertical: 12,
-      backgroundColor: colors.surface,
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: colors.border,
-    },
-    title: { fontSize: 17, fontWeight: '600', color: colors.text },
-    cancel: { fontSize: 17, color: colors.textSecondary },
-    cancelPlaceholder: { width: 50 },
     periodBadge: {
       alignItems: 'center',
       paddingVertical: 20,
@@ -628,13 +598,6 @@ function makeStyles(colors: ColorPalette) {
       borderLeftColor: GOAL_COLOR,
     },
     idleGoalsLabel: { fontSize: 11, fontWeight: '700', color: GOAL_COLOR, letterSpacing: 0.5 },
-    idleGoalRow: { flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: 8, padding: 6 },
-    idleGoalRowOverdue: { backgroundColor: OVERDUE_COLOR + '16' },
-    idleGoalInfo: { flex: 1, gap: 3 },
-    idleGoalText: { fontSize: 13, color: colors.text, fontWeight: '500' },
-    idleBarBg: { height: 3, backgroundColor: colors.border, borderRadius: 2, overflow: 'hidden' },
-    idleBarFill: { height: 3, backgroundColor: GOAL_COLOR, borderRadius: 2 },
-    idleGoalPct: { fontSize: 13, fontWeight: '700', color: GOAL_COLOR, minWidth: 36, textAlign: 'right' },
     overdueLabel: { fontSize: 11, color: OVERDUE_COLOR, fontWeight: '700' },
     // Confirming phase — contribution cards
     goalsSection: { width: '100%', gap: 10 },

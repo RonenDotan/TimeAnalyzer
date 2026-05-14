@@ -12,13 +12,16 @@ import {
 } from 'react-native';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import DateNavigator from '../components/DateNavigator';
 import DictateBar from '../components/DictateBar';
+import GoalCard from '../components/GoalCard';
+import ScreenHeader from '../components/ScreenHeader';
 import TranscriptionService from '../services/TranscriptionService';
 import StorageService from '../services/StorageService';
 import GoalsService from '../services/GoalsService';
 import CalendarSyncService from '../services/CalendarSyncService';
 import { ParsedBlock, PlanBlock } from '../types/DayPlan';
-import { Goal, isGoalOverdue } from '../types/Goal';
+import { Goal } from '../types/Goal';
 import { applyTranscription } from '../utils/parseTranscript';
 import { formatMin, parseDayPlan } from '../utils/parseDayPlan';
 import { ColorPalette, useTheme } from '../contexts/ThemeContext';
@@ -113,14 +116,18 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false,
   const [blocks, setBlocks] = useState<EditBlock[]>([]);
   const [calendarBlocks, setCalendarBlocks] = useState<PlanBlock[]>([]);
   const [deletedBlockIds, setDeletedBlockIds] = useState<number[]>([]);
-  const [saving, setSaving] = useState(false);
   const [recording, setRecording] = useState<RecordingState>(null);
   const [activeTimePicker, setActiveTimePicker] = useState<ActiveTimePicker>(null);
   const [goals, setGoals] = useState<Goal[]>([]);
   const [goalsExpanded, setGoalsExpanded] = useState(false);
   const [newGoalText, setNewGoalText] = useState('');
   const [addingGoal, setAddingGoal] = useState(false);
+  const [editingBlockIndex, setEditingBlockIndex] = useState<number | null>(null);
+  const [editingBlockDraft, setEditingBlockDraft] = useState<EditBlock | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const suppressAutosaveRef = useRef(true);
+  const autosavingRef = useRef(false);
 
   const dateStr = toDateString(currentDate);
 
@@ -131,6 +138,7 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false,
 
   useEffect(() => {
     async function load() {
+      suppressAutosaveRef.current = true;
       setBlocks([]);
       setCalendarBlocks([]);
       setDeletedBlockIds([]);
@@ -146,6 +154,8 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false,
         setBlocks(existing.map(b => planBlockToEdit(b)));
       } catch (e: any) {
         Alert.alert('Load failed', String(e?.message ?? e));
+      } finally {
+        setTimeout(() => { suppressAutosaveRef.current = false; }, 0);
       }
     }
     load();
@@ -189,7 +199,8 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false,
     setBlocks(prev => [...prev, { startText: '', endText: '', activity: '' }]);
   }
 
-  function pickerDateFor(block: EditBlock, field: 'start' | 'end'): Date {
+  function pickerDateFor(index: number, field: 'start' | 'end'): Date {
+    const block = (editingBlockIndex === index && editingBlockDraft) ? editingBlockDraft : blocks[index];
     const raw = field === 'start' ? block.startText : block.endText;
     return minToDate(parseTimeText(raw) ?? 9 * 60);
   }
@@ -199,9 +210,14 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false,
     const picker = activeTimePicker;
     setActiveTimePicker(null);
     if (event.type === 'dismissed' || !picked) return;
-    updateBlock(picker.index, {
-      [picker.field === 'start' ? 'startText' : 'endText']: formatMin(dateToMin(picked)),
-    });
+    const field = picker.field === 'start' ? 'startText' : 'endText';
+    const value = formatMin(dateToMin(picked));
+    // If we're in inline-edit mode for this block, update the draft instead
+    if (editingBlockIndex === picker.index && editingBlockDraft) {
+      setEditingBlockDraft(prev => prev ? { ...prev, [field]: value } : prev);
+    } else {
+      updateBlock(picker.index, { [field]: value });
+    }
   }
 
   async function startBlockDictation(index: number) {
@@ -224,7 +240,11 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false,
     try {
       const text = await TranscriptionService.stop();
       if (text?.trim()) {
-        updateBlock(index, { activity: text.trim() });
+        if (editingBlockIndex === index && editingBlockDraft) {
+          setEditingBlockDraft(prev => prev ? { ...prev, activity: text!.trim() } : prev);
+        } else {
+          updateBlock(index, { activity: text.trim() });
+        }
       }
     } catch (e: any) {
       Alert.alert('Transcription failed', String(e?.message ?? e));
@@ -256,58 +276,50 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false,
     await loadGoals();
   }
 
-  async function handleSave() {
-    let currentBlocks = blocks;
-    if (rawInput.trim().length > 0) {
-      const autoParsed = parseDayPlan(rawInput);
-      if (autoParsed.length > 0) {
-        currentBlocks = [...currentBlocks, ...autoParsed.map(parsedToEdit)];
-        setBlocks(currentBlocks);
-        setRawInput('');
-      }
-    }
-
+  function parseBlocksForAutosave(currentBlocks: EditBlock[]): Array<ParsedBlock & { id?: number }> | null {
     const parsed: Array<ParsedBlock & { id?: number }> = [];
     for (const b of currentBlocks) {
       const startMin = parseTimeText(b.startText);
       const endMin = parseTimeText(b.endText);
-      if (startMin === null) {
-        Alert.alert('Invalid time', `"${b.startText}" is not a valid time (use HH:MM).`);
-        return;
-      }
-      if (endMin === null) {
-        Alert.alert('Invalid time', `"${b.endText}" is not a valid time (use HH:MM).`);
-        return;
-      }
-      if (endMin <= startMin) {
-        Alert.alert('Invalid range', `End time must be after start time for "${b.activity}".`);
-        return;
-      }
-      if (!b.activity.trim()) {
-        Alert.alert('Missing activity', 'Every block needs an activity description.');
-        return;
-      }
+      if (startMin === null || endMin === null || endMin <= startMin || !b.activity.trim()) return null;
       parsed.push({ startMin, endMin, activity: b.activity.trim(), id: b.id });
     }
-
-    if (parsed.length === 0 && deletedBlockIds.length === 0) {
-      onClose();
-      return;
-    }
-
-    setSaving(true);
-    try {
-      const plan = await StorageService.upsertDayPlan(dateStr);
-      await StorageService.upsertPlanBlocks(plan.id, parsed, deletedBlockIds);
-      setDeletedBlockIds([]);
-      CalendarSyncService.syncChanged().catch(() => {});
-      onClose();
-    } catch (e: any) {
-      Alert.alert('Save failed', String(e?.message ?? e));
-    } finally {
-      setSaving(false);
-    }
+    return parsed;
   }
+
+  useEffect(() => {
+    if (suppressAutosaveRef.current) return;
+    const parsed = parseBlocksForAutosave(blocks);
+    if (parsed === null) return;
+    if (parsed.length === 0 && deletedBlockIds.length === 0) return;
+
+    if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
+    autosaveTimerRef.current = setTimeout(async () => {
+      if (autosavingRef.current) return;
+      autosavingRef.current = true;
+      try {
+        const plan = await StorageService.upsertDayPlan(dateStr);
+        const saved = await StorageService.upsertPlanBlocks(plan.id, parsed, deletedBlockIds);
+        suppressAutosaveRef.current = true;
+        setBlocks(saved.map(b => planBlockToEdit(b)));
+        setDeletedBlockIds([]);
+        CalendarSyncService.syncChanged().catch(() => {});
+        setTimeout(() => { suppressAutosaveRef.current = false; }, 0);
+      } catch (e: any) {
+        Alert.alert('Autosave failed', String(e?.message ?? e));
+      } finally {
+        autosavingRef.current = false;
+      }
+    }, 700);
+
+    return () => {
+      if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
+    };
+  }, [blocks, deletedBlockIds, dateStr]);
+
+  useEffect(() => () => {
+    if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
+  }, []);
 
   const styles = makeStyles(colors, calendarColor);
 
@@ -315,173 +327,209 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false,
     <KeyboardAvoidingView
       style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={onClose}>
-          <Text style={styles.cancel}>Cancel</Text>
-        </TouchableOpacity>
-        <Text style={styles.title}>Plans</Text>
-        <TouchableOpacity onPress={handleSave} disabled={saving}>
-          <Text style={[styles.save, saving && styles.saveDim]}>Save</Text>
-        </TouchableOpacity>
-      </View>
+      <ScreenHeader
+        title="Plans"
+        onLeft={onClose}
+        leftLabel="Cancel"
+      />
 
-      <View style={styles.dayNav}>
-        <TouchableOpacity onPress={goToPrevDay} style={styles.navBtn}>
-          <Text style={styles.navArrow}>{'‹'}</Text>
-        </TouchableOpacity>
-        <Text style={styles.dayLabel}>{formatHeader(dateStr)}</Text>
-        <TouchableOpacity onPress={goToNextDay} style={styles.navBtn}>
-          <Text style={styles.navArrow}>{'›'}</Text>
-        </TouchableOpacity>
-      </View>
-
-      {(goals.length > 0 || addingGoal) && (
-        <View style={styles.goalsSectionCard}>
-          <View style={styles.goalsSectionHeader}>
-            <Text style={styles.goalsSectionTitle}>{'\u{1F3AF}  ACTIVE GOALS'}</Text>
-            <TouchableOpacity onPress={() => setAddingGoal(v => !v)}>
-              <Text style={styles.goalsSectionAdd}>{addingGoal ? '\u{2715}' : '+ New goal'}</Text>
-            </TouchableOpacity>
-          </View>
-
-          {(goalsExpanded ? goals : goals.slice(0, GOALS_COLLAPSED_COUNT)).map(goal => {
-            const overdue = isGoalOverdue(goal);
-            const goalColor = overdue ? OVERDUE_COLOR : GOAL_COLOR;
-            return (
-            <View key={goal.id} style={[styles.goalRow, overdue && styles.goalRowOverdue]}>
-              <View style={styles.goalRowTop}>
-                <Text style={styles.goalText} numberOfLines={1}>{goal.text}</Text>
-                <Text style={[styles.goalPct, { color: goalColor }]}>{goal.progress}%</Text>
-              </View>
-              <View style={styles.goalProgressBg}>
-                <View style={[styles.goalProgressFill, { width: `${goal.progress}%` as any, backgroundColor: goalColor }]} />
-              </View>
-              {goal.targetAt !== null && (
-                <Text style={[styles.goalTarget, overdue && styles.goalOverdueText]}>
-                  {'\u{1F4C5} '}{new Date(goal.targetAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                </Text>
-              )}
-              {overdue && <Text style={styles.goalOverdueText}>Overdue</Text>}
-            </View>
-            );
-          })}
-
-          {goals.length > GOALS_COLLAPSED_COUNT && (
-            <TouchableOpacity
-              style={styles.goalsToggle}
-              onPress={() => setGoalsExpanded(prev => !prev)}>
-              <Text style={styles.goalsToggleText}>
-                {goalsExpanded ? 'Show less' : `Show ${goals.length - GOALS_COLLAPSED_COUNT} more`}
-              </Text>
-            </TouchableOpacity>
-          )}
-
-          {addingGoal && (
-            <View style={styles.addGoalRow}>
-              <TextInput
-                style={styles.addGoalInput}
-                value={newGoalText}
-                onChangeText={setNewGoalText}
-                placeholder="Describe your goal..."
-                placeholderTextColor={colors.placeholder}
-                multiline
-                textAlignVertical="top"
-                autoFocus
-              />
-              <TouchableOpacity
-                style={[styles.addGoalBtn, !newGoalText.trim() && styles.addGoalBtnDisabled]}
-                onPress={handleAddGoal}
-                disabled={!newGoalText.trim()}>
-                <Text style={styles.addGoalBtnText}>Add</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-        </View>
-      )}
+      <DateNavigator
+        date={currentDate}
+        onPrev={goToPrevDay}
+        onNext={goToNextDay}
+        formatLabel={() => formatHeader(dateStr)}
+      />
 
       <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
-        {/* Voice / text input area */}
-        <View style={styles.inputCard}>
-          <TextInput
-            style={styles.rawInput}
-            value={rawInput}
-            onChangeText={setRawInput}
-            placeholder={'e.g. "from 8 to 10 backend work, 10 to 12 meetings"'}
-            placeholderTextColor={colors.placeholder}
-            multiline
-            textAlignVertical="top"
-          />
-          <DictateBar onResult={raw => setRawInput(prev => applyTranscription(prev, raw))} />
-          {rawInput.trim().length > 0 && (
-            <TouchableOpacity style={styles.parseBtn} onPress={handleParse}>
-              <Text style={styles.parseBtnText}>Parse into blocks</Text>
-            </TouchableOpacity>
-          )}
-        </View>
+        {(goals.length > 0 || addingGoal) && (
+          <View style={styles.goalsSectionCard}>
+            <View style={styles.goalsSectionHeader}>
+              <Text style={styles.goalsSectionTitle}>{'\u{1F3AF}  ACTIVE GOALS'}</Text>
+              <TouchableOpacity onPress={() => setAddingGoal(v => !v)}>
+                <Text style={styles.goalsSectionAdd}>{addingGoal ? '\u{2715}' : '+ New goal'}</Text>
+              </TouchableOpacity>
+            </View>
+
+            {(goalsExpanded ? goals : goals.slice(0, GOALS_COLLAPSED_COUNT)).map(goal => (
+              <GoalCard key={goal.id} goal={goal} />
+            ))}
+
+            {goals.length > GOALS_COLLAPSED_COUNT && (
+              <TouchableOpacity
+                style={styles.goalsToggle}
+                onPress={() => setGoalsExpanded(prev => !prev)}>
+                <Text style={styles.goalsToggleText}>
+                  {goalsExpanded ? 'Show less' : `Show ${goals.length - GOALS_COLLAPSED_COUNT} more`}
+                </Text>
+              </TouchableOpacity>
+            )}
+
+            {addingGoal && (
+              <View style={styles.addGoalRow}>
+                <TextInput
+                  style={styles.addGoalInput}
+                  value={newGoalText}
+                  onChangeText={setNewGoalText}
+                  placeholder="Describe your goal..."
+                  placeholderTextColor={colors.placeholder}
+                  multiline
+                  textAlignVertical="top"
+                  autoFocus
+                />
+                <TouchableOpacity
+                  style={[styles.addGoalBtn, !newGoalText.trim() && styles.addGoalBtnDisabled]}
+                  onPress={handleAddGoal}
+                  disabled={!newGoalText.trim()}>
+                  <Text style={styles.addGoalBtnText}>Add</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* Voice / text input area — debug only */}
+        {debugMode && (
+          <View style={styles.inputCard}>
+            <TextInput
+              style={styles.rawInput}
+              value={rawInput}
+              onChangeText={setRawInput}
+              placeholder={'e.g. "from 8 to 10 backend work, 10 to 12 meetings"'}
+              placeholderTextColor={colors.placeholder}
+              multiline
+              textAlignVertical="top"
+            />
+            <DictateBar onResult={raw => setRawInput(prev => applyTranscription(prev, raw))} />
+            {rawInput.trim().length > 0 && (
+              <TouchableOpacity style={styles.parseBtn} onPress={handleParse}>
+                <Text style={styles.parseBtnText}>Parse into blocks</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
 
         {/* Block list */}
         {(blocks.length > 0 || calendarBlocks.length > 0) && (
           <Text style={styles.sectionLabel}>PLAN BLOCKS</Text>
         )}
         {blocks.map((block, i) => {
+          const isEditing = editingBlockIndex === i;
           const isRecording = recording?.index === i;
+
+          if (isEditing && editingBlockDraft) {
+            // Inline edit mode
+            return (
+              <View key={i} style={styles.blockCard}>
+                <View style={styles.blockTimes}>
+                  <TouchableOpacity style={styles.timeInput} onPress={() => setActiveTimePicker({ index: i, field: 'start' })}>
+                    <Text style={styles.timeInputText}>{normalizeTimeText(editingBlockDraft.startText) || 'Start'}</Text>
+                  </TouchableOpacity>
+                  <Text style={styles.timeDash}>–</Text>
+                  <TouchableOpacity style={styles.timeInput} onPress={() => setActiveTimePicker({ index: i, field: 'end' })}>
+                    <Text style={styles.timeInputText}>{normalizeTimeText(editingBlockDraft.endText) || 'End'}</Text>
+                  </TouchableOpacity>
+                </View>
+                <View style={styles.activityRow}>
+                  <TextInput
+                    style={styles.activityInput}
+                    value={editingBlockDraft.activity}
+                    onChangeText={v => setEditingBlockDraft(prev => prev ? { ...prev, activity: v } : prev)}
+                    placeholder="Activity description…"
+                    placeholderTextColor={colors.placeholder}
+                    editable={!isRecording}
+                    multiline
+                    textAlignVertical="top"
+                    autoFocus
+                  />
+                  <TouchableOpacity
+                    style={[styles.micBtn, isRecording && styles.micBtnActive]}
+                    onPress={() => isRecording ? stopBlockDictation(i) : startBlockDictation(i)}>
+                    <Text style={styles.micIcon}>{isRecording ? '⏹' : '🎙'}</Text>
+                  </TouchableOpacity>
+                </View>
+                {isRecording && (
+                  <Text style={styles.recordingLabel}>
+                    Recording… {(recording!.ms / 1000).toFixed(1)}s — tap ⏹ to stop
+                  </Text>
+                )}
+                <View style={styles.blockEditActions}>
+                  <TouchableOpacity
+                    style={styles.blockSaveBtn}
+                    onPress={() => {
+                      updateBlock(i, editingBlockDraft);
+                      setEditingBlockIndex(null);
+                      setEditingBlockDraft(null);
+                    }}>
+                    <Text style={styles.blockSaveBtnText}>Save</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.blockCancelBtn}
+                    onPress={() => {
+                      setEditingBlockIndex(null);
+                      setEditingBlockDraft(null);
+                    }}>
+                    <Text style={styles.blockCancelBtnText}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.blockDeleteBtn}
+                    onPress={() => {
+                      removeBlock(i);
+                      setEditingBlockIndex(null);
+                      setEditingBlockDraft(null);
+                    }}>
+                    <Text style={styles.blockDeleteBtnText}>Delete</Text>
+                  </TouchableOpacity>
+                </View>
+                {debugMode && block.id !== undefined && (
+                  <View style={styles.debugRow}>
+                    <Text style={styles.debugText}>
+                      synced: {block.syncedAt !== null && block.syncedAt !== undefined && block.updatedAt !== undefined && block.syncedAt >= block.updatedAt ? 'yes' : 'no'}
+                    </Text>
+                    {block.updatedAt !== undefined && (
+                      <Text style={styles.debugText}>upd: {new Date(block.updatedAt).toLocaleTimeString()}</Text>
+                    )}
+                    {block.syncedAt != null && (
+                      <Text style={styles.debugText}>sync_at: {new Date(block.syncedAt).toLocaleTimeString()}</Text>
+                    )}
+                    <Text style={styles.debugText}>status: {block.status === 1 ? 'active' : block.status === 0 ? 'del' : 'new'}</Text>
+                  </View>
+                )}
+              </View>
+            );
+          }
+
+          // Collapsed card view (goal-card style)
           return (
-            <View key={i} style={styles.blockCard}>
-              <View style={styles.blockTimes}>
-                <TouchableOpacity style={styles.timeInput} onPress={() => setActiveTimePicker({ index: i, field: 'start' })}>
-                  <Text style={styles.timeInputText}>{normalizeTimeText(block.startText) || 'Start'}</Text>
-                </TouchableOpacity>
-                <Text style={styles.timeDash}>–</Text>
-                <TouchableOpacity style={styles.timeInput} onPress={() => setActiveTimePicker({ index: i, field: 'end' })}>
-                  <Text style={styles.timeInputText}>{normalizeTimeText(block.endText) || 'End'}</Text>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => removeBlock(i)} style={styles.removeBtn}>
-                  <Text style={styles.removeBtnText}>✕</Text>
-                </TouchableOpacity>
-              </View>
-              <View style={styles.activityRow}>
-                <TextInput
-                  style={styles.activityInput}
-                  value={block.activity}
-                  onChangeText={v => updateBlock(i, { activity: v })}
-                  placeholder="Activity description…"
-                  placeholderTextColor={colors.placeholder}
-                  editable={!isRecording}
-                  multiline
-                  textAlignVertical="top"
-                />
-                <TouchableOpacity
-                  style={[styles.micBtn, isRecording && styles.micBtnActive]}
-                  onPress={() => isRecording ? stopBlockDictation(i) : startBlockDictation(i)}>
-                  <Text style={styles.micIcon}>{isRecording ? '⏹' : '🎙'}</Text>
-                </TouchableOpacity>
-              </View>
-              {isRecording && (
-                <Text style={styles.recordingLabel}>
-                  Recording… {(recording!.ms / 1000).toFixed(1)}s — tap ⏹ to stop
+            <TouchableOpacity
+              key={i}
+              style={styles.blockCard}
+              onPress={() => {
+                setEditingBlockIndex(i);
+                setEditingBlockDraft({ ...block });
+              }}
+              activeOpacity={0.75}>
+              <View style={styles.blockCardRow}>
+                <Text style={styles.blockCardTime}>
+                  {normalizeTimeText(block.startText) || '??'} – {normalizeTimeText(block.endText) || '??'}
                 </Text>
-              )}
+                <Text style={styles.blockCardEdit}>Edit</Text>
+              </View>
+              <Text style={styles.blockCardActivity}>{block.activity || 'No activity set'}</Text>
               {debugMode && block.id !== undefined && (
                 <View style={styles.debugRow}>
                   <Text style={styles.debugText}>
                     synced: {block.syncedAt !== null && block.syncedAt !== undefined && block.updatedAt !== undefined && block.syncedAt >= block.updatedAt ? 'yes' : 'no'}
                   </Text>
                   {block.updatedAt !== undefined && (
-                    <Text style={styles.debugText}>
-                      upd: {new Date(block.updatedAt).toLocaleTimeString()}
-                    </Text>
+                    <Text style={styles.debugText}>upd: {new Date(block.updatedAt).toLocaleTimeString()}</Text>
                   )}
                   {block.syncedAt != null && (
-                    <Text style={styles.debugText}>
-                      sync_at: {new Date(block.syncedAt).toLocaleTimeString()}
-                    </Text>
+                    <Text style={styles.debugText}>sync_at: {new Date(block.syncedAt).toLocaleTimeString()}</Text>
                   )}
-                  <Text style={styles.debugText}>
-                    status: {block.status === 1 ? 'active' : block.status === 0 ? 'del' : 'new'}
-                  </Text>
+                  <Text style={styles.debugText}>status: {block.status === 1 ? 'active' : block.status === 0 ? 'del' : 'new'}</Text>
                 </View>
               )}
-            </View>
+            </TouchableOpacity>
           );
         })}
 
@@ -520,7 +568,7 @@ export default function DayPlanScreen({ initialDate, onClose, debugMode = false,
 
       {activeTimePicker && blocks[activeTimePicker.index] && (
         <DateTimePicker
-          value={pickerDateFor(blocks[activeTimePicker.index], activeTimePicker.field)}
+          value={pickerDateFor(activeTimePicker.index, activeTimePicker.field)}
           mode="time"
           display="default"
           onChange={handleTimePicked}
@@ -560,12 +608,12 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
     navBtn: { paddingHorizontal: 8, paddingVertical: 3 },
     navArrow: { fontSize: 24, color: colors.accent, fontWeight: '300' },
     dayLabel: { fontSize: 14, fontWeight: '600', color: colors.text },
-    body: { padding: 16, gap: 12, paddingBottom: 40 },
+    body: { paddingHorizontal: 16, paddingTop: 16, gap: 12, paddingBottom: 40 },
     inputCard: {
       backgroundColor: colors.surface,
-      borderRadius: 12,
-      padding: 14,
-      gap: 10,
+      borderRadius: 8,
+      padding: 12,
+      gap: 8,
     },
     rawInput: {
       fontSize: 15,
@@ -591,9 +639,9 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
     },
     blockCard: {
       backgroundColor: '#039BE5' + '18',
-      borderRadius: 12,
-      padding: 14,
-      gap: 10,
+      borderRadius: 8,
+      padding: 12,
+      gap: 8,
       borderLeftWidth: 4,
       borderLeftColor: '#039BE5',
     },
@@ -642,8 +690,8 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
     addBtnText: { fontSize: 15, color: colors.accent, fontWeight: '500' },
     calendarBlockCard: {
       backgroundColor: calendarColor + '18',
-      borderRadius: 12,
-      padding: 14,
+      borderRadius: 8,
+      padding: 12,
       gap: 6,
       borderLeftWidth: 4,
       borderLeftColor: calendarColor,
@@ -677,11 +725,11 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
     debugText: { fontSize: 11, color: colors.textSecondary, fontFamily: 'monospace' },
     goalsSectionCard: {
       backgroundColor: GOAL_COLOR + '10',
-      paddingHorizontal: 12,
-      paddingVertical: 8,
-      gap: 6,
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: GOAL_COLOR + '40',
+      borderRadius: 8,
+      padding: 12,
+      gap: 8,
+      borderLeftWidth: 4,
+      borderLeftColor: GOAL_COLOR,
     },
     goalsSectionHeader: {
       flexDirection: 'row',
@@ -734,7 +782,7 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
       color: colors.text,
       backgroundColor: colors.background,
       borderRadius: 8,
-      padding: 10,
+      padding: 8,
       minHeight: 64,
       lineHeight: 22,
       borderWidth: 1,
@@ -749,5 +797,52 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
     },
     addGoalBtnDisabled: { backgroundColor: colors.placeholder },
     addGoalBtnText: { fontSize: 14, color: '#fff', fontWeight: '600' },
+    blockCardRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 4,
+    },
+    blockCardTime: {
+      fontSize: 14,
+      fontWeight: '700',
+      color: '#039BE5',
+    },
+    blockCardEdit: {
+      fontSize: 13,
+      color: '#039BE5',
+      fontWeight: '600',
+    },
+    blockCardActivity: {
+      fontSize: 15,
+      color: colors.text,
+      lineHeight: 22,
+    },
+    blockEditActions: {
+      flexDirection: 'row',
+      gap: 8,
+      marginTop: 4,
+    },
+    blockSaveBtn: {
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      backgroundColor: '#039BE5',
+      borderRadius: 8,
+    },
+    blockSaveBtnText: { fontSize: 14, color: '#fff', fontWeight: '700' },
+    blockCancelBtn: {
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    blockCancelBtnText: { fontSize: 14, color: colors.textSecondary, fontWeight: '700' },
+    blockDeleteBtn: {
+      marginLeft: 'auto',
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+    },
+    blockDeleteBtnText: { fontSize: 14, color: colors.recordBtn, fontWeight: '500' },
   });
 }
