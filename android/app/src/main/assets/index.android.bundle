@@ -104170,7 +104170,7 @@ __d(function(global, require, _importDefaultUnused, _importAllUnused, module, ex
     "major":  0,
     "minor":  0,
     "ticket_id":  41,
-    "sequence":  10
+    "sequence":  11
 }
 ;
 },638,[],"version.json");
@@ -116255,16 +116255,20 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
       setGoalsExpanded = _useState14[1];
     var _useState15 = (0, _react.useState)(false),
       _useState16 = (0, _slicedToArray2.default)(_useState15, 2),
-      entriesExpanded = _useState16[0],
-      setEntriesExpanded = _useState16[1];
-    var _useState17 = (0, _react.useState)({}),
+      planExpanded = _useState16[0],
+      setPlanExpanded = _useState16[1];
+    var _useState17 = (0, _react.useState)(false),
       _useState18 = (0, _slicedToArray2.default)(_useState17, 2),
-      entryContributions = _useState18[0],
-      setEntryContributions = _useState18[1];
-    var _useState19 = (0, _react.useState)(null),
+      entriesExpanded = _useState18[0],
+      setEntriesExpanded = _useState18[1];
+    var _useState19 = (0, _react.useState)({}),
       _useState20 = (0, _slicedToArray2.default)(_useState19, 2),
-      summary = _useState20[0],
-      setSummary = _useState20[1];
+      entryContributions = _useState20[0],
+      setEntryContributions = _useState20[1];
+    var _useState21 = (0, _react.useState)(null),
+      _useState22 = (0, _slicedToArray2.default)(_useState21, 2),
+      summary = _useState22[0],
+      setSummary = _useState22[1];
     var loadEntries = (0, _react.useCallback)(/*#__PURE__*/function () {
       var _ref = (0, _asyncToGenerator2.default)(function* (date) {
         setLoading(true);
@@ -116311,18 +116315,23 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
     }, [currentDate, loadEntries]);
     function goToPrevDay() {
       setGoalsExpanded(false);
+      setPlanExpanded(false);
       setEntriesExpanded(false);
       setCurrentDate(d => new Date(d.getTime() - 86_400_000));
     }
     function goToNextDay() {
       setGoalsExpanded(false);
+      setPlanExpanded(false);
       setEntriesExpanded(false);
       setCurrentDate(d => new Date(d.getTime() + 86_400_000));
     }
     var ENTRIES_COLLAPSED_COUNT = 2;
+    var PLAN_COLLAPSED_COUNT = 2;
     var canGoForward = !isToday(currentDate);
     var visibleGoals = goalsExpanded ? goals : goals.slice(0, PINNED_GOALS_COLLAPSED_COUNT);
     var hiddenGoalCount = Math.max(0, goals.length - PINNED_GOALS_COLLAPSED_COUNT);
+    var visiblePlanBlocks = planExpanded ? planBlocks : planBlocks.slice(0, PLAN_COLLAPSED_COUNT);
+    var hiddenPlanCount = Math.max(0, planBlocks.length - PLAN_COLLAPSED_COUNT);
     var visibleEntries = entriesExpanded ? entries : entries.slice(0, ENTRIES_COLLAPSED_COUNT);
     var hiddenEntryCount = Math.max(0, entries.length - ENTRIES_COLLAPSED_COUNT);
     var styles = makeStyles(colors, calendarColor);
@@ -116390,7 +116399,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
             children: [/*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
               style: styles.planHeader,
               children: "PLAN  \u203A"
-            }), planBlocks.map(block => {
+            }), visiblePlanBlocks.map(block => {
               var covered = (0, _$$_REQUIRE(_dependencyMap[15], "../utils/planMatching").isCovered)(block, entries);
               var isCalendar = block.source === 'calendar';
               var blockKey = block.id ?? `${block.source}-${block.startMin}-${block.endMin}-${block.activity}`;
@@ -116406,6 +116415,16 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
                   children: [block.activity, isCalendar ? ' 🗓' : '']
                 })]
               }, blockKey);
+            }), hiddenPlanCount > 0 && /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.TouchableOpacity, {
+              onPress: e => {
+                e.stopPropagation?.();
+                setPlanExpanded(prev => !prev);
+              },
+              style: styles.pinnedGoalsToggle,
+              children: /*#__PURE__*/(0, _jsxRuntime.jsx)(_reactNative.Text, {
+                style: styles.pinnedGoalsToggleText,
+                children: planExpanded ? 'Show less' : `Show ${hiddenPlanCount} more`
+              })
             }), /*#__PURE__*/(0, _jsxRuntime.jsxs)(_reactNative.Text, {
               style: styles.planCoverage,
               children: [coveredCount, "/", planBlocks.length, " blocks covered", coveredCount < planBlocks.length ? `  ·  ${planBlocks.length - coveredCount} missed` : '  ✓']

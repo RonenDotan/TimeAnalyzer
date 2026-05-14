@@ -98,6 +98,7 @@ export default function ReportScreen({
   const [planBlocks, setPlanBlocks] = useState<PlanBlock[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
   const [goalsExpanded, setGoalsExpanded] = useState(false);
+  const [planExpanded, setPlanExpanded] = useState(false);
   const [entriesExpanded, setEntriesExpanded] = useState(false);
   const [entryContributions, setEntryContributions] = useState<Record<number, GoalEntryContribution[]>>({});
   const [summary, setSummary] = useState<DailySummaryResult | null>(null);
@@ -140,20 +141,25 @@ export default function ReportScreen({
 
   function goToPrevDay() {
     setGoalsExpanded(false);
+    setPlanExpanded(false);
     setEntriesExpanded(false);
     setCurrentDate(d => new Date(d.getTime() - 86_400_000));
   }
 
   function goToNextDay() {
     setGoalsExpanded(false);
+    setPlanExpanded(false);
     setEntriesExpanded(false);
     setCurrentDate(d => new Date(d.getTime() + 86_400_000));
   }
 
   const ENTRIES_COLLAPSED_COUNT = 2;
+  const PLAN_COLLAPSED_COUNT = 2;
   const canGoForward = !isToday(currentDate);
   const visibleGoals = goalsExpanded ? goals : goals.slice(0, PINNED_GOALS_COLLAPSED_COUNT);
   const hiddenGoalCount = Math.max(0, goals.length - PINNED_GOALS_COLLAPSED_COUNT);
+  const visiblePlanBlocks = planExpanded ? planBlocks : planBlocks.slice(0, PLAN_COLLAPSED_COUNT);
+  const hiddenPlanCount = Math.max(0, planBlocks.length - PLAN_COLLAPSED_COUNT);
   const visibleEntries = entriesExpanded ? entries : entries.slice(0, ENTRIES_COLLAPSED_COUNT);
   const hiddenEntryCount = Math.max(0, entries.length - ENTRIES_COLLAPSED_COUNT);
   const styles = makeStyles(colors, calendarColor);
@@ -226,7 +232,7 @@ export default function ReportScreen({
                 onPress={() => onEditPlan?.(currentDate)}
                 activeOpacity={0.85}>
                 <Text style={styles.planHeader}>PLAN  ›</Text>
-                {planBlocks.map(block => {
+                {visiblePlanBlocks.map(block => {
                   const covered = isCovered(block, entries);
                   const isCalendar = block.source === 'calendar';
                   const blockKey = block.id ?? `${block.source}-${block.startMin}-${block.endMin}-${block.activity}`;
@@ -245,6 +251,13 @@ export default function ReportScreen({
                     </View>
                   );
                 })}
+                {hiddenPlanCount > 0 && (
+                  <TouchableOpacity onPress={e => { e.stopPropagation?.(); setPlanExpanded(prev => !prev); }} style={styles.pinnedGoalsToggle}>
+                    <Text style={styles.pinnedGoalsToggleText}>
+                      {planExpanded ? 'Show less' : `Show ${hiddenPlanCount} more`}
+                    </Text>
+                  </TouchableOpacity>
+                )}
                 <Text style={styles.planCoverage}>
                   {coveredCount}/{planBlocks.length} blocks covered
                   {coveredCount < planBlocks.length ? `  ·  ${planBlocks.length - coveredCount} missed` : '  ✓'}
