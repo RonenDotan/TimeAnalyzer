@@ -244,25 +244,20 @@ export default function ReportScreen({
               </TouchableOpacity>
               {planOpen && (
                 <TouchableOpacity onPress={() => onEditPlan?.(currentDate)} activeOpacity={0.85}>
-                  {visiblePlanBlocks.map(block => {
+                  {visiblePlanBlocks.map((block, index) => {
                     const covered = isCovered(block, entries);
                     const isCalendar = block.source === 'calendar';
                     const blockKey = block.id ?? `${block.source}-${block.startMin}-${block.endMin}-${block.activity}`;
                     return (
-                      <View key={blockKey} style={styles.planBlock}>
-                        <View style={[
-                          styles.planDot,
-                          isCalendar
-                            ? styles.planDotCalendar
-                            : covered ? styles.planDotCovered : styles.planDotMissed,
-                        ]} />
-                        <View style={styles.planBlockContent}>
+                      <React.Fragment key={blockKey}>
+                        <View style={styles.planBlock}>
                           <Text style={styles.planTime}>{formatMin(block.startMin)}–{formatMin(block.endMin)}</Text>
                           <Text style={[styles.planActivity, !covered && styles.planActivityMissed]}>
                             {block.activity}{isCalendar ? ' 🗓' : ''}
                           </Text>
                         </View>
-                      </View>
+                        {index < visiblePlanBlocks.length - 1 && <View style={styles.itemSeparator} />}
+                      </React.Fragment>
                     );
                   })}
                   {hiddenPlanCount > 0 && (
@@ -297,9 +292,10 @@ export default function ReportScreen({
                 <>
                   {visibleEntries.map((entry, index) => {
                     const matched = planBlocks.length > 0 ? allMatchingBlocks(entry, planBlocks) : [];
+                    const entryKey = entry.id ?? `entry-${index}-${entry.timestampStart}-${entry.timestampEnd}`;
                     return (
+                      <React.Fragment key={entryKey}>
                       <TouchableOpacity
-                        key={entry.id ?? `entry-${index}-${entry.timestampStart}-${entry.timestampEnd}`}
                         style={styles.entryCard}
                         onPress={() => setSelectedEntry(entry)}>
                         <View style={styles.entryCardHeader}>
@@ -348,6 +344,8 @@ export default function ReportScreen({
                           </View>
                         )}
                       </TouchableOpacity>
+                      {index < visibleEntries.length - 1 && <View style={styles.itemSeparator} />}
+                      </React.Fragment>
                     );
                   })}
                   {hiddenEntryCount > 0 && (
@@ -491,15 +489,11 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
     },
     entryId: { fontSize: 11, color: colors.border, fontWeight: '500' },
     entryCard: {
-      backgroundColor: '#33B679' + '18',
+      backgroundColor: 'transparent',
       borderRadius: 8,
       padding: 12,
-      borderLeftWidth: 4,
-      borderLeftColor: '#33B679',
-      shadowColor: '#000',
-      shadowOpacity: 0.05,
-      shadowRadius: 4,
-      elevation: 2,
+      borderWidth: 1,
+      borderColor: '#33B679' + '60',
     },
     timeRange: { fontSize: 14, fontWeight: '700', color: '#33B679' },
     transcript: { fontSize: 15, color: colors.text, lineHeight: 22 },
@@ -532,6 +526,8 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
       borderRadius: 8,
       padding: 12,
       gap: 8,
+      borderLeftWidth: 4,
+      borderLeftColor: '#33B679',
     },
     entriesHeader: {
       flex: 1,
@@ -600,12 +596,14 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
       flex: 1,
       fontSize: 11, fontWeight: '700', color: '#039BE5', letterSpacing: 0.5,
     },
-    planBlock: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
-    planBlockContent: { flex: 1, gap: 2 },
-    planDot: { width: 10, height: 10, borderRadius: 5 },
-    planDotCovered: { backgroundColor: '#039BE5' },
-    planDotMissed: { backgroundColor: colors.border },
-    planDotCalendar: { backgroundColor: calendarColor },
+    planBlock: {
+      backgroundColor: 'transparent',
+      borderWidth: 1,
+      borderColor: '#039BE5' + '60',
+      borderRadius: 8,
+      padding: 12,
+      gap: 2,
+    },
     planTime: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
     planActivity: { fontSize: 14, color: colors.text, lineHeight: 20 },
     planActivityMissed: { color: colors.textSecondary },
@@ -646,6 +644,10 @@ function makeStyles(colors: ColorPalette, calendarColor: string) {
       fontSize: 12,
       color: '#33B679',
       fontWeight: '700',
+    },
+    itemSeparator: {
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: colors.border,
     },
   });
 }

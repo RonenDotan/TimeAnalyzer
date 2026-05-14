@@ -33,7 +33,7 @@ interface Props {
   onClose: (saved: boolean) => void;
 }
 
-type SectionKey = 'providers' | 'keywords' | 'theme' | 'notifications' | 'integrations' | 'debug' | 'debugNotifications';
+type SectionKey = 'providers' | 'keywords' | 'theme' | 'notificationSchedule' | 'integrations' | 'debug';
 
 export default function SettingsScreen({ onClose }: Props) {
   const insets = useSafeAreaInsets();
@@ -231,6 +231,90 @@ export default function SettingsScreen({ onClose }: Props) {
 
       <ScrollView contentContainerStyle={styles.body}>
 
+        <SectionHeader sectionKey="notificationSchedule" title="NOTIFICATION SCHEDULE" />
+        {expanded.has('notificationSchedule') && (
+          <>
+            <Text style={styles.sectionLabel}>NOTIFICATION DAYS</Text>
+            <View style={styles.card}>
+              {DAY_LABELS.map((label, i) => (
+                <View key={label} style={[styles.row, i > 0 && styles.rowBorder]}>
+                  <Text style={styles.rowLabel}>{label}</Text>
+                  <Switch value={settings.checkInDays[i]} onValueChange={() => toggleDay(i)} />
+                </View>
+              ))}
+            </View>
+
+            <Text style={styles.sectionLabel}>NOTIFICATION HOURS</Text>
+            <View style={styles.card}>
+              <View style={styles.row}>
+                <Text style={styles.rowLabel}>All day</Text>
+                <Switch value={settings.everyHour} onValueChange={v => set({ everyHour: v })} />
+              </View>
+              {!settings.everyHour && (
+                <>
+                  <View style={[styles.row, styles.rowBorder]}>
+                    <Text style={styles.rowLabel}>Start</Text>
+                    <View style={styles.stepper}>
+                      <TouchableOpacity onPress={() => set({ startHour: Math.max(0, settings.startHour - 1) })}>
+                        <Text style={styles.stepperBtn}>-</Text>
+                      </TouchableOpacity>
+                      <Text style={styles.stepperVal}>{settings.startHour.toString().padStart(2, '0')}:00</Text>
+                      <TouchableOpacity onPress={() => set({ startHour: Math.min(settings.endHour - 1, settings.startHour + 1) })}>
+                        <Text style={styles.stepperBtn}>+</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                  <View style={[styles.row, styles.rowBorder]}>
+                    <Text style={styles.rowLabel}>End</Text>
+                    <View style={styles.stepper}>
+                      <TouchableOpacity onPress={() => set({ endHour: Math.max(settings.startHour + 1, settings.endHour - 1) })}>
+                        <Text style={styles.stepperBtn}>-</Text>
+                      </TouchableOpacity>
+                      <Text style={styles.stepperVal}>{settings.endHour.toString().padStart(2, '0')}:00</Text>
+                      <TouchableOpacity onPress={() => set({ endHour: Math.min(24, settings.endHour + 1) })}>
+                        <Text style={styles.stepperBtn}>+</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </>
+              )}
+            </View>
+
+            <Text style={styles.sectionLabel}>CHECK-IN FREQUENCY</Text>
+            <View style={styles.card}>
+              <View style={styles.row}>
+                <Text style={styles.rowLabel}>Check-in frequency</Text>
+                <View style={styles.numericInputGroup}>
+                  <TextInput
+                    style={styles.numericInput}
+                    value={String(Math.max(1, Math.round(settings.frequencyMinutes / 60)))}
+                    onChangeText={setFrequencyHours}
+                    keyboardType="number-pad"
+                    returnKeyType="done"
+                  />
+                  <Text style={styles.rowSub}>hours</Text>
+                </View>
+              </View>
+            </View>
+
+            <Text style={styles.sectionLabel}>DAILY PLAN</Text>
+            <View style={styles.card}>
+              <View style={styles.row}>
+                <Text style={styles.rowLabel}>Plan notification time</Text>
+                <View style={styles.stepper}>
+                  <TouchableOpacity onPress={() => set({ dailyPlanHour: Math.max(0, settings.dailyPlanHour - 1) })}>
+                    <Text style={styles.stepperBtn}>-</Text>
+                  </TouchableOpacity>
+                  <Text style={styles.stepperVal}>{settings.dailyPlanHour.toString().padStart(2, '0')}:00</Text>
+                  <TouchableOpacity onPress={() => set({ dailyPlanHour: Math.min(23, settings.dailyPlanHour + 1) })}>
+                    <Text style={styles.stepperBtn}>+</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </>
+        )}
+
 {/* ── PROVIDERS ────────────────────────────────────────── */}
         <SectionHeader sectionKey="providers" title="PROVIDERS" />
         {expanded.has('providers') && (
@@ -376,87 +460,6 @@ export default function SettingsScreen({ onClose }: Props) {
           </>
         )}
 
-        {/* ── NOTIFICATIONS ────────────────────────────────────── */}
-        <SectionHeader sectionKey="notifications" title="NOTIFICATIONS" />
-        {expanded.has('notifications') && (
-          <>
-            <Text style={styles.sectionLabel}>DIAGNOSTICS</Text>
-            <View style={styles.card}>
-              <TouchableOpacity
-                style={styles.row}
-                onPress={async () => {
-                  try {
-                    const ns = await SchedulerService.getNotificationDiagnostics();
-                    Alert.alert(
-                      'Notification Status',
-                      ns,
-                      [
-                        { text: 'OK' },
-                        { text: 'Open Alarm Settings', onPress: () => SchedulerService.openAlarmSettings() },
-                        { text: 'Open App Settings', onPress: () => SchedulerService.openAppSettings() },
-                      ],
-                    );
-                  } catch (e: any) {
-                    Alert.alert('Error', String(e?.message ?? e));
-                  }
-                }}>
-                <Text style={styles.rowLabel}>Run full diagnostic</Text>
-                <Text style={styles.chevron}>›</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.row, styles.rowBorder]}
-                onPress={async () => {
-                  try {
-                    const report = await SchedulerService.rescheduleWithReport();
-                    Alert.alert('Reschedule result', report);
-                  } catch (e: any) {
-                    Alert.alert('Failed', String(e?.message ?? e));
-                  }
-                }}>
-                <Text style={styles.rowLabel}>Reschedule now</Text>
-                <Text style={styles.chevron}>›</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.row, styles.rowBorder]}
-                onPress={async () => {
-                  try {
-                    await SchedulerService.sendTestNotification();
-                    Alert.alert('Fired', 'Check your notification shade (pull down from top).');
-                  } catch (e: any) {
-                    Alert.alert('Failed', String(e?.message ?? e));
-                  }
-                }}>
-                <Text style={styles.rowLabel}>Send test notification</Text>
-                <Text style={styles.chevron}>›</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.row, styles.rowBorder]}
-                onPress={async () => {
-                  const count = await SchedulerService.getPendingCount();
-                  setPendingCount(count);
-                }}>
-                <Text style={styles.rowLabel}>Scheduled notifications</Text>
-                <Text style={[styles.rowLabel, { color: colors.accent }]}>
-                  {pendingCount === null ? 'tap to check' : `${pendingCount} pending`}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.row, styles.rowBorder]}
-                onPress={() => SchedulerService.openAlarmSettings()}>
-                <Text style={styles.rowLabel}>Open alarm settings</Text>
-                <Text style={styles.chevron}>›</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.row, styles.rowBorder]}
-                onPress={() => SchedulerService.openAppSettings()}>
-                <Text style={styles.rowLabel}>Open app notification settings</Text>
-                <Text style={styles.chevron}>›</Text>
-              </TouchableOpacity>
-            </View>
-          </>
-        )}
-
-        {/* ── INTEGRATIONS ─────────────────────────────────────── */}
         <SectionHeader sectionKey="integrations" title="INTEGRATIONS" />
         {expanded.has('integrations') && (
           <>
@@ -541,121 +544,111 @@ export default function SettingsScreen({ onClose }: Props) {
         {/* Debug section */}
         <SectionHeader sectionKey="debug" title="DEBUG" />
         {expanded.has('debug') && (
-          <View style={styles.card}>
-            <TouchableOpacity
-              style={styles.row}
-              onPress={() => set({ debugMode: !settings.debugMode })}>
-              <View>
-                <Text style={styles.rowLabel}>Debug mode</Text>
-                <Text style={styles.rowSub}>Show sync fields on each entry</Text>
-              </View>
-              {settings.debugMode && <Text style={styles.checkmark}>✓</Text>}
-            </TouchableOpacity>
-            {settings.debugMode && (
-              <TouchableOpacity
-                style={[styles.row, styles.rowBorder]}
-                onPress={handleSeedDemoData}
-                disabled={seeding}>
-                <View>
-                  <Text style={styles.rowLabel}>Seed Mock Data</Text>
-                  <Text style={styles.rowSub}>Emulator-only software engineer dataset</Text>
-                </View>
-                {seeding
-                  ? <ActivityIndicator size="small" color={colors.accent} />
-                  : <Text style={styles.chevron}>›</Text>}
-              </TouchableOpacity>
-            )}
-          </View>
-        )}
-
-        {settings.debugMode && (
           <>
-            <SectionHeader sectionKey="debugNotifications" title="DEBUG NOTIFICATIONS" />
-            {expanded.has('debugNotifications') && (
+            <View style={styles.card}>
+              <TouchableOpacity
+                style={styles.row}
+                onPress={() => set({ debugMode: !settings.debugMode })}>
+                <View>
+                  <Text style={styles.rowLabel}>Debug mode</Text>
+                  <Text style={styles.rowSub}>Show sync fields on each entry</Text>
+                </View>
+                {settings.debugMode && <Text style={styles.checkmark}>✓</Text>}
+              </TouchableOpacity>
+              {settings.debugMode && (
+                <TouchableOpacity
+                  style={[styles.row, styles.rowBorder]}
+                  onPress={handleSeedDemoData}
+                  disabled={seeding}>
+                  <View>
+                    <Text style={styles.rowLabel}>Seed Mock Data</Text>
+                    <Text style={styles.rowSub}>Emulator-only software engineer dataset</Text>
+                  </View>
+                  {seeding
+                    ? <ActivityIndicator size="small" color={colors.accent} />
+                    : <Text style={styles.chevron}>›</Text>}
+                </TouchableOpacity>
+              )}
+            </View>
+            {settings.debugMode && (
               <>
-                <Text style={styles.sectionLabel}>NOTIFICATION DAYS</Text>
+                <Text style={styles.sectionLabel}>NOTIFICATIONS DIAGNOSTICS</Text>
                 <View style={styles.card}>
-                  {DAY_LABELS.map((label, i) => (
-                    <View key={label} style={[styles.row, i > 0 && styles.rowBorder]}>
-                      <Text style={styles.rowLabel}>{label}</Text>
-                      <Switch value={settings.checkInDays[i]} onValueChange={() => toggleDay(i)} />
-                    </View>
-                  ))}
-                </View>
-
-                <Text style={styles.sectionLabel}>NOTIFICATION HOURS</Text>
-                <View style={styles.card}>
-                  <View style={styles.row}>
-                    <Text style={styles.rowLabel}>All day</Text>
-                    <Switch value={settings.everyHour} onValueChange={v => set({ everyHour: v })} />
-                  </View>
-                  {!settings.everyHour && (
-                    <>
-                      <View style={[styles.row, styles.rowBorder]}>
-                        <Text style={styles.rowLabel}>Start</Text>
-                        <View style={styles.stepper}>
-                          <TouchableOpacity onPress={() => set({ startHour: Math.max(0, settings.startHour - 1) })}>
-                            <Text style={styles.stepperBtn}>-</Text>
-                          </TouchableOpacity>
-                          <Text style={styles.stepperVal}>{settings.startHour.toString().padStart(2, '0')}:00</Text>
-                          <TouchableOpacity onPress={() => set({ startHour: Math.min(settings.endHour - 1, settings.startHour + 1) })}>
-                            <Text style={styles.stepperBtn}>+</Text>
-                          </TouchableOpacity>
-                        </View>
-                      </View>
-                      <View style={[styles.row, styles.rowBorder]}>
-                        <Text style={styles.rowLabel}>End</Text>
-                        <View style={styles.stepper}>
-                          <TouchableOpacity onPress={() => set({ endHour: Math.max(settings.startHour + 1, settings.endHour - 1) })}>
-                            <Text style={styles.stepperBtn}>-</Text>
-                          </TouchableOpacity>
-                          <Text style={styles.stepperVal}>{settings.endHour.toString().padStart(2, '0')}:00</Text>
-                          <TouchableOpacity onPress={() => set({ endHour: Math.min(24, settings.endHour + 1) })}>
-                            <Text style={styles.stepperBtn}>+</Text>
-                          </TouchableOpacity>
-                        </View>
-                      </View>
-                    </>
-                  )}
-                </View>
-
-                <Text style={styles.sectionLabel}>CHECK-IN FREQUENCY</Text>
-                <View style={styles.card}>
-                  <View style={styles.row}>
-                    <Text style={styles.rowLabel}>Check-in frequency</Text>
-                    <View style={styles.numericInputGroup}>
-                      <TextInput
-                        style={styles.numericInput}
-                        value={String(Math.max(1, Math.round(settings.frequencyMinutes / 60)))}
-                        onChangeText={setFrequencyHours}
-                        keyboardType="number-pad"
-                        returnKeyType="done"
-                      />
-                      <Text style={styles.rowSub}>hours</Text>
-                    </View>
-                  </View>
-                </View>
-
-                <Text style={styles.sectionLabel}>DAILY PLAN</Text>
-                <View style={styles.card}>
-                  <View style={styles.row}>
-                    <Text style={styles.rowLabel}>Plan notification time</Text>
-                    <View style={styles.stepper}>
-                      <TouchableOpacity onPress={() => set({ dailyPlanHour: Math.max(0, settings.dailyPlanHour - 1) })}>
-                        <Text style={styles.stepperBtn}>-</Text>
-                      </TouchableOpacity>
-                      <Text style={styles.stepperVal}>{settings.dailyPlanHour.toString().padStart(2, '0')}:00</Text>
-                      <TouchableOpacity onPress={() => set({ dailyPlanHour: Math.min(23, settings.dailyPlanHour + 1) })}>
-                        <Text style={styles.stepperBtn}>+</Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
+                  <TouchableOpacity
+                    style={styles.row}
+                    onPress={async () => {
+                      try {
+                        const ns = await SchedulerService.getNotificationDiagnostics();
+                        Alert.alert(
+                          'Notification Status',
+                          ns,
+                          [
+                            { text: 'OK' },
+                            { text: 'Open Alarm Settings', onPress: () => SchedulerService.openAlarmSettings() },
+                            { text: 'Open App Settings', onPress: () => SchedulerService.openAppSettings() },
+                          ],
+                        );
+                      } catch (e: any) {
+                        Alert.alert('Error', String(e?.message ?? e));
+                      }
+                    }}>
+                    <Text style={styles.rowLabel}>Run full diagnostic</Text>
+                    <Text style={styles.chevron}>›</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.row, styles.rowBorder]}
+                    onPress={async () => {
+                      try {
+                        const report = await SchedulerService.rescheduleWithReport();
+                        Alert.alert('Reschedule result', report);
+                      } catch (e: any) {
+                        Alert.alert('Failed', String(e?.message ?? e));
+                      }
+                    }}>
+                    <Text style={styles.rowLabel}>Reschedule now</Text>
+                    <Text style={styles.chevron}>›</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.row, styles.rowBorder]}
+                    onPress={async () => {
+                      try {
+                        await SchedulerService.sendTestNotification();
+                        Alert.alert('Fired', 'Check your notification shade (pull down from top).');
+                      } catch (e: any) {
+                        Alert.alert('Failed', String(e?.message ?? e));
+                      }
+                    }}>
+                    <Text style={styles.rowLabel}>Send test notification</Text>
+                    <Text style={styles.chevron}>›</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.row, styles.rowBorder]}
+                    onPress={async () => {
+                      const count = await SchedulerService.getPendingCount();
+                      setPendingCount(count);
+                    }}>
+                    <Text style={styles.rowLabel}>Scheduled notifications</Text>
+                    <Text style={[styles.rowLabel, { color: colors.accent }]}>
+                      {pendingCount === null ? 'tap to check' : `${pendingCount} pending`}
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.row, styles.rowBorder]}
+                    onPress={() => SchedulerService.openAlarmSettings()}>
+                    <Text style={styles.rowLabel}>Open alarm settings</Text>
+                    <Text style={styles.chevron}>›</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.row, styles.rowBorder]}
+                    onPress={() => SchedulerService.openAppSettings()}>
+                    <Text style={styles.rowLabel}>Open app notification settings</Text>
+                    <Text style={styles.chevron}>›</Text>
+                  </TouchableOpacity>
                 </View>
               </>
             )}
           </>
         )}
-
         <Text style={styles.versionText}>{version}</Text>
       </ScrollView>
     </View>
