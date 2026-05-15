@@ -4,12 +4,12 @@ import { Note } from '../../types/Note';
 import { DayPlan, ParsedBlock, PlanBlock, PlanBlockWithDate, BlockSource } from '../../types/DayPlan';
 import { StorageProvider } from './StorageProvider';
 import { PROMPT_ACTION_DAILY_SUMMARY, PROMPT_ACTION_GOAL_CONTRIBUTION } from '../../types/Prompt';
-import { CLAUDE_DAILY_SUMMARY_PROMPT_BODY, CLAUDE_GOAL_CONTRIBUTION_PROMPT_BODY, CODEX_DAILY_SUMMARY_PROMPT_BODY, DEFAULT_DAILY_SUMMARY_PROMPT_BODY, DEFAULT_GOAL_CONTRIBUTION_PROMPT_BODY } from '../../utils/promptTemplates';
+import { CLAUDE_DAILY_SUMMARY_PROMPT_BODY, CLAUDE_GOAL_CONTRIBUTION_PROMPT_BODY, CLAUDE_SUMMARY_GOALS_PROMPT_BODY, CODEX_DAILY_SUMMARY_PROMPT_BODY, DEFAULT_DAILY_SUMMARY_PROMPT_BODY, DEFAULT_GOAL_CONTRIBUTION_PROMPT_BODY } from '../../utils/promptTemplates';
 
 type DB = ReturnType<typeof open>;
 let db: DB | null = null;
 
-const SCHEMA_VERSION = 9;
+const SCHEMA_VERSION = 10;
 
 export function getDb(): DB {
   if (!db) {
@@ -313,6 +313,22 @@ function runMigrations(d: DB): void {
   if (current < 9) {
     try { d.executeSync('ALTER TABLE goal_contributions ADD COLUMN reason TEXT'); } catch {}
     setVersion(d, 9);
+  }
+
+  // Migration 9->10: add claude-summary-goals prompt as new default daily summary
+  if (current < 10) {
+    const now = Date.now();
+    d.executeSync(
+      'INSERT INTO prompts (action_id, name, body, is_default, created_at) VALUES (?, ?, ?, 0, ?)',
+      [PROMPT_ACTION_DAILY_SUMMARY, 'claude-summary-goals', CLAUDE_SUMMARY_GOALS_PROMPT_BODY, now],
+    );
+    // Set it as the new default, clear the previous default
+    d.executeSync('UPDATE prompts SET is_default = 0 WHERE action_id = ?', [PROMPT_ACTION_DAILY_SUMMARY]);
+    d.executeSync(
+      "UPDATE prompts SET is_default = 1 WHERE action_id = ? AND name = 'claude-summary-goals'",
+      [PROMPT_ACTION_DAILY_SUMMARY],
+    );
+    setVersion(d, 10);
   }
 }
 

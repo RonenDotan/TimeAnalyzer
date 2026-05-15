@@ -104172,7 +104172,7 @@ __d(function(global, require, _importDefaultUnused, _importAllUnused, module, ex
     "major":  0,
     "minor":  0,
     "ticket_id":  41,
-    "sequence":  20
+    "sequence":  21
 }
 ;
 },638,[],"version.json");
@@ -104978,7 +104978,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
   exports.getDb = getDb;
   var _asyncToGenerator2 = _interopRequireDefault(_$$_REQUIRE(_dependencyMap[1], "@babel/runtime/helpers/asyncToGenerator"));
   var db = null;
-  var SCHEMA_VERSION = 9;
+  var SCHEMA_VERSION = 10;
   function getDb() {
     if (!db) {
       db = (0, _$$_REQUIRE(_dependencyMap[2], "@op-engineering/op-sqlite").open)({
@@ -105301,6 +105301,16 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
         d.executeSync('ALTER TABLE goal_contributions ADD COLUMN reason TEXT');
       } catch {}
       setVersion(d, 9);
+    }
+
+    // Migration 9->10: add claude-summary-goals prompt as new default daily summary
+    if (current < 10) {
+      var _now2 = Date.now();
+      d.executeSync('INSERT INTO prompts (action_id, name, body, is_default, created_at) VALUES (?, ?, ?, 0, ?)', [_$$_REQUIRE(_dependencyMap[3], "../../types/Prompt").PROMPT_ACTION_DAILY_SUMMARY, 'claude-summary-goals', _$$_REQUIRE(_dependencyMap[4], "../../utils/promptTemplates").CLAUDE_SUMMARY_GOALS_PROMPT_BODY, _now2]);
+      // Set it as the new default, clear the previous default
+      d.executeSync('UPDATE prompts SET is_default = 0 WHERE action_id = ?', [_$$_REQUIRE(_dependencyMap[3], "../../types/Prompt").PROMPT_ACTION_DAILY_SUMMARY]);
+      d.executeSync("UPDATE prompts SET is_default = 1 WHERE action_id = ? AND name = 'claude-summary-goals'", [_$$_REQUIRE(_dependencyMap[3], "../../types/Prompt").PROMPT_ACTION_DAILY_SUMMARY]);
+      setVersion(d, 10);
     }
   }
   function seedDefaultPrompts(d) {
@@ -106250,7 +106260,7 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
   Object.defineProperty(exports, "__esModule", {
     value: true
   });
-  exports.DEFAULT_GOAL_CONTRIBUTION_PROMPT_BODY = exports.DEFAULT_DAILY_SUMMARY_PROMPT_BODY = exports.CODEX_DAILY_SUMMARY_PROMPT_BODY = exports.CLAUDE_GOAL_CONTRIBUTION_PROMPT_BODY = exports.CLAUDE_DAILY_SUMMARY_PROMPT_BODY = void 0;
+  exports.DEFAULT_GOAL_CONTRIBUTION_PROMPT_BODY = exports.DEFAULT_DAILY_SUMMARY_PROMPT_BODY = exports.CODEX_DAILY_SUMMARY_PROMPT_BODY = exports.CLAUDE_SUMMARY_GOALS_PROMPT_BODY = exports.CLAUDE_GOAL_CONTRIBUTION_PROMPT_BODY = exports.CLAUDE_DAILY_SUMMARY_PROMPT_BODY = void 0;
   exports.buildGoalContributionPrompt = buildGoalContributionPrompt;
   exports.goalContextJson = goalContextJson;
   exports.renderDailySummaryPrompt = renderDailySummaryPrompt;
@@ -106260,6 +106270,11 @@ __d(function (global, _$$_REQUIRE, _$$_IMPORT_DEFAULT, _$$_IMPORT_ALL, module, e
   var CLAUDE_GOAL_CONTRIBUTION_PROMPT_BODY = exports.CLAUDE_GOAL_CONTRIBUTION_PROMPT_BODY = ['You are analyzing a work journal check-in to suggest how much progress was made on each active goal.', '', 'For each goal, consider:', '- Does the transcript mention work directly related to this goal?', '- How significant was that work relative to what remains?', '- Err on the side of under-estimating — it is better to suggest too little than too much.', '', 'Rules:', '- Return only JSON: {"suggestions":[{"goalId":number,"contributionPct":number,"reason":string}]}', '- Only include goals where the transcript clearly shows progress.', '- contributionPct is the amount to add now (1 to remainingAutoContribution).', '- Never suggest the final point to 100%; leave completion for the user to confirm manually.', '- Small focused work: 5-10. Meaningful progress: 10-20. Near-completion work: 20-40.', '- Reasons are one short sentence, written for the user, not for a developer.', '- If nothing clearly advanced a goal, return {"suggestions":[]}.', '', 'Active goals:', '{{goals_json}}', '', 'Transcript:', '{{transcript}}'].join('\n');
   var CLAUDE_DAILY_SUMMARY_PROMPT_BODY = exports.CLAUDE_DAILY_SUMMARY_PROMPT_BODY = ['Summarize today\'s work journal as an end-of-day debrief.', '', 'You have:', '- Check-in transcripts: what was actually worked on', '- Day plan: what was intended', '- Active goals: long-term priorities with current progress', '', 'Rules:', '- Return only valid JSON. No markdown.', '- Ground everything in the transcripts — they are the source of truth.', '- Be specific and concrete. Reference actual work mentioned.', '- Do not fabricate blockers, emotions, or progress not evidenced in the transcripts.', '- If no transcripts exist, return a minimal response.', '', 'Return JSON:', '{', '  "debrief": "2-4 sentences. What actually happened, how it compared to the plan, what moved forward on goals.",', '  "momentum": "1 sentence. What to carry into tomorrow.",', '  "gaps": ["Planned work that did not happen. Empty array if no plan or no gaps."]', '}', '', 'Date: {{date}}', '', 'Transcripts: {{entries_json}}', '', 'Plan: {{plan_json}}', '', 'Goals: {{goals_json}}'].join('\n');
   var CODEX_DAILY_SUMMARY_PROMPT_BODY = exports.CODEX_DAILY_SUMMARY_PROMPT_BODY = ['Generate an end-of-day debrief for a voice-driven work journal.', '', 'You will receive:', '- Today\'s check-in transcripts: what was actually done, with timestamps.', '- Today\'s day plan: planned time blocks and activities.', '- Active goals: goal text, current progress %, and optional target date.', '', 'Write a concise, factual debrief that helps the user understand how the day actually went.', '', 'Rules:', '- Return only valid JSON. Do not include markdown or commentary.', '- Use the user\'s actual check-ins as the source of truth.', '- Compare plan vs actual when a day plan exists.', '- Mention goal progress only when the transcripts clearly relate to active goals.', '- Do not invent work, emotions, blockers, meetings, or progress.', '- If evidence is weak, say that directly.', '- Keep the debrief paragraph readable and specific, not generic.', '- Key insights should be short, practical observations.', '- Prefer concrete phrasing like "The morning shifted from planned writing to debugging" over vague phrasing like "There were productivity challenges."', '- If there are no transcripts, return an empty/low-confidence summary.', '- If there is no plan, focus on what was done and any goal alignment.', '', 'Return JSON with this exact shape:', '{', '  "debrief": "One concise paragraph, 3-6 sentences.",', '  "keyInsights": [', '    {', '      "type": "plan_vs_actual | goal_progress | blocker | pattern | follow_up | note",', '      "text": "Short user-facing insight.",', '      "confidence": "high | medium | low"', '    }', '  ]', '}', '', 'Date:', '{{date}}', '', 'Check-in transcripts:', '{{entries_json}}', '', 'Day plan:', '{{plan_json}}', '', 'Active goals:', '{{goals_json}}'].join('\n');
+
+  // claude-summary-goals: plan→actual gap narrative + goal alignment.
+  // Uses all four template variables: {{date}} {{entries_json}} {{plan_json}} {{goals_json}}
+  // Returns the full DailySummaryResult shape: debrief + momentum + gaps + keyInsights.
+  var CLAUDE_SUMMARY_GOALS_PROMPT_BODY = exports.CLAUDE_SUMMARY_GOALS_PROMPT_BODY = ['You are writing an end-of-day debrief for a work journal app.', '', 'The user recorded short voice check-ins throughout the day and may have written a day plan in advance.', 'Your job is to tell them concisely:', '  1. What they actually accomplished (grounded in the transcripts)', '  2. How the day compared to the plan — which blocks were covered, which slipped, what replaced them', '  3. How today moved the needle on active goals', '', 'Source of truth: check-in transcripts. Only describe work that appears in a transcript.', '', 'Rules:', '- Return only valid JSON. No markdown, no commentary outside the JSON.', '- Be specific. Reference actual activities, times, and work mentioned in the transcripts.', '- Debrief: 3–5 sentences. Readable, second-person ("You started the morning with…").', '  Cover: what was actually done, one clear plan/actual contrast if a plan exists, any notable goal progress.', '- Momentum: 1 sentence. The single most concrete thing to carry into tomorrow.', '- Gaps: list plan blocks that had zero or minimal check-in coverage.', '  Format each as: "<HH:MM–HH:MM> <activity> — <brief reason it slipped, if inferable from transcripts>".', '  Empty array if no plan exists or all blocks were covered.', '- Key insights: 2–4 short observations. Each must be specific and evidence-based.', '  type must be exactly one of: plan_vs_actual | goal_progress | blocker | pattern | follow_up', '  confidence: high (clearly evidenced) | medium (inferable) | low (speculative)', '- Do not invent blockers, emotions, meetings, or outcomes not evidenced in the transcripts.', '- If no transcripts exist, set debrief to "No check-ins were recorded for this day." and return empty arrays.', '- If no plan exists, skip plan comparison; focus on accomplishments and goal alignment.', '- If no goals exist, omit goal references entirely.', '', 'Return JSON with this exact shape:', '{', '  "debrief": "3–5 sentences.",', '  "momentum": "1 sentence.",', '  "gaps": ["HH:MM–HH:MM activity — reason"],', '  "keyInsights": [{ "type": "...", "text": "...", "confidence": "..." }]', '}', '', 'Date: {{date}}', '', 'Check-in transcripts (source of truth):', '{{entries_json}}', '', 'Day plan (intended):', '{{plan_json}}', '', 'Active goals:', '{{goals_json}}'].join('\n');
   function goalContextJson(goals) {
     return JSON.stringify(goals.map(goal => ({
       id: goal.id,

@@ -141,6 +141,57 @@ export const CODEX_DAILY_SUMMARY_PROMPT_BODY = [
   '{{goals_json}}',
 ].join('\n');
 
+// claude-summary-goals: plan→actual gap narrative + goal alignment.
+// Uses all four template variables: {{date}} {{entries_json}} {{plan_json}} {{goals_json}}
+// Returns the full DailySummaryResult shape: debrief + momentum + gaps + keyInsights.
+export const CLAUDE_SUMMARY_GOALS_PROMPT_BODY = [
+  'You are writing an end-of-day debrief for a work journal app.',
+  '',
+  'The user recorded short voice check-ins throughout the day and may have written a day plan in advance.',
+  'Your job is to tell them concisely:',
+  '  1. What they actually accomplished (grounded in the transcripts)',
+  '  2. How the day compared to the plan — which blocks were covered, which slipped, what replaced them',
+  '  3. How today moved the needle on active goals',
+  '',
+  'Source of truth: check-in transcripts. Only describe work that appears in a transcript.',
+  '',
+  'Rules:',
+  '- Return only valid JSON. No markdown, no commentary outside the JSON.',
+  '- Be specific. Reference actual activities, times, and work mentioned in the transcripts.',
+  '- Debrief: 3–5 sentences. Readable, second-person ("You started the morning with…").',
+  '  Cover: what was actually done, one clear plan/actual contrast if a plan exists, any notable goal progress.',
+  '- Momentum: 1 sentence. The single most concrete thing to carry into tomorrow.',
+  '- Gaps: list plan blocks that had zero or minimal check-in coverage.',
+  '  Format each as: "<HH:MM–HH:MM> <activity> — <brief reason it slipped, if inferable from transcripts>".',
+  '  Empty array if no plan exists or all blocks were covered.',
+  '- Key insights: 2–4 short observations. Each must be specific and evidence-based.',
+  '  type must be exactly one of: plan_vs_actual | goal_progress | blocker | pattern | follow_up',
+  '  confidence: high (clearly evidenced) | medium (inferable) | low (speculative)',
+  '- Do not invent blockers, emotions, meetings, or outcomes not evidenced in the transcripts.',
+  '- If no transcripts exist, set debrief to "No check-ins were recorded for this day." and return empty arrays.',
+  '- If no plan exists, skip plan comparison; focus on accomplishments and goal alignment.',
+  '- If no goals exist, omit goal references entirely.',
+  '',
+  'Return JSON with this exact shape:',
+  '{',
+  '  "debrief": "3–5 sentences.",',
+  '  "momentum": "1 sentence.",',
+  '  "gaps": ["HH:MM–HH:MM activity — reason"],',
+  '  "keyInsights": [{ "type": "...", "text": "...", "confidence": "..." }]',
+  '}',
+  '',
+  'Date: {{date}}',
+  '',
+  'Check-in transcripts (source of truth):',
+  '{{entries_json}}',
+  '',
+  'Day plan (intended):',
+  '{{plan_json}}',
+  '',
+  'Active goals:',
+  '{{goals_json}}',
+].join('\n');
+
 export function goalContextJson(goals: Goal[]): string {
   return JSON.stringify(
     goals.map(goal => ({
