@@ -7,7 +7,7 @@ See `AGENTS.md` for full architecture reference, `CLAUDE.md` for Claude-specific
 
 ## Last updated
 
-- **Date:** 2026-05-14
+- **Date:** 2026-05-16
 - **Updated by:** Claude
 - **Switching to:** (next ticket)
 
@@ -25,8 +25,8 @@ See `AGENTS.md` for full architecture reference, `CLAUDE.md` for Claude-specific
 
 **None** — pick the next from the project board.
 
-- Version: `v0.0.41.20`
-- `version.json`: `major=0`, `minor=0`, `ticket_id=41`, `sequence=20`
+- Version: `v0.0.41.21`
+- `version.json`: `major=0`, `minor=0`, `ticket_id=41`, `sequence=21`
 
 ---
 
